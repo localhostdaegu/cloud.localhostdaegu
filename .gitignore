@@ -8,3 +8,8 @@ data/**
 .worktrees/
 .claude/settings.local.json
 .DS_Store
+node_modules/
+.next/
+*.log
+.superpowers/
+scratchpad/
