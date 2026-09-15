@@ -6,6 +6,7 @@ from apps.finance.adapter.inbound.api.v1.finance_router import router as finance
 from apps.funding.adapter.inbound.api.v1.funding_program_router import (
     router as funding_router,
 )
+from apps.intent.adapter.inbound.api.v1.intent_router import router as intent_router
 from apps.master.adapter.inbound.api.v1.region_router import router as region_router
 from apps.matching.adapter.inbound.api.v1.matching_router import router as matching_router
 from apps.metric.adapter.inbound.api.v1.region_industry_metric_router import (
@@ -25,6 +26,7 @@ app.add_middleware(
 app.add_middleware(GZipMiddleware, minimum_size=1024)  # /regions/geojson 등 대형 응답 압축
 app.include_router(finance_router)
 app.include_router(funding_router)
+app.include_router(intent_router)
 app.include_router(matching_router)
 app.include_router(region_router)
 app.include_router(metric_router)
