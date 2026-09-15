@@ -1,0 +1,34 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+
+from apps.funding.adapter.inbound.api.v1.funding_program_router import (
+    router as funding_router,
+)
+from apps.master.adapter.inbound.api.v1.region_router import router as region_router
+from apps.metric.adapter.inbound.api.v1.region_industry_metric_router import (
+    router as metric_router,
+)
+from apps.news.adapter.inbound.api.v1.news_article_router import router as news_router
+from apps.shock.adapter.inbound.api.v1.shock_event_router import router as shock_router
+from apps.store.adapter.inbound.api.v1.store_router import router as store_router
+
+app = FastAPI(title="beyondfacade backend")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3300", "http://127.0.0.1:3300"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(GZipMiddleware, minimum_size=1024)  # /regions/geojson 등 대형 응답 압축
+app.include_router(funding_router)
+app.include_router(region_router)
+app.include_router(metric_router)
+app.include_router(news_router)
+app.include_router(shock_router)
+app.include_router(store_router)
+
+
+@app.get("/health")
+def health() -> dict:
+    return {"status": "ok"}
