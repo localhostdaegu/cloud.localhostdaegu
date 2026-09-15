@@ -58,3 +58,44 @@ export interface IndustryRiskScore {
   grade: RiskGrade;
   components: RiskComponents;
 }
+
+/** POST /finance/simulate 요청 바디 — 백엔드 FinanceInput 필드명 그대로(원 단위 int). */
+export interface FinanceInput {
+  deposit: number;
+  key_money: number;
+  interior_cost: number;
+  equipment_cost: number;
+  monthly_rent: number;
+  monthly_payroll: number;
+  monthly_insurance: number;
+  cost_ratio: number;
+  fee_ratio: number;
+  equity: number;
+  desired_loan: number;
+  loan_rate: number;
+  expected_monthly_revenue: number;
+}
+
+export interface FinanceScenario {
+  name: string;
+  monthly_revenue: number;
+  variable_cost: number;
+  operating_profit: number;
+  payback_months: number | null;
+  runway_months: number | null;
+}
+
+export interface FinanceStress {
+  rate_delta: number;
+  monthly_fixed: number;
+  base_operating_profit: number;
+}
+
+export interface FinanceOutput {
+  capex: number;
+  monthly_fixed: number;
+  bep_revenue: number;
+  funding_gap: number;
+  scenarios: FinanceScenario[];
+  stress: FinanceStress[];
+}

@@ -15,6 +15,8 @@ interface SidePanelProps {
    *  채워 "없음"을 표현할 수 없으므로, 원본 파라미터를 별도로 받아 B유형(업종 랭킹) 여부를 가른다. */
   industryParam: string | null;
   onSelectIndustry: (industryId: string) => void;
+  /** 현재 URL 쿼리 전체(district·industry·budget 등) — /simulate CTA에 그대로 승계한다. */
+  searchParams?: string;
 }
 
 function SkeletonRows() {
@@ -30,8 +32,9 @@ function SkeletonRows() {
   );
 }
 
-export function SidePanel({ regionCode, industry, industryParam, onSelectIndustry }: SidePanelProps) {
+export function SidePanel({ regionCode, industry, industryParam, onSelectIndustry, searchParams = "" }: SidePanelProps) {
   const isRanking = !!regionCode && industryParam === null;
+  const simulateHref = searchParams ? `/simulate?${searchParams}` : "/simulate";
 
   const summary = useQuery({
     queryKey: ["region-summary", regionCode, industry],
@@ -174,6 +177,13 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
             className="mt-6 rounded-md bg-[var(--accent)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--accent-fg)] transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px"
           >
             AI 분석 →
+          </Link>
+
+          <Link
+            href={simulateHref}
+            className="mt-2 rounded-md border border-[var(--border)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px"
+          >
+            이 자리에서 시뮬레이션 →
           </Link>
         </>
       )}

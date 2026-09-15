@@ -44,6 +44,7 @@ export function MapPage() {
           industry={state.industry}
           industryParam={searchParams.get("industry")}
           onSelectIndustry={handleSelectIndustry}
+          searchParams={searchParams.toString()}
         />
       </div>
     </div>
