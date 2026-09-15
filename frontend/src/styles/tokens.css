@@ -6,6 +6,7 @@
   --border: #dce5e4;
   --accent: #0f766e;       --accent-fg: #ffffff;
   --ok: #15803d;           --warn: #b45309;         --danger: #b91c1c;
+  --info: #1d4ed8;         --violet: #7e22ce;
 }
 [data-theme="dark"] {
   --bg-base: #101617;      --bg-surface: #171f20;   --bg-raised: #202a2b;
@@ -13,4 +14,5 @@
   --border: #2c3839;
   --accent: #2dd4bf;       --accent-fg: #06201c;
   --ok: #4ade80;           --warn: #fbbf24;         --danger: #f87171;
+  --info: #60a5fa;         --violet: #c084fc;
 }

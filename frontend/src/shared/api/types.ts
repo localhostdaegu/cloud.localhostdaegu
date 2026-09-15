@@ -99,3 +99,24 @@ export interface FinanceOutput {
   scenarios: FinanceScenario[];
   stress: FinanceStress[];
 }
+
+export type ProviderType = "guarantee" | "bank" | "policy";
+
+/** GET /matching 응답 각 항목 — 백엔드 필드명 그대로. */
+export interface MatchingProduct {
+  product_id: string;
+  provider: string;
+  provider_type: ProviderType;
+  product_name: string;
+  target: string;
+  region: string;
+  business_age_min: number;
+  business_age_max: number | null;
+  category: string[] | null;
+  owner_age_max: number | null;
+  loan_limit: number;
+  interest_rate: number;
+  guarantee_fee: number;
+  url: string;
+  source_url: string;
+}

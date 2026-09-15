@@ -6,9 +6,9 @@ import { industryLabel } from "@/shared/industries";
 import { buildDefaults } from "../lib/form-defaults";
 import { simulateFinance } from "../api";
 import { SimulatorForm } from "./simulator-form";
+import { ResultView } from "./result-view";
 
-/** URL district·industry·budget 프리필 → 시뮬레이션 폼 → 결과.
- *  결과 UI는 임시 JSON 요약(Task 6의 ResultView가 이 자리를 교체한다). */
+/** URL district·industry·budget 프리필 → 시뮬레이션 폼 → 결과(ResultView). */
 export function SimulatorPage() {
   const searchParams = useSearchParams();
   const industry = searchParams.get("industry");
@@ -40,9 +40,11 @@ export function SimulatorPage() {
       )}
 
       {mutation.data && (
-        <pre className="overflow-x-auto rounded-md border border-[var(--border)] bg-[var(--bg-surface)] p-4 text-xs text-[var(--text-primary)]">
-          {JSON.stringify(mutation.data, null, 2)}
-        </pre>
+        <ResultView
+          result={mutation.data}
+          category={industry ?? undefined}
+          backHref={`/simulate?${searchParams.toString()}`}
+        />
       )}
     </div>
   );
