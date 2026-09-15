@@ -10,6 +10,6 @@ export const DISTRICTS: Record<string, { name: string; center: [number, number] 
   "27710": { name: "달성군", center: [128.431, 35.775] },
 };
 export const INDUSTRY_LABELS: Record<string, string> = {
-  general_restaurants: "일반음식점", rest_cafes: "카페·휴게음식점", beauty_salons: "미용실",
-  fitness_centers: "헬스장", billiard_halls: "당구장", karaoke_rooms: "노래방", pc_bangs: "PC방",
+  cafe: "카페·휴게음식점", restaurant: "일반음식점", hair_salon: "미용실",
+  gym: "헬스장", billiard: "당구장", karaoke: "노래방", pc_bang: "PC방",
 };

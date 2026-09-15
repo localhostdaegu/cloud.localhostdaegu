@@ -38,9 +38,9 @@ export function ChatLanding() {
     mutation.mutate(trimmed);
   }
 
-  function handlePickIndustry(slug: string) {
+  function handlePickIndustry(id: string) {
     if (!awaitingIndustry) return;
-    router.push(intentToUrl({ ...awaitingIndustry, industry_slug: slug }));
+    router.push(intentToUrl({ ...awaitingIndustry, industry_id: id }));
   }
 
   return (
@@ -81,8 +81,8 @@ export function ChatLanding() {
         <div className="flex flex-col items-center gap-2">
           <span className="text-sm text-[var(--text-secondary)]">어떤 업종을 찾으세요?</span>
           <div className="flex flex-wrap justify-center gap-2">
-            {Object.entries(INDUSTRY_LABELS).map(([slug, label]) => (
-              <button key={slug} type="button" onClick={() => handlePickIndustry(slug)} className={CHIP}>
+            {Object.entries(INDUSTRY_LABELS).map(([id, label]) => (
+              <button key={id} type="button" onClick={() => handlePickIndustry(id)} className={CHIP}>
                 {label}
               </button>
             ))}

@@ -8,7 +8,7 @@ def test_type_a_full():
     r = parse_intent("수성구 들안길에 카페 차리고 싶어, 예산 5천", DONGS, GUS)
     assert r.intent_type == "A"
     assert r.district_code == "27260"           # 들안길 → 랜드마크 별칭 → 수성구
-    assert r.industry_slug == "rest_cafes"      # 카페 → 휴게음식점
+    assert r.industry_id == "cafe"               # 카페 → 휴게음식점
     assert r.budget_krw == 50_000_000           # "5천" → 5,000만원
 
 def test_type_b_region_only():

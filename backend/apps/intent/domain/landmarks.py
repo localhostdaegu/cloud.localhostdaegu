@@ -8,9 +8,9 @@ LANDMARKS: dict[str, tuple[str, str]] = {
     "경북대": ("산격동", "27230"),
 }
 INDUSTRY_SYNONYMS: dict[str, str] = {
-    "카페": "rest_cafes", "커피": "rest_cafes", "디저트": "rest_cafes",
-    "음식점": "general_restaurants", "식당": "general_restaurants", "고깃집": "general_restaurants",
-    "곱창": "general_restaurants", "찜갈비": "general_restaurants", "치킨": "general_restaurants",
-    "미용실": "beauty_salons", "헬스장": "fitness_centers", "체육관": "fitness_centers",
-    "당구장": "billiard_halls", "노래방": "karaoke_rooms", "피시방": "pc_bangs", "PC방": "pc_bangs",
+    "카페": "cafe", "커피": "cafe", "디저트": "cafe",
+    "음식점": "restaurant", "식당": "restaurant", "고깃집": "restaurant",
+    "곱창": "restaurant", "찜갈비": "restaurant", "치킨": "restaurant",
+    "미용실": "hair_salon", "헬스장": "gym", "체육관": "gym",
+    "당구장": "billiard", "노래방": "karaoke", "피시방": "pc_bang", "PC방": "pc_bang",
 }

@@ -9,7 +9,7 @@ class Intent:
     intent_type: str
     district_code: str | None = None
     region_name: str | None = None
-    industry_slug: str | None = None
+    industry_id: str | None = None
     budget_krw: int | None = None
     missing: list[str] = field(default_factory=list)
 

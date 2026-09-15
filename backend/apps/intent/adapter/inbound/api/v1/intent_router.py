@@ -19,7 +19,7 @@ class IntentResponse(BaseModel):
     intent_type: str
     district_code: str | None = None
     region_name: str | None = None
-    industry_slug: str | None = None
+    industry_id: str | None = None
     budget_krw: int | None = None
     missing: list[str] = []
 
@@ -68,7 +68,7 @@ def extract_intent(
         intent_type=result.intent_type,
         district_code=result.district_code,
         region_name=result.region_name,
-        industry_slug=result.industry_slug,
+        industry_id=result.industry_id,
         budget_krw=result.budget_krw,
         missing=result.missing,
     )

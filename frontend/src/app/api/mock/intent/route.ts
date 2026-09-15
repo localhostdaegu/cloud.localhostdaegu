@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       intent_type: "A",
       district_code: "27110",
       region_name: "대신동",
-      industry_slug: "rest_cafes",
+      industry_id: "cafe",
       budget_krw: parseBudget(input),
       missing: [],
     };
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       intent_type: "B",
       district_code: "27110",
       region_name: "성내1동",
-      industry_slug: hasIndustry ? "beauty_salons" : null,
+      industry_id: hasIndustry ? "hair_salon" : null,
       budget_krw: null,
       missing: hasIndustry ? [] : ["industry"],
     };
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       intent_type: "C",
       district_code: null,
       region_name: null,
-      industry_slug: null,
+      industry_id: null,
       budget_krw: parseBudget(input),
       missing: ["region"],
     };
