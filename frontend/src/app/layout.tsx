@@ -4,7 +4,7 @@ import { TopBar } from "@/shared/ui/top-bar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Metabole — 상권 분석",
+  title: "localhostdaegu — 대구 창업 금융 네비게이터",
   description: "행정동 단위 상권 지표를 지도에서 탐색하고, AI 에이전트 분석 리포트를 확인합니다.",
 };
 

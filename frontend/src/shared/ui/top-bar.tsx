@@ -15,7 +15,7 @@ export function TopBar() {
   return (
     <header className="flex shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-surface)] px-5">
       <div className="flex items-center gap-7">
-        <span className="text-sm font-semibold tracking-tight text-[var(--text-primary)]">Metabole</span>
+        <span className="text-sm font-semibold tracking-tight text-[var(--text-primary)]">localhostdaegu</span>
         <nav className="flex items-center gap-1">
           {TABS.map((tab) => {
             const active = pathname === tab.href;

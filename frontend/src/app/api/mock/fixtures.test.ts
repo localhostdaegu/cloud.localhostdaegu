@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { SEOUL_REGIONS_GEOJSON, metricRows, summaryOf, agentEventScript } from "./fixtures";
 
 it("geojson feature마다 region_code·name이 있다", () => {
-  expect(SEOUL_REGIONS_GEOJSON.features.length).toBeGreaterThanOrEqual(8);
+  expect(SEOUL_REGIONS_GEOJSON.features.length).toBeGreaterThanOrEqual(5);
   for (const f of SEOUL_REGIONS_GEOJSON.features)
     expect(f.properties).toMatchObject({ region_code: expect.any(String), name: expect.any(String) });
 });

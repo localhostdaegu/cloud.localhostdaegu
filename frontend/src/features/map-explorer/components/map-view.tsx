@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Map as MapLibreGLMap, setWorkerUrl, type GeoJSONSource, type RasterTileSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { config } from "@/shared/config";
+import { DAEGU_CENTER } from "@/shared/daegu";
 import type { MetricKey } from "@/shared/api/types";
 import { useMapData } from "../hooks/use-map-data";
 import { makeMetricColorScale, NO_DATA_COLOR, type ColorScheme } from "../lib/metric-color";
@@ -18,7 +19,6 @@ import { StoreMarkers } from "./store-markers";
 // 그래서 원본 이름을 유지한 채 두 파일(worker + shared)을 public/에 함께 두고 그 경로를 지정한다.
 setWorkerUrl("/maplibre-gl/maplibre-gl-worker.mjs");
 
-const SEOUL_CENTER: [number, number] = [126.99, 37.55];
 const INITIAL_ZOOM = 11;
 
 const TILE_SOURCE_ID = "vworld";
@@ -82,7 +82,7 @@ export function MapView({ regionCode, metric, industry, year, onSelectRegion }: 
 
     const map = new MapLibreGLMap({
       container: containerRef.current,
-      center: SEOUL_CENTER,
+      center: DAEGU_CENTER,
       zoom: INITIAL_ZOOM,
       style: {
         version: 8,

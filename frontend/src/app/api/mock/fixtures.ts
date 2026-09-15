@@ -1,6 +1,4 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
-import type { FeatureCollection, MultiPolygon } from "geojson";
+import type { Feature, FeatureCollection, MultiPolygon } from "geojson";
 import type {
   AgentEvent,
   AgentName,
@@ -13,14 +11,44 @@ import type {
 import { STORE_SAMPLES } from "./store-samples";
 
 type RegionProperties = { region_code: string; name: string };
+type RegionSeed = RegionProperties & { center: [number, number] };
 
-/** 서울 행정동 427개 실경계 — 백엔드 GET /regions/geojson 산출물 스냅샷 (v0.8.0, 좌표 5자리 절삭).
- *  서버 전용 모듈(mock 라우트·테스트)에서만 import — 클라이언트 번들에 실리지 않는다. */
-export const SEOUL_REGIONS_GEOJSON: FeatureCollection<MultiPolygon, RegionProperties> = JSON.parse(
-  readFileSync(path.join(process.cwd(), "public", "geojson", "seoul-regions.geojson"), "utf-8"),
-);
+/** 대구 행정동 5개 목업 시드 — 실제 위치 근방, region_code는 행안부 10자리 체계(구코드 5자리 + 동 일련번호)를 흉내낸 값.
+ *  실 경계는 백엔드 GET /regions/geojson 연동 시 대체된다 — 여기서는 화면 개발용 사각 폴리곤 스텁만 제공. */
+const REGION_SEEDS: RegionSeed[] = [
+  { region_code: "2711051000", name: "성내1동", center: [128.593, 35.870] },
+  { region_code: "2711053500", name: "대신동", center: [128.578, 35.867] },
+  { region_code: "2711054000", name: "동인동", center: [128.605, 35.874] },
+  { region_code: "2726052500", name: "상동", center: [128.614, 35.855] },
+  { region_code: "2714052000", name: "신암동", center: [128.615, 35.885] },
+];
 
-const REGIONS: RegionProperties[] = SEOUL_REGIONS_GEOJSON.features.map((f) => f.properties);
+const HALF_SIZE = 0.003;
+
+function squareFeature({ region_code, name, center }: RegionSeed): Feature<MultiPolygon, RegionProperties> {
+  const [lng, lat] = center;
+  const ring = [
+    [lng - HALF_SIZE, lat - HALF_SIZE],
+    [lng + HALF_SIZE, lat - HALF_SIZE],
+    [lng + HALF_SIZE, lat + HALF_SIZE],
+    [lng - HALF_SIZE, lat + HALF_SIZE],
+    [lng - HALF_SIZE, lat - HALF_SIZE],
+  ];
+  return {
+    type: "Feature",
+    properties: { region_code, name },
+    geometry: { type: "MultiPolygon", coordinates: [[ring]] },
+  };
+}
+
+/** 대구 행정동 5개 목업 경계 — 백엔드 GET /regions/geojson 응답 구조(FeatureCollection·properties 필드명)를 그대로 따르는
+ *  사각 폴리곤 스텁. 서버 전용 모듈(mock 라우트·테스트)에서만 import — 클라이언트 번들에 실리지 않는다. */
+export const SEOUL_REGIONS_GEOJSON: FeatureCollection<MultiPolygon, RegionProperties> = {
+  type: "FeatureCollection",
+  features: REGION_SEEDS.map(squareFeature),
+};
+
+const REGIONS: RegionProperties[] = SEOUL_REGIONS_GEOJSON.features.map((f) => f.properties!);
 
 /** 문자열 시드 → 결정적 정수 해시 (FNV-1a). Math.random 사용 금지 — 테스트 재현성. */
 function hashSeed(...parts: (string | number)[]): number {

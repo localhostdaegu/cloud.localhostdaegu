@@ -972,4 +972,9 @@ export const STORE_SAMPLES: Record<string, StoreSample[]> = {
     { store_id: "pc_bang:3220000:CDFF2241022017000024", name: "탑 플레이스 pc방", lat: 37.4946324, lng: 127.0402357, status_name: "영업중", open_date: "2017-08-25", industry_id: "pc_bang" },
     { store_id: "pc_bang:3220000:CDFF2241022017000020", name: "704 애비뉴", lat: 37.5051725, lng: 127.0442467, status_name: "폐업", open_date: "2017-07-26", industry_id: "pc_bang" },
   ],
+  // 대구 목업 region_code(fixtures.ts 참고) 최소 표본 — stores 라우트 happy-path 테스트용.
+  "2711051000": [
+    { store_id: "cafe:27110:mock-daegu-001", name: "성내커피", lat: 35.8701, lng: 128.5928, status_name: "영업중", open_date: "2024-03-10", industry_id: "cafe" },
+    { store_id: "cafe:27110:mock-daegu-002", name: "대구중앙로커피", lat: 35.8698, lng: 128.5933, status_name: "영업중", open_date: "2023-11-02", industry_id: "cafe" },
+  ],
 };
