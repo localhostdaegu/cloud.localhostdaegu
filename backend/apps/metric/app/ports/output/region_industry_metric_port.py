@@ -25,6 +25,16 @@ class RegionIndustryMetricRepositoryPort(ABC):
     ) -> RegionIndustryMetric | None:
         """복합키 단건 조회 — 없으면 None."""
 
+    @abstractmethod
+    def latest_year(self, industry_id: str | None = None) -> int | None:
+        """해당 industry(미지정 시 전체)의 최신(최대) year. 데이터 없으면 None (risk API용)."""
+
+    @abstractmethod
+    def list_by_region_year(
+        self, region_code: str, year: int
+    ) -> list[RegionIndustryMetric]:
+        """해당 region의 해당 연도 전 업종 지표를 industry_id 순으로 반환한다 (risk API용)."""
+
 
 class StoreStatsPort(ABC):
     @abstractmethod

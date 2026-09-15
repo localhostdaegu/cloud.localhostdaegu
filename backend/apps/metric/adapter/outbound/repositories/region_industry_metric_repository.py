@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from apps.metric.adapter.outbound.orm_mappers.region_industry_metric_orm_mapper import (
     to_entity,
@@ -49,3 +49,28 @@ class SqlAlchemyRegionIndustryMetricRepository(RegionIndustryMetricRepositoryPor
         with session_scope() as session:
             orm = session.get(RegionIndustryMetricOrm, (region_code, industry_id, year))
             return None if orm is None else to_entity(orm)
+
+    def latest_year(self, industry_id: str | None = None) -> int | None:
+        with session_scope() as session:
+            stmt = select(func.max(RegionIndustryMetricOrm.year))
+            if industry_id is not None:
+                stmt = stmt.where(RegionIndustryMetricOrm.industry_id == industry_id)
+            return session.execute(stmt).scalar_one_or_none()
+
+    def list_by_region_year(
+        self, region_code: str, year: int
+    ) -> list[RegionIndustryMetric]:
+        with session_scope() as session:
+            rows = (
+                session.execute(
+                    select(RegionIndustryMetricOrm)
+                    .where(
+                        RegionIndustryMetricOrm.region_code == region_code,
+                        RegionIndustryMetricOrm.year == year,
+                    )
+                    .order_by(RegionIndustryMetricOrm.industry_id)
+                )
+                .scalars()
+                .all()
+            )
+            return [to_entity(row) for row in rows]

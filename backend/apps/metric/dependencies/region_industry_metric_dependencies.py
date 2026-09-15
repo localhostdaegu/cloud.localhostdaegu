@@ -10,9 +10,11 @@ from apps.metric.adapter.outbound.repositories.region_industry_metric_repository
 from apps.metric.app.ports.input.region_industry_metric_use_case import (
     RegionIndustryMetricUseCase,
 )
+from apps.metric.app.ports.input.risk_use_case import RiskUseCase
 from apps.metric.app.use_cases.region_industry_metric_interactor import (
     RegionIndustryMetricInteractor,
 )
+from apps.metric.app.use_cases.risk_interactor import RiskInteractor
 
 
 def get_region_industry_metric_use_case() -> RegionIndustryMetricUseCase:
@@ -21,3 +23,7 @@ def get_region_industry_metric_use_case() -> RegionIndustryMetricUseCase:
         store_stats=StoreStatsGateway(),
         industry_catalog=IndustryCatalogGateway(),
     )
+
+
+def get_risk_use_case() -> RiskUseCase:
+    return RiskInteractor(repository=SqlAlchemyRegionIndustryMetricRepository())

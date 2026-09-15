@@ -40,6 +40,14 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
     ) -> RegionIndustryMetric | None:
         return self.rows.get((region_code, industry_id, year))
 
+    def latest_year(self, industry_id: str | None = None) -> int | None:
+        raise NotImplementedError
+
+    def list_by_region_year(
+        self, region_code: str, year: int
+    ) -> list[RegionIndustryMetric]:
+        raise NotImplementedError
+
 
 class FakeStoreStats(StoreStatsPort):
     def __init__(self, stats: list[YearlyStoreStat]) -> None:
