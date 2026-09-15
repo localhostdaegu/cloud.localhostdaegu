@@ -38,6 +38,10 @@ def test_funding_gap_and_runway():
         assert pess.runway_months == round(cash / -pess.operating_profit, 1)
 
 def test_interest_stress():
+    from apps.finance.domain.engine import _profit_at, _fixed
     r = simulate(BASE)
     assert r.stress[0].rate_delta == 0.01 and r.stress[1].rate_delta == 0.02
     assert r.stress[0].monthly_fixed > r.monthly_fixed  # 금리 +1%p → 고정비 증가
+    # Verify profit formula is unified: if stress had delta=0, it should match scenarios[1]
+    base_profit_at_zero_delta = _profit_at(BASE.expected_monthly_revenue, BASE.cost_ratio + BASE.fee_ratio, _fixed(BASE, BASE.loan_rate + 0))
+    assert base_profit_at_zero_delta == r.scenarios[1].operating_profit

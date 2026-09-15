@@ -37,6 +37,11 @@ def _monthly_interest(principal: int, rate: float) -> int:
 def _fixed(inp: FinanceInput, rate: float) -> int:
     return inp.monthly_rent + _monthly_interest(inp.desired_loan, rate) + inp.monthly_insurance + inp.monthly_payroll
 
+def _profit_at(revenue: int, var_ratio: float, fixed: int) -> int:
+    """Canonical profit formula: revenue - variable_costs - fixed_costs.
+    Unifies scenarios and stress calculation paths."""
+    return revenue - int(revenue * var_ratio) - fixed
+
 def simulate(inp: FinanceInput) -> FinanceResult:
     capex = inp.deposit + inp.key_money + inp.interior_cost + inp.equipment_cost
     fixed = _fixed(inp, inp.loan_rate)
@@ -50,12 +55,11 @@ def simulate(inp: FinanceInput) -> FinanceResult:
     for name, mult in _SCENARIO_MULTIPLIERS:
         revenue = int(inp.expected_monthly_revenue * mult)
         variable = int(revenue * var_ratio)
-        profit = revenue - variable - fixed
+        profit = _profit_at(revenue, var_ratio, fixed)
         payback = round(capex / profit, 1) if profit > 0 else None      # 영업이익 ≤ 0 → 회수 불가
         runway = round(available_cash / -profit, 1) if (profit < 0 and available_cash > 0) else None
         scenarios.append(SimulationScenario(name, revenue, variable, profit, payback, runway))
 
-    base_revenue_profit = lambda f: int(inp.expected_monthly_revenue * (1 - var_ratio)) - f
-    stress = [StressResult(d, _fixed(inp, inp.loan_rate + d), base_revenue_profit(_fixed(inp, inp.loan_rate + d)))
+    stress = [StressResult(d, _fixed(inp, inp.loan_rate + d), _profit_at(inp.expected_monthly_revenue, var_ratio, _fixed(inp, inp.loan_rate + d)))
               for d in _STRESS_DELTAS]
     return FinanceResult(capex, fixed, bep_revenue, funding_gap, scenarios, stress)
