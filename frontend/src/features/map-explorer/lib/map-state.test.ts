@@ -11,6 +11,8 @@ it("기본값: 파라미터 없으면 cafe/closure_rate/2026/null", () => {
     metric: "closure_rate",
     year: 2026,
     region: null,
+    district: null,
+    budget: null,
   });
 });
 
@@ -20,6 +22,8 @@ it("직렬화→파싱 라운드트립이 보존된다", () => {
     metric: "growth_rate" as const,
     year: 2021,
     region: "1168051500",
+    district: "27260",
+    budget: 50_000_000,
   };
   expect(parseMapState(new URLSearchParams(serializeMapState(s)))).toEqual(s);
 });
@@ -27,4 +31,9 @@ it("직렬화→파싱 라운드트립이 보존된다", () => {
 it("알 수 없는 값은 기본값으로 강제된다", () => {
   expect(parseMapState(new URLSearchParams("industry=hack&metric=x"))
     .industry).toBe("cafe");
+});
+
+it("district·budget은 없으면 URL에서 생략된다", () => {
+  const s = { industry: "cafe", metric: "closure_rate" as const, year: 2026, region: null, district: null, budget: null };
+  expect(serializeMapState(s)).not.toMatch(/district=|budget=/);
 });

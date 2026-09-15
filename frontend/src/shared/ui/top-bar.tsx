@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
 
 const TABS = [
-  { href: "/", label: "지도 탐색" },
+  { href: "/map", label: "지도 탐색" },
   { href: "/analysis", label: "AI 분석" },
 ];
 

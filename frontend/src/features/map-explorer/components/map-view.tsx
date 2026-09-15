@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Map as MapLibreGLMap, setWorkerUrl, type GeoJSONSource, type RasterTileSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { config } from "@/shared/config";
-import { DAEGU_CENTER } from "@/shared/daegu";
+import { DAEGU_CENTER, DISTRICTS } from "@/shared/daegu";
 import type { MetricKey } from "@/shared/api/types";
 import { useMapData } from "../hooks/use-map-data";
 import { makeMetricColorScale, NO_DATA_COLOR, type ColorScheme } from "../lib/metric-color";
@@ -54,15 +54,18 @@ interface MapViewProps {
   metric: MetricKey;
   industry: string;
   year: number;
+  /** intent-gate 랜딩에서 넘어온 구·군 코드 — region 미선택 시 최초 진입 시점에만 flyTo한다. */
+  district?: string | null;
   onSelectRegion: (code: string) => void;
 }
 
-export function MapView({ regionCode, metric, industry, year, onSelectRegion }: MapViewProps) {
+export function MapView({ regionCode, metric, industry, year, district, onSelectRegion }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreGLMap | null>(null);
   const onSelectRegionRef = useRef(onSelectRegion);
   onSelectRegionRef.current = onSelectRegion;
   const [ready, setReady] = useState(false);
+  const flewToDistrictRef = useRef(false);
 
   const { geojson, rows } = useMapData(metric, industry, year);
   // 경계/지표 fetch 실패는 무음 빈 지도가 아니라 배너로 알린다 (side-panel의 role="alert" 관행과 일관).
@@ -129,6 +132,17 @@ export function MapView({ regionCode, metric, industry, year, onSelectRegion }: 
       mapRef.current = null;
     };
   }, []);
+
+  // intent-gate 랜딩에서 district만 넘어오고 region은 없을 때 — 최초 1회만 해당 구·군으로 flyTo.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || flewToDistrictRef.current) return;
+    if (!district || regionCode) return;
+    const target = DISTRICTS[district];
+    if (!target) return;
+    map.flyTo({ center: target.center, zoom: 13 });
+    flewToDistrictRef.current = true;
+  }, [ready, district, regionCode]);
 
   // 테마 전환(data-theme) → 래스터 타일 URL 교체 + 선택 강조색(--accent) 재적용.
   useEffect(() => {
