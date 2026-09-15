@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { MapView } from "./map-view";
 import { ControlBar } from "./control-bar";
 import { SidePanel } from "./side-panel";
-import { parseMapState, serializeMapState } from "../lib/map-state";
+import { DEFAULT_INDUSTRY, parseMapState, serializeMapState } from "../lib/map-state";
 import type { MapState } from "../lib/map-state";
 
 /** URL 파라미터와 상태를 연동. */
@@ -33,7 +33,7 @@ export function MapPage() {
           <MapView
             regionCode={state.region}
             metric={state.metric}
-            industry={state.industry}
+            industry={state.industry ?? DEFAULT_INDUSTRY}
             year={state.year}
             district={state.district}
             onSelectRegion={handleSelectRegion}
@@ -41,7 +41,7 @@ export function MapPage() {
         </div>
         <SidePanel
           regionCode={state.region}
-          industry={state.industry}
+          industry={state.industry ?? DEFAULT_INDUSTRY}
           industryParam={searchParams.get("industry")}
           onSelectIndustry={handleSelectIndustry}
           searchParams={searchParams.toString()}

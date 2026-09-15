@@ -13,7 +13,9 @@ export const METRIC_LABELS: Record<(typeof METRICS)[number], string> = {
 };
 
 export interface MapState {
-  industry: string;
+  /** null = URL에 industry가 없어 미지정 상태(B유형 랭킹 진입 조건). 소비처(MapView·ControlBar 등)가
+   *  표시·조회용 기본값을 직접 적용한다 — 여기서 기본값으로 채우면 미지정을 표현할 수 없다. */
+  industry: string | null;
   metric: MetricKey;
   year: number;
   region: string | null;
@@ -23,8 +25,11 @@ export interface MapState {
   budget: number | null;
 }
 
+/** industry 미지정 시 화면 조회·표시에 쓰는 기본 업종. */
+export const DEFAULT_INDUSTRY = "cafe";
+
 export const DEFAULT_STATE: MapState = {
-  industry: "cafe",
+  industry: null,
   metric: "closure_rate",
   year: 2026,
   region: null,
@@ -34,7 +39,9 @@ export const DEFAULT_STATE: MapState = {
 
 export function serializeMapState(state: MapState): string {
   const params = new URLSearchParams();
-  params.set("industry", state.industry);
+  if (state.industry) {
+    params.set("industry", state.industry);
+  }
   params.set("metric", state.metric);
   params.set("year", String(state.year));
   if (state.region) {
@@ -58,7 +65,7 @@ export function parseMapState(sp: URLSearchParams): MapState {
   const budget = sp.get("budget");
 
   return {
-    industry: INDUSTRIES.includes(industry as any) ? industry! : DEFAULT_STATE.industry,
+    industry: industry && INDUSTRIES.includes(industry as any) ? industry : DEFAULT_STATE.industry,
     metric: METRICS.includes(metric as any) ? (metric as MetricKey) : DEFAULT_STATE.metric,
     year: YEARS.includes(Number(year)) ? Number(year) : DEFAULT_STATE.year,
     region: region || null,

@@ -1,7 +1,7 @@
 "use client";
 
 import { INDUSTRIES, INDUSTRY_LABELS } from "@/shared/industries";
-import { METRICS, METRIC_LABELS, YEARS, type MapState } from "../lib/map-state";
+import { DEFAULT_INDUSTRY, METRICS, METRIC_LABELS, YEARS, type MapState } from "../lib/map-state";
 
 const FIELD =
   "rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-sm text-[var(--text-primary)] transition-colors hover:border-[var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]";
@@ -19,7 +19,7 @@ export function ControlBar({ state, onChange }: ControlBarProps) {
       <label className="flex flex-col gap-1.5">
         <span className={LEGEND}>업종</span>
         <select
-          value={state.industry}
+          value={state.industry ?? DEFAULT_INDUSTRY}
           onChange={(e) => onChange({ ...state, industry: e.target.value })}
           className={FIELD}
         >

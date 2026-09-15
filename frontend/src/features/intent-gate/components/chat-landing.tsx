@@ -43,6 +43,13 @@ export function ChatLanding() {
     router.push(intentToUrl({ ...awaitingIndustry, industry_id: id }));
   }
 
+  // B유형(업종 랭킹) 직행 경로 — industry_id를 채우지 않고 그대로 라우팅한다.
+  // intentToUrl은 industry_id가 null이면 industry 파라미터를 생략하므로 /map?district=...만 남는다.
+  function handleSkipIndustry() {
+    if (!awaitingIndustry) return;
+    router.push(intentToUrl(awaitingIndustry));
+  }
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6 px-5 py-10">
       <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">무엇을 알아볼까요?</h1>
@@ -52,6 +59,7 @@ export function ChatLanding() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="예: 서문시장 근처 카페, 예산 5천"
+          aria-label="무엇을 알아볼까요?"
           className="w-full rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-3 text-base text-[var(--text-primary)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         />
         <button
@@ -86,6 +94,9 @@ export function ChatLanding() {
                 {label}
               </button>
             ))}
+            <button type="button" onClick={handleSkipIndustry} className={CHIP}>
+              잘 몰라요 — 업종별 위험도 먼저 보기
+            </button>
           </div>
         </div>
       )}
