@@ -5,7 +5,7 @@
 # 전제: http://localhost:3200 (또는 $BASE_URL)에 dev 서버가 떠 있어야 한다 (npm run dev).
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:3200}"
+BASE_URL="${BASE_URL:-http://localhost:3300}"
 export AGENT_BROWSER_ARGS="${AGENT_BROWSER_ARGS:---no-sandbox}"
 
 AB() { npx -y agent-browser "$@" >/dev/null; }

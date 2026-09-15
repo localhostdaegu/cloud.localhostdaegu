@@ -15,7 +15,7 @@
 #     경로가 통과하는지 확인해야 한다.
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://localhost:3200}"
+BASE_URL="${BASE_URL:-http://localhost:3300}"
 # 컨테이너/CI 등 Chrome 샌드박스 네임스페이스 제약이 있는 환경을 위한 기본값 — 호출자가 이미 지정했으면 존중한다.
 export AGENT_BROWSER_ARGS="${AGENT_BROWSER_ARGS:---no-sandbox}"
 
