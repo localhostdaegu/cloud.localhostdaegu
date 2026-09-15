@@ -1,0 +1,78 @@
+name: localhostdaegu
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: localhostdaegu-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-localhostdaegu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localhostdaegu}
+      POSTGRES_DB: ${POSTGRES_DB:-localhostdaegu}
+    ports:
+      - "127.0.0.1:5437:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-localhostdaegu} -d ${POSTGRES_DB:-localhostdaegu}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  neo4j:
+    image: neo4j:5-community
+    container_name: localhostdaegu-neo4j
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/localhostdaegu}
+    ports:
+      - "127.0.0.1:7476:7474"
+      - "127.0.0.1:7689:7687"
+    volumes:
+      - neo4jdata:/data
+      - neo4jlogs:/logs
+
+  redis:
+    image: redis:7-alpine
+    container_name: localhostdaegu-redis
+    ports:
+      - "127.0.0.1:6381:6379"
+    volumes:
+      - redisdata:/data
+
+  # 백엔드 구성 완료 후 사용:
+  # docker compose --profile backend up
+  backend:
+    profiles: ["backend"]
+    build: ./backend
+    container_name: localhostdaegu-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-localhostdaegu}:${POSTGRES_PASSWORD:-localhostdaegu}@db:5432/${POSTGRES_DB:-localhostdaegu}
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/localhostdaegu}
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "127.0.0.1:8300:8300"
+    depends_on:
+      db:
+        condition: service_healthy
+      neo4j:
+        condition: service_started
+      redis:
+        condition: service_started
+
+  # 프론트엔드 스택 확정 후 frontend/Dockerfile 작성하고 사용:
+  # docker compose --profile frontend up
+  frontend:
+    profiles: ["frontend"]
+    build: ./frontend
+    container_name: localhostdaegu-web
+    ports:
+      - "127.0.0.1:3300:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
+  neo4jdata:
+  neo4jlogs:
+  redisdata:
