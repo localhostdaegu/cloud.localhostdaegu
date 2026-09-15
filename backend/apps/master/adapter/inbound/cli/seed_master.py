@@ -23,8 +23,9 @@ from core.matrix.grid_region_config import CSV_SIDO_PREFIX, DISTRICTS
 _JUMIN_DIR = Path(__file__).resolve().parents[6] / "data" / "raw" / "jumin"
 _CODE_PATTERN = re.compile(r"\((\d{10})\)\s*$")
 
-# 업종 10종 — (industry_id, 이름, 수요동인)
+# 업종 11종 — (industry_id, 이름, 수요동인)
 _INDUSTRIES = [
+    ("restaurant", "일반음식점", "daily"),
     ("cafe", "카페", "daily"),
     ("convenience_store", "편의점", "daily"),
     ("hair_salon", "미용실", "daily"),
@@ -39,6 +40,7 @@ _INDUSTRIES = [
 
 # 확정된 원천 코드만 시드 (미확정: 편의점 상가정보 업종코드 — 확정 시 추가)
 _SOURCE_CODES = [
+    ("restaurant", "mois_permit", "general_restaurants"),
     ("cafe", "mois_permit", "rest_cafes"),
     ("hair_salon", "mois_permit", "beauty_salons"),
     ("karaoke", "mois_permit", "karaoke_rooms"),
