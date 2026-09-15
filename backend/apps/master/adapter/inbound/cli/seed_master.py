@@ -18,6 +18,7 @@ from apps.master.adapter.outbound.orms.industry_source_code_orm import IndustryS
 from apps.master.adapter.outbound.orms.industry_subcategory_orm import IndustrySubcategoryOrm
 from apps.master.adapter.outbound.orms.region_orm import RegionOrm
 from core.matrix.grid_oracle_database_manager import session_scope
+from core.matrix.grid_region_config import CSV_SIDO_PREFIX, DISTRICTS
 
 _JUMIN_DIR = Path(__file__).resolve().parents[6] / "data" / "raw" / "jumin"
 _CODE_PATTERN = re.compile(r"\((\d{10})\)\s*$")
@@ -45,20 +46,8 @@ _SOURCE_CODES = [
     ("gym", "mois_permit", "fitness_centers"),
     ("billiard", "mois_permit", "billiard_halls"),
     ("real_estate", "molit_broker", "15123990"),
-    ("academy", "seoul_academy", "OA-20528"),
     ("childcare", "childcare_portal", "15013108"),
 ]
-
-# 인허가 API 개방자치단체코드 (2026-08-25 karaoke_rooms/info 실응답에서 구명 교차확인)
-_OPN_AUTHORITY_CODES = {
-    "종로구": "3000000", "중구": "3010000", "용산구": "3020000", "성동구": "3030000",
-    "광진구": "3040000", "동대문구": "3050000", "중랑구": "3060000", "성북구": "3070000",
-    "강북구": "3080000", "도봉구": "3090000", "노원구": "3100000", "은평구": "3110000",
-    "서대문구": "3120000", "마포구": "3130000", "양천구": "3140000", "강서구": "3150000",
-    "구로구": "3160000", "금천구": "3170000", "영등포구": "3180000", "동작구": "3190000",
-    "관악구": "3200000", "서초구": "3210000", "강남구": "3220000", "송파구": "3230000",
-    "강동구": "3240000",
-}
 
 # 학원 교습계열 5 + 미용업 세분 3 (brainstorming §3.5·§3.6)
 _SUBCATEGORIES = [
@@ -73,7 +62,7 @@ _SUBCATEGORIES = [
 ]
 
 
-def _parse_seoul_admin_codes(jumin_dir: Path) -> tuple[list[tuple[str, str]], list[tuple[str, str, str]]]:
+def _parse_admin_codes(jumin_dir: Path) -> tuple[list[tuple[str, str]], list[tuple[str, str, str]]]:
     """인구세대 CSV 1개에서 (자치구, 행정동) 목록을 파싱한다."""
     candidates = [
         p for p in glob.glob(str(jumin_dir / "*.csv"))
@@ -87,22 +76,22 @@ def _parse_seoul_admin_codes(jumin_dir: Path) -> tuple[list[tuple[str, str]], li
     with open(sorted(candidates)[-1], encoding="cp949") as f:
         for line in f:
             head = line.split(",")[0].strip().strip('"')
-            if not head.startswith("서울"):
+            if not head.startswith(CSV_SIDO_PREFIX):
                 continue
             code_match = _CODE_PATTERN.search(head)
             if not code_match:
                 continue
             code = code_match.group(1)
             names = head[: code_match.start()].split()
-            if len(names) == 2:  # 자치구: "서울특별시 종로구 (1111000000)"
+            if len(names) == 2:  # 자치구: "대구광역시 중구 (2711000000)"
                 districts.append((code[:5], names[1]))
-            elif len(names) == 3:  # 행정동: "서울특별시 종로구 청운효자동(1111051500)"
+            elif len(names) == 3:  # 행정동: "대구광역시 중구 동인동(2711051500)"
                 regions.append((code, code[:5], names[2]))
     return districts, regions
 
 
 def seed_all(jumin_dir: Path = _JUMIN_DIR) -> None:
-    districts, regions = _parse_seoul_admin_codes(jumin_dir)
+    districts, regions = _parse_admin_codes(jumin_dir)
 
     with session_scope() as session:
         for district_code, name in districts:
@@ -110,7 +99,9 @@ def seed_all(jumin_dir: Path = _JUMIN_DIR) -> None:
                 DistrictOrm(
                     district_code=district_code,
                     name=name,
-                    opn_authority_code=_OPN_AUTHORITY_CODES.get(name),
+                    opn_authority_code=DISTRICTS[district_code].opn_authority_code
+                    if district_code in DISTRICTS
+                    else None,
                 )
             )
         for region_code, district_code, name in regions:

@@ -12,10 +12,10 @@ import httpx
 
 from apps.rent.domain.entities.rent_price_entity import RentObservation
 from core.matrix.grid_keymaker_secret_manager import get_settings
+from core.matrix.grid_region_config import REGION_NAME
 
 _BASE_URL = "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do"
 _PAGE_SIZE = 1000  # 1회 최대 수신 실측 허용치
-_SEOUL = "서울"
 
 
 @dataclass(frozen=True)
@@ -84,11 +84,11 @@ def _to_period(wrttime: str) -> str:
 
 
 def to_observations(rows: list[dict], table: RoneTable) -> list[RentObservation]:
-    """서울(시도·권역·상권) 행만 관측 엔티티로 변환 — 전국·타 시도 제외."""
+    """대상 지역(시도·권역·상권) 행만 관측 엔티티로 변환 — 전국·타 시도 제외."""
     observations = []
     for row in rows:
         path = row.get("CLS_FULLNM") or ""
-        if path != _SEOUL and not path.startswith(f"{_SEOUL}>"):
+        if path != REGION_NAME and not path.startswith(f"{REGION_NAME}>"):
             continue
         try:
             value = float(row["DTA_VAL"])
@@ -148,7 +148,7 @@ class RoneRentGateway:
                 observations.extend(table_observations)
                 print(
                     f"R-ONE {table.metric}/{table.building_type}/{table.vintage}"
-                    f" ({table.statbl_id}): 서울 {len(table_observations)}행"
+                    f" ({table.statbl_id}): {REGION_NAME} {len(table_observations)}행"
                 )
-        print(f"R-ONE API 호출 {calls}건 — 서울 관측 {len(observations)}행 수신")
+        print(f"R-ONE API 호출 {calls}건 — {REGION_NAME} 관측 {len(observations)}행 수신")
         return observations

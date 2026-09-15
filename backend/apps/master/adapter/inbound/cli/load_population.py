@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from apps.master.adapter.outbound.orms.population_stat_orm import PopulationStatOrm
 from apps.master.adapter.outbound.orms.region_orm import RegionOrm
 from core.matrix.grid_oracle_database_manager import session_scope
+from core.matrix.grid_region_config import CSV_SIDO_PREFIX
 
 _JUMIN_DIR = Path(__file__).resolve().parents[6] / "data" / "raw" / "jumin"
 _CODE_PATTERN = re.compile(r"\((\d{10})\)\s*$")  # seed_master와 동일 — 행정기관코드
@@ -74,14 +75,14 @@ def parse_population_records(
 ) -> tuple[list[Record], set[str]]:
     """CSV 행(첫 행 = 헤더) → (적재 레코드, region 미매칭 행정동 코드).
 
-    행정동 판별: 서울 접두 + 코드 앞 이름 3어절(시·구·동) — 시 총계·자치구 행은 제외.
+    행정동 판별: 시도 접두 + 코드 앞 이름 3어절(시·구·동) — 시 총계·자치구 행은 제외.
     """
     columns = parse_age_columns(next(rows), period)
     records: list[Record] = []
     skipped: set[str] = set()
     for row in rows:
         head = row[0].strip()
-        if not head.startswith("서울"):
+        if not head.startswith(CSV_SIDO_PREFIX):
             continue
         code_match = _CODE_PATTERN.search(head)
         if not code_match or len(head[: code_match.start()].split()) != 3:

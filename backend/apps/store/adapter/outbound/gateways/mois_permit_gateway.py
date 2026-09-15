@@ -17,14 +17,12 @@ from apps.store.app.dtos.store_dto import IngestTarget
 from apps.store.app.ports.output.store_port import StorePermitGatewayPort
 from apps.store.domain.entities.store_entity import Store
 from core.matrix.grid_keymaker_secret_manager import get_settings
+from core.matrix.grid_region_config import LAT_RANGE as _LAT_RANGE
+from core.matrix.grid_region_config import LNG_RANGE as _LNG_RANGE
 
 _BASE_URL = "https://apis.data.go.kr/1741000"
 _PAGE_SIZE = 100  # API 최대값
 _TRANSFORMER = Transformer.from_crs(5174, 4326, always_xy=True)
-
-# 변환 결과 검증 범위 (서울 근방) — 벗어나면 좌표 오류로 보고 버림
-_LAT_RANGE = (37.0, 38.2)
-_LNG_RANGE = (126.3, 127.6)
 
 
 def _clamp_ymd(text: str) -> tuple[int, int, int] | None:

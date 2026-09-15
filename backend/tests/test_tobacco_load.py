@@ -41,7 +41,11 @@ def _row(**overrides: str) -> dict[str, str]:
 
 
 def test_parse_retailer_maps_real_row():
-    retailer = parse_retailer(_row(), _DISTRICTS)
+    # 좌표만 대구 범위 내 값으로 교체 (다른 필드는 서울 아카이브 실측 사본 그대로 — 실데이터는 Task 4에서 교체)
+    retailer = parse_retailer(
+        _row(**{"좌표정보(X)": "344556.519288455", "좌표정보(Y)": "264651.134370732"}),
+        _DISTRICTS,
+    )
     assert isinstance(retailer, TobaccoRetailer)
     assert retailer.retailer_id == "2006300010105600013"
     assert retailer.name == "홍익마트"
@@ -55,13 +59,13 @@ def test_parse_retailer_maps_real_row():
     assert str(retailer.permit_date) == "2006-08-11"
     assert str(retailer.cancel_date) == "2011-11-10"
     assert str(retailer.source_updated_at) == "2025-12-15 16:15:28"
-    # EPSG:5174 → WGS84 (무악동 실좌표 — 브이월드 교차검증 전례와 동일 변환)
-    assert retailer.lat == pytest.approx(37.5749346, abs=1e-6)
-    assert retailer.lng == pytest.approx(126.9576974, abs=1e-6)
+    # EPSG:5174 → WGS84 (대구 중구 근방 좌표 — 유효범위 내 변환 확인)
+    assert retailer.lat == pytest.approx(35.8714000, abs=1e-6)
+    assert retailer.lng == pytest.approx(128.6014000, abs=1e-6)
 
 
-def test_parse_retailer_drops_out_of_seoul_coords():
-    # 실CSV에 실존하는 이상 좌표(Y=171131 → 위도 35.0, 서울 밖) — 좌표만 버리고 행은 유지
+def test_parse_retailer_drops_out_of_range_coords():
+    # 실CSV에 실존하는 이상 좌표(Y=171131 → 위도 35.0, 유효범위 밖) — 좌표만 버리고 행은 유지
     retailer = parse_retailer(
         _row(**{"좌표정보(X)": "153874.180653307", "좌표정보(Y)": "171131.881015428"}),
         _DISTRICTS,

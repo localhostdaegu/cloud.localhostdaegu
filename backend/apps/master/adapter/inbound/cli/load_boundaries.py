@@ -106,7 +106,7 @@ def write_boundary_file(
 
 def load_all(geojson_dir: Path = _GEOJSON_DIR) -> None:
     gateway = VworldBoundaryGateway()
-    features = gateway.fetch_seoul_admin_dongs()
+    features = gateway.fetch_admin_dongs()
     print(f"WFS 행정동 수신: {len(features)}건")
 
     with session_scope() as session:

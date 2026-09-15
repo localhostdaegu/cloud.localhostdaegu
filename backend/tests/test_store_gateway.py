@@ -33,5 +33,5 @@ def test_parse_datetime_clamps_invalid_day():
 
 def test_to_wgs84_rejects_out_of_range():
     assert _to_wgs84(None, None) == (None, None)
-    lat, lng = _to_wgs84("204514.126", "444551.989")  # 강남 실좌표
-    assert 37.4 < lat < 37.6 and 126.9 < lng < 127.2
+    lat, lng = _to_wgs84("344556.519", "264651.134")  # 대구 중구 실좌표
+    assert 35.7 < lat < 36.0 and 128.4 < lng < 128.8

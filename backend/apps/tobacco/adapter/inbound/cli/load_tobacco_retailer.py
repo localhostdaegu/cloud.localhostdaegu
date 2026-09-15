@@ -2,7 +2,7 @@
 
 - 원천: 지방행정 인허가 「기타_담배소매업」 서울 아카이브 CSV
   (data/raw/tobacco_retail/*.csv, CP949 — 2026-08-25 확보 불변 원본, API 호출 0회)
-- 좌표: EPSG:5174 평면직각 → WGS84 변환 + 서울 근방 범위 검증 (store BC 전례)
+- 좌표: EPSG:5174 평면직각 → WGS84 변환 + 지역 범위 검증 (store BC 전례)
 - 자치구: 개방자치단체코드 ↔ district.opn_authority_code (25개 구 전수 실측)
 - 멱등: PK(관리번호) INSERT … ON CONFLICT DO UPDATE — region_code는 건드리지 않아
   공간조인 기입값을 보존. 적재 후 region 공간조인(store RegionIndex 재사용)까지 수행
@@ -31,14 +31,13 @@ from apps.store.adapter.inbound.cli.assign_regions import RegionIndex
 from apps.tobacco.adapter.outbound.orms.tobacco_retailer_orm import TobaccoRetailerOrm
 from apps.tobacco.domain.entities.tobacco_retailer_entity import TobaccoRetailer
 from core.matrix.grid_oracle_database_manager import session_scope
+from core.matrix.grid_region_config import LAT_RANGE as _LAT_RANGE
+from core.matrix.grid_region_config import LNG_RANGE as _LNG_RANGE
 
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 _CSV_GLOB = str(_REPO_ROOT / "data" / "raw" / "tobacco_retail" / "*.csv")
 _TRANSFORMER = Transformer.from_crs(5174, 4326, always_xy=True)
 
-# 변환 결과 검증 범위 (서울 근방) — 벗어나면 좌표 오류로 보고 버림 (store 전례와 동일)
-_LAT_RANGE = (37.0, 38.2)
-_LNG_RANGE = (126.3, 127.6)
 _UPSERT_BATCH = 4000  # 14컬럼 × 4000 = 56,000 파라미터 < psycopg 한도 65,535
 _UPDATE_CHUNK = 10_000
 

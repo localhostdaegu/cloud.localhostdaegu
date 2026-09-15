@@ -31,11 +31,11 @@ _RESPONSE = {
                     "DTACYCLE_CD": "QY",
                     "WRTTIME_IDTFR_ID": "202201",
                     "CLS_ID": 520036,
-                    "CLS_NM": "가락시장",
+                    "CLS_NM": "서문시장",
                     "ITM_NM": "임대료",
                     "DTA_VAL": 38.9998660091614,
                     "UI_NM": "천원/㎡",
-                    "CLS_FULLNM": "서울>기타>가락시장",
+                    "CLS_FULLNM": "대구>기타>서문시장",
                     "WRTTIME_DESC": "2022년 1분기",
                 },
                 {
@@ -47,7 +47,7 @@ _RESPONSE = {
                     "ITM_NM": "임대료",
                     "DTA_VAL": 99.9326232717226,
                     "UI_NM": "천원/㎡",
-                    "CLS_FULLNM": "서울>도심",
+                    "CLS_FULLNM": "대구>도심",
                     "WRTTIME_DESC": "2022년 1분기",
                 },
                 {
@@ -93,24 +93,24 @@ def test_parse_page_raises_on_error_result():
         parse_page(error)
 
 
-def test_to_observations_keeps_seoul_only_and_maps_fields():
+def test_to_observations_keeps_daegu_only_and_maps_fields():
     _, rows = parse_page(_RESPONSE)
     observations = to_observations(rows, _TABLE)
-    # 전국·광주 행은 제외 — 서울 시도·권역·상권만
+    # 전국·광주 행은 제외 — 대구 시도·권역·상권만
     assert len(observations) == 2
     first = observations[0]
     assert first.id == "medium_large:520036:2022Q1"  # 결정적 ID — 재적재 멱등
     assert first.building_type == "medium_large"
     assert first.cls_id == "520036"
-    assert first.region_name == "가락시장"
-    assert first.region_path == "서울>기타>가락시장"
+    assert first.region_name == "서문시장"
+    assert first.region_path == "대구>기타>서문시장"
     assert first.region_level == 3  # 시도>권역>상권
     assert first.period == "2022Q1"  # WRTTIME_IDTFR_ID 202201 → 분기 표기
     assert first.metric == "rent"
     assert first.value == pytest.approx(38.9998660091614)
     assert first.unit == "천원/㎡"
     assert first.statbl_id == "A_2024_00278"
-    assert observations[1].region_level == 2  # "서울>도심" 권역
+    assert observations[1].region_level == 2  # "대구>도심" 권역
 
 
 def test_to_observations_skips_missing_values():
