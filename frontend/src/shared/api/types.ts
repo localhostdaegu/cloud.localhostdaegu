@@ -34,3 +34,27 @@ export interface Store {
   status_name: string;
   open_date: string;
 }
+
+export type RiskGrade = "red" | "yellow" | "green";
+
+export interface RiskComponents {
+  closure: number;
+  density: number;
+  growth: number;
+}
+
+/** region_code+industry 단건, 또는 industry 고정 전 region 랭킹(A유형)의 각 행 — {region_code, score, grade, components}. */
+export interface RiskScore {
+  region_code: string;
+  score: number;
+  grade: RiskGrade;
+  components: RiskComponents;
+}
+
+/** region_code 고정 업종별 랭킹(B유형)의 각 행 — {industry_id, score, grade, components}. */
+export interface IndustryRiskScore {
+  industry_id: string;
+  score: number;
+  grade: RiskGrade;
+  components: RiskComponents;
+}

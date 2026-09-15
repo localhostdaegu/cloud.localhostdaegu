@@ -1,6 +1,6 @@
 import type { FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import { apiGet } from "@/shared/api/client";
-import type { MetricKey, MetricRow, RegionSummary, Store } from "@/shared/api/types";
+import type { IndustryRiskScore, MetricKey, MetricRow, RegionSummary, RiskScore, Store } from "@/shared/api/types";
 
 export type RegionProperties = { region_code: string; name: string };
 export type RegionGeoJSON = FeatureCollection<Polygon | MultiPolygon, RegionProperties>;
@@ -22,4 +22,16 @@ export function fetchRegionSummary(regionCode: string, industry: string): Promis
 export function fetchStores(regionCode: string, industry: string): Promise<Store[]> {
   const params = new URLSearchParams({ region: regionCode, industry });
   return apiGet<Store[]>(`/stores?${params.toString()}`);
+}
+
+/** region×industry 단건 위험도. 데이터 없으면 ApiError(code="RISK_NOT_FOUND")로 404를 던진다 — 정상 케이스. */
+export function fetchRiskScore(regionCode: string, industry: string): Promise<RiskScore> {
+  const params = new URLSearchParams({ region_code: regionCode, industry });
+  return apiGet<RiskScore>(`/metrics/risk?${params.toString()}`);
+}
+
+/** region 고정 업종별 위험도 랭킹(B유형) — industry 미지정 시 side-panel이 1회 호출로 받는다. */
+export function fetchIndustryRiskRanking(regionCode: string): Promise<IndustryRiskScore[]> {
+  const params = new URLSearchParams({ region_code: regionCode });
+  return apiGet<IndustryRiskScore[]>(`/metrics/risk?${params.toString()}`);
 }

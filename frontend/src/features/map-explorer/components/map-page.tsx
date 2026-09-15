@@ -21,6 +21,10 @@ export function MapPage() {
     handleStateChange({ ...state, region: code });
   };
 
+  const handleSelectIndustry = (industry: string) => {
+    handleStateChange({ ...state, industry });
+  };
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ControlBar state={state} onChange={handleStateChange} />
@@ -35,7 +39,12 @@ export function MapPage() {
             onSelectRegion={handleSelectRegion}
           />
         </div>
-        <SidePanel regionCode={state.region} industry={state.industry} />
+        <SidePanel
+          regionCode={state.region}
+          industry={state.industry}
+          industryParam={searchParams.get("industry")}
+          onSelectIndustry={handleSelectIndustry}
+        />
       </div>
     </div>
   );

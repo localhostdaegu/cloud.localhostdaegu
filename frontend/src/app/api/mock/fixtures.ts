@@ -2,9 +2,13 @@ import type { Feature, FeatureCollection, MultiPolygon } from "geojson";
 import type {
   AgentEvent,
   AgentName,
+  IndustryRiskScore,
   MetricKey,
   MetricRow,
   RegionSummary,
+  RiskComponents,
+  RiskGrade,
+  RiskScore,
   Store,
   SummaryCard,
 } from "@/shared/api/types";
@@ -121,6 +125,61 @@ export function storesOf(regionCode: string, industryId: string): Store[] {
       status_name,
       open_date,
     }));
+}
+
+/** risk API가 실제로 점수를 산출하는 업종 — shared/industries.ts INDUSTRIES(11종)의 부분집합.
+ *  백엔드 Task 7 위험도 모델이 지원하는 7종 계약(cafe/restaurant/hair_salon/gym/billiard/karaoke/pc_bang)만 미러링한다. */
+export const RISK_INDUSTRIES = [
+  "cafe",
+  "restaurant",
+  "hair_salon",
+  "gym",
+  "billiard",
+  "karaoke",
+  "pc_bang",
+] as const;
+
+const RISK_W_CLOSURE = 0.4;
+const RISK_W_DENSITY = 0.4;
+const RISK_W_GROWTH = 0.2;
+
+function riskGradeOf(score: number): RiskGrade {
+  return score >= 70 ? "red" : score >= 40 ? "yellow" : "green";
+}
+
+function riskComponentsOf(regionCode: string, industry: string): RiskComponents {
+  const closure = Math.round(unitFrom(hashSeed("risk-closure", regionCode, industry)) * RISK_W_CLOSURE * 1000) / 10;
+  const density = Math.round(unitFrom(hashSeed("risk-density", regionCode, industry)) * RISK_W_DENSITY * 1000) / 10;
+  const growth = Math.round(unitFrom(hashSeed("risk-growth", regionCode, industry)) * RISK_W_GROWTH * 1000) / 10;
+  return { closure, density, growth };
+}
+
+/** region×industry 단건 위험도. REGIONS·RISK_INDUSTRIES 조합 밖은 데이터 없음(null) — 라우트가 404로 매핑한다
+ *  (백엔드 실계약: 배열 폼은 데이터 없음=200 빈배열, 단건은 404 RISK_NOT_FOUND). */
+export function riskScoreOf(regionCode: string, industry: string): RiskScore | null {
+  if (!REGIONS.some((r) => r.region_code === regionCode)) return null;
+  if (!(RISK_INDUSTRIES as readonly string[]).includes(industry)) return null;
+  const components = riskComponentsOf(regionCode, industry);
+  const score = Math.round((components.closure + components.density + components.growth) * 10) / 10;
+  return { region_code: regionCode, score, grade: riskGradeOf(score), components };
+}
+
+/** industry 고정 — 전 region 위험도 랭킹(score 내림차순, A유형). 지원하지 않는 industry는 빈 배열
+ *  (백엔드는 industry 카탈로그를 검증하지 않고 자연히 빈 결과를 낸다 — 500/404 아님). */
+export function riskRankingByIndustry(industry: string): RiskScore[] {
+  return REGIONS.map((r) => riskScoreOf(r.region_code, industry))
+    .filter((r): r is RiskScore => r !== null)
+    .sort((a, b) => b.score - a.score);
+}
+
+/** region 고정 — 업종별 위험도 랭킹(score 내림차순, B유형). 미등록 region은 빈 배열. */
+export function riskRankingByRegion(regionCode: string): IndustryRiskScore[] {
+  return RISK_INDUSTRIES.map((industry): IndustryRiskScore | null => {
+    const s = riskScoreOf(regionCode, industry);
+    return s ? { industry_id: industry, score: s.score, grade: s.grade, components: s.components } : null;
+  })
+    .filter((r): r is IndustryRiskScore => r !== null)
+    .sort((a, b) => b.score - a.score);
 }
 
 const AGENT_TOOLS: Record<Exclude<AgentName, "orchestrator">, { tool: string; summary: string }[]> = {
