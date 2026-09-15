@@ -17,7 +17,7 @@ from core.matrix.grid_oracle_database_manager import session_scope
 
 _TEST_PREFIX = "test-broker-"
 _INDUSTRY = "real_estate"
-_DISTRICT = "11110"
+_DISTRICT = "27110"
 
 
 def _store(n: int) -> Store:

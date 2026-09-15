@@ -17,7 +17,7 @@ from core.matrix.grid_oracle_database_manager import session_scope
 
 _TEST_PREFIX = "test-store-"
 _TARGET = IngestTarget(
-    industry_id="karaoke", slug="karaoke_rooms", district_code="11110", authority_code="3000000"
+    industry_id="karaoke", slug="karaoke_rooms", district_code="27110", authority_code="3410000"
 )
 
 

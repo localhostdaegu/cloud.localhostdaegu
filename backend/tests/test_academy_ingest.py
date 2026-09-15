@@ -29,7 +29,7 @@ def _record(n: int, course_names: list[str]) -> AcademyRecord:
             store_id=store_id,
             name=f"학원 {n}",
             industry_id="academy",
-            district_code="11110",
+            district_code="27110",
             open_date=date(2020, 1, n),
             close_date=None,
             status_code="open",

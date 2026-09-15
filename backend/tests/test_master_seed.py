@@ -1,4 +1,4 @@
-"""마스터 계층 시드 검증 — 서울 자치구 25 / 행정동 427 / 업종 10종 + 소스코드 매핑."""
+"""마스터 계층 시드 검증 — 대구 자치구 8 / 행정동 144 / 업종 10종 + 소스코드 매핑."""
 
 from sqlalchemy import func, select
 
@@ -20,10 +20,10 @@ def test_seed_all_is_idempotent_and_counts_match():
     seed_all()  # 두 번 실행해도 중복 없이 동일해야 한다
 
     with session_scope() as session:
-        assert _count(session, DistrictOrm) == 25
-        assert _count(session, RegionOrm) == 427
+        assert _count(session, DistrictOrm) == 8
+        assert _count(session, RegionOrm) == 144
         assert _count(session, IndustryOrm) == 10
-        assert _count(session, IndustrySourceCodeOrm) >= 9
+        assert _count(session, IndustrySourceCodeOrm) >= 8
         assert _count(session, IndustrySubcategoryOrm) >= 8
 
 

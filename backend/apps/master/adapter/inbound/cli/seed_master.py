@@ -82,6 +82,8 @@ def _parse_admin_codes(jumin_dir: Path) -> tuple[list[tuple[str, str]], list[tup
             if not code_match:
                 continue
             code = code_match.group(1)
+            if code[:5] not in DISTRICTS:  # 군위군(27720) 등 미확정 자치구 제외
+                continue
             names = head[: code_match.start()].split()
             if len(names) == 2:  # 자치구: "대구광역시 중구 (2711000000)"
                 districts.append((code[:5], names[1]))

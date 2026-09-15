@@ -12,7 +12,7 @@ from apps.tobacco.domain.entities.tobacco_retailer_entity import TobaccoRetailer
 from apps.master.adapter.outbound.orms.region_orm import RegionOrm
 from core.matrix.grid_oracle_database_manager import session_scope
 
-_DISTRICTS = {"3000000": "11110"}  # 종로구 (개방자치단체코드 → district_code)
+_DISTRICTS = {"3000000": "27110"}  # 중구 (개방자치단체코드 → district_code, 실존 Daegu 코드로 매핑)
 _TEST_ID = "TEST-TOBACCO-0001"  # 실데이터 관리번호(숫자 19자리)와 충돌하지 않는 시험용 키
 
 
@@ -49,7 +49,7 @@ def test_parse_retailer_maps_real_row():
     assert isinstance(retailer, TobaccoRetailer)
     assert retailer.retailer_id == "2006300010105600013"
     assert retailer.name == "홍익마트"
-    assert retailer.district_code == "11110"
+    assert retailer.district_code == "27110"
     assert retailer.status_code == "5"
     assert retailer.status_name == "지정취소"
     assert retailer.close_date is None

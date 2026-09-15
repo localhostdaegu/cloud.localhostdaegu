@@ -77,15 +77,15 @@ def test_load_latest_period_is_idempotent_and_full_coverage():
             .select_from(PopulationStatOrm)
             .where(PopulationStatOrm.period == "202606")
         ).one()
-        assert rows == (427 * 2 * 21, 427)  # 행정동 427 × 남녀 2 × 5세구간 21
+        assert rows == (144 * 2 * 21, 144)  # 행정동 144 × 남녀 2 × 5세구간 21
 
-        # 실 CSV 교차검증 — 역삼1동 2026-06 남 0~4세 (원본 211)
+        # 실 CSV 교차검증 — 범어1동 2026-06 남 0~4세 (원본 424)
         value = session.execute(
             select(PopulationStatOrm.population).where(
-                PopulationStatOrm.region_code == "1168064000",
+                PopulationStatOrm.region_code == "2726051000",
                 PopulationStatOrm.period == "202606",
                 PopulationStatOrm.gender == "M",
                 PopulationStatOrm.age_from == 0,
             )
         ).scalar()
-        assert value == 211
+        assert value == 424
