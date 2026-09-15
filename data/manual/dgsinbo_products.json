@@ -1,0 +1,36 @@
+[
+  {
+    "product_id": "dgsinbo-1",
+    "provider": "대구신용보증재단",
+    "provider_type": "guarantee",
+    "product_name": "소상공인 신용보증",
+    "target": "[확인] dgsinbo.co.kr에서 실값 기입",
+    "region": "대구광역시",
+    "business_age_min": 0,
+    "business_age_max": null,
+    "category": null,
+    "owner_age_max": null,
+    "loan_limit": 30000000,
+    "interest_rate": 0.0,
+    "guarantee_fee": 0.5,
+    "url": "[확인] dgsinbo.co.kr에서 실값 기입",
+    "source_url": "https://dgsinbo.co.kr/products/guarantee"
+  },
+  {
+    "product_id": "dgsinbo-2",
+    "provider": "대구신용보증재단",
+    "provider_type": "guarantee",
+    "product_name": "여성 소상공인 신용보증",
+    "target": "[확인] dgsinbo.co.kr에서 실값 기입",
+    "region": "대구광역시",
+    "business_age_min": 0,
+    "business_age_max": null,
+    "category": null,
+    "owner_age_max": null,
+    "loan_limit": 40000000,
+    "interest_rate": 0.0,
+    "guarantee_fee": 0.4,
+    "url": "[확인] dgsinbo.co.kr에서 실값 기입",
+    "source_url": "https://dgsinbo.co.kr/products/women-guarantee"
+  }
+]

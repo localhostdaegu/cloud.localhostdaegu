@@ -2,7 +2,9 @@
 .venv/
 __pycache__/
 logs/
-data/
+data/**
+!data/manual/
+!data/manual/**
 .worktrees/
 .claude/settings.local.json
 .DS_Store

@@ -1,0 +1,36 @@
+[
+  {
+    "product_id": "youth-1",
+    "provider": "대구시 청년창업자금",
+    "provider_type": "policy",
+    "product_name": "청년창업기금 저금리대출",
+    "target": "[확인] daegu.go.kr에서 실값 기입",
+    "region": "대구광역시",
+    "business_age_min": 0,
+    "business_age_max": 12,
+    "category": null,
+    "owner_age_max": 39,
+    "loan_limit": 20000000,
+    "interest_rate": 2.5,
+    "guarantee_fee": 0.0,
+    "url": "[확인] daegu.go.kr에서 실값 기입",
+    "source_url": "https://daegu.go.kr/youth-startup-loan"
+  },
+  {
+    "product_id": "youth-2",
+    "provider": "대구시 청년창업자금",
+    "provider_type": "policy",
+    "product_name": "청년창업기금 기술개발 지원",
+    "target": "[확인] daegu.go.kr에서 실값 기입",
+    "region": "대구광역시",
+    "business_age_min": 0,
+    "business_age_max": 24,
+    "category": null,
+    "owner_age_max": 40,
+    "loan_limit": 30000000,
+    "interest_rate": 2.0,
+    "guarantee_fee": 0.0,
+    "url": "[확인] daegu.go.kr에서 실값 기입",
+    "source_url": "https://daegu.go.kr/youth-startup-tech"
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "product_id": "imbank-1",
+    "provider": "iM뱅크",
+    "provider_type": "bank",
+    "product_name": "소상공인 운영자금대출",
+    "target": "[확인] imbank.co.kr에서 실값 기입",
+    "region": "대구광역시",
+    "business_age_min": 0,
+    "business_age_max": null,
+    "category": ["general_restaurants", "rest_cafes", "cafe_bars"],
+    "owner_age_max": null,
+    "loan_limit": 50000000,
+    "interest_rate": 5.5,
+    "guarantee_fee": 0.8,
+    "url": "[확인] imbank.co.kr에서 실값 기입",
+    "source_url": "https://imbank.co.kr/products/operating-loan"
+  },
+  {
+    "product_id": "imbank-2",
+    "provider": "iM뱅크",
+    "provider_type": "bank",
+    "product_name": "소상공인 시설자금대출",
+    "target": "[확인] imbank.co.kr에서 실값 기입",
+    "region": "대구광역시",
+    "business_age_min": 0,
+    "business_age_max": null,
+    "category": null,
+    "owner_age_max": null,
+    "loan_limit": 100000000,
+    "interest_rate": 5.0,
+    "guarantee_fee": 1.0,
+    "url": "[확인] imbank.co.kr에서 실값 기입",
+    "source_url": "https://imbank.co.kr/products/facility-loan"
+  }
+]
