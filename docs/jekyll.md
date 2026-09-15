@@ -4,6 +4,25 @@
 
 ---
 
+## 2026-09-16
+
+### 백엔드 — Metabole 이식·대구화 완료 (키 불요 구간)
+
+- SDD(서브에이전트) 방식으로 Task 1·2·3·6·7·8·9 완료. 테스트 **196 passed / 0 failed** (이식 시점 117 → 시드 후 160 → 엔진·API 추가 후 196).
+- 실측: district 8 · region 144 · mois 업종 7(일반음식점은 원본 Metabole에 없어 시드에 신규 추가) · 주민등록 CSV 전국 원본에서 대구 150행.
+- 신규 API: `POST /finance/simulate`(BEP/Runway/Funding Gap/스트레스) · `GET /metrics/risk`(3형태, 백분위 모델) · `GET /matching`(보증→은행→정책) · `POST /intent`(랜드마크 15 사전).
+- 리뷰 루프가 잡은 결함: 일반음식점 업종 누락, 재무 산식 1원 truncation(계획서 결함), 위험도 혼합 연도 누락, placebo 게이트웨이 테스트 — 전부 fix·재리뷰 완료.
+- 미결: Task 4(인허가 수집)·5(수집기 가동)·브이월드 경계 적재 — **API 키 대기**. 백엔드 최종 whole-branch 리뷰는 수집 후.
+
+### 프론트엔드 — "한 문장 깔때기" 완성
+
+- Metabole 프론트 이식(71파일) → 대구화 → 채팅 랜딩(⓪①) → 진단 패널(RiskCard·B유형 랭킹) → 시뮬레이터 → 결론 화면(Funding Gap→매칭 카드) → headless E2E. **vitest 77/77 · tsc clean · funnel E2E PASS**.
+- 업종 어휘를 전 구간 industry_id로 통일(백엔드 intent 계층 포함) — mois slug는 수집 계층에만 유지.
+- 최종 whole-branch 리뷰가 Critical 1건(B유형 도달 불가 — 계획 내부 모순) 적발 → fix 웨이브로 해소(B유형 직행 칩, MapState.industry nullable, 도달성 테스트).
+- 리뷰가 잡은 실계약 결함: matching category 파라미터 누락 시 실백엔드 422(mock이 가림) — 상시 전송으로 수정.
+- 미결: T7(redoceanmap 차트, P1 보류) · 실백엔드 연동 스모크(수집 후) · 스펙 갭 후속(A유형 대안 업종, 결론 화면 AI 리포트 CTA, stress 렌더).
+
+
 ## 2026-09-15 — 프로젝트 개시: 뼈대·지침 체계·포트 확정·도커 구성·해커톤 정리와 도메인 확정
 
 ### 프로젝트 뼈대 생성
