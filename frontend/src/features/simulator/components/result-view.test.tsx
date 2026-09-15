@@ -22,3 +22,10 @@ test("runway shown for loss scenario, payback for profit", () => {
   expect(screen.getByText(/5.8개월/)).toBeInTheDocument();     // 비관 runway
   expect(screen.getByText(/21.2개월/)).toBeInTheDocument();    // 기준 회수
 });
+
+test("funding_gap이 0이면 자기자본 문구만 보여주고 매칭 섹션은 렌더하지 않는다", () => {
+  render(<ResultView result={{ ...RESULT, funding_gap: 0 }} />);
+  expect(screen.getByText("자기자본으로 충분해요")).toBeInTheDocument();
+  expect(screen.queryByText(/이렇게 메울 수 있어요/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/상품을 찾는 중/)).not.toBeInTheDocument();
+});
