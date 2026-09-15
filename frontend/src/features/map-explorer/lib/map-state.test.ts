@@ -28,6 +28,18 @@ it("직렬화→파싱 라운드트립이 보존된다", () => {
   expect(parseMapState(new URLSearchParams(serializeMapState(s)))).toEqual(s);
 });
 
+it("industry=restaurant는 기본값 강제 없이 라운드트립된다 (채팅→지도 음식점 깔때기)", () => {
+  const s = {
+    industry: "restaurant",
+    metric: "closure_rate" as const,
+    year: 2026,
+    region: null,
+    district: null,
+    budget: null,
+  };
+  expect(parseMapState(new URLSearchParams(serializeMapState(s)))).toEqual(s);
+});
+
 it("알 수 없는 값은 기본값으로 강제된다", () => {
   expect(parseMapState(new URLSearchParams("industry=hack&metric=x"))
     .industry).toBe("cafe");

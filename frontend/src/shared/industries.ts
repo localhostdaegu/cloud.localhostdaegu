@@ -2,6 +2,7 @@
  *  지도 탐색·AI 분석 두 feature가 함께 쓰는 공통 어휘이므로 shared에 둔다 (feature 간 직접 import 금지). */
 export const INDUSTRIES = [
   "cafe",
+  "restaurant",
   "convenience_store",
   "hair_salon",
   "karaoke",
@@ -17,6 +18,7 @@ export type IndustryId = (typeof INDUSTRIES)[number];
 
 export const INDUSTRY_LABELS: Record<IndustryId, string> = {
   cafe: "카페",
+  restaurant: "일반음식점",
   convenience_store: "편의점",
   hair_salon: "미용실",
   karaoke: "노래방",
