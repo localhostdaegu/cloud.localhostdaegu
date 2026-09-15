@@ -48,6 +48,9 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
     ) -> list[RegionIndustryMetric]:
         raise NotImplementedError
 
+    def list_latest_by_region(self, region_code: str) -> list[RegionIndustryMetric]:
+        raise NotImplementedError
+
 
 class FakeStoreStats(StoreStatsPort):
     def __init__(self, stats: list[YearlyStoreStat]) -> None:

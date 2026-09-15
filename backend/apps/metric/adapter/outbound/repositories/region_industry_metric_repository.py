@@ -74,3 +74,33 @@ class SqlAlchemyRegionIndustryMetricRepository(RegionIndustryMetricRepositoryPor
                 .all()
             )
             return [to_entity(row) for row in rows]
+
+    def list_latest_by_region(self, region_code: str) -> list[RegionIndustryMetric]:
+        with session_scope() as session:
+            latest_year_by_industry = (
+                select(
+                    RegionIndustryMetricOrm.industry_id,
+                    func.max(RegionIndustryMetricOrm.year).label("year"),
+                )
+                .where(RegionIndustryMetricOrm.region_code == region_code)
+                .group_by(RegionIndustryMetricOrm.industry_id)
+                .subquery()
+            )
+            rows = (
+                session.execute(
+                    select(RegionIndustryMetricOrm)
+                    .join(
+                        latest_year_by_industry,
+                        (
+                            RegionIndustryMetricOrm.industry_id
+                            == latest_year_by_industry.c.industry_id
+                        )
+                        & (RegionIndustryMetricOrm.year == latest_year_by_industry.c.year),
+                    )
+                    .where(RegionIndustryMetricOrm.region_code == region_code)
+                    .order_by(RegionIndustryMetricOrm.industry_id)
+                )
+                .scalars()
+                .all()
+            )
+            return [to_entity(row) for row in rows]

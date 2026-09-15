@@ -87,6 +87,19 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
             m for m in self._metrics if m.region_code == region_code and m.year == year
         ]
 
+    def list_latest_by_region(self, region_code: str) -> list[RegionIndustryMetric]:
+        region_rows = [m for m in self._metrics if m.region_code == region_code]
+        latest_year_by_industry: dict[str, int] = {}
+        for m in region_rows:
+            latest_year_by_industry[m.industry_id] = max(
+                m.year, latest_year_by_industry.get(m.industry_id, m.year)
+            )
+        return [
+            m
+            for m in region_rows
+            if m.year == latest_year_by_industry[m.industry_id]
+        ]
+
 
 def _m(
     region_code: str,
@@ -264,3 +277,39 @@ def test_risk_endpoint_year_param_overrides_latest():
     assert response.status_code == 200
     body = response.json()
     assert body["components"] == {"closure": 20.0, "density": 20.0, "growth": 10.0}
+
+
+# ---------------------------------------------------------------------------
+# Fix — rank_by_industry의 업종별 연도 해석 (전역 latest_year 하나로 필터링하면
+# 업종마다 최신 연도가 다를 때 행이 조용히 누락된다: bakery만 2023, cafe는 2025)
+# ---------------------------------------------------------------------------
+
+_BAKERY_POOL_2023_ONLY = [
+    _m("R1", "bakery", 1.0, 5, 1.0, year=2023),
+    _m("R2", "bakery", 0.0, 1, 0.0, year=2023),
+]
+
+
+def test_rank_by_industry_keeps_industries_with_different_latest_years():
+    # cafe는 2025년까지 데이터가 있고, bakery는 2023년에만 데이터가 있다(2024·2025 없음).
+    # 전역 latest_year()(=2025) 하나로 region_code 행을 필터링하면 bakery 행이 사라진다.
+    interactor = RiskInteractor(
+        repository=FakeRepository(_CAFE_POOL + _BAKERY_POOL_2023_ONLY)
+    )
+    ranking = interactor.rank_by_industry("R1", year=None)
+
+    assert [d.industry_id for d in ranking] == ["bakery", "cafe"]  # 둘 다 등장, desc 정렬
+    assert ranking[0].score == 75.0  # bakery: 2023년 자기 풀(R1,R2) 기준 백분위
+    assert ranking[0].grade == "red"
+    assert ranking[1].score == 16.7  # cafe: 2025년 자기 풀(R1,R2,R3) 기준 백분위
+    assert ranking[1].grade == "green"
+
+
+def test_risk_endpoint_region_only_keeps_industries_with_different_latest_years():
+    client = _client(_CAFE_POOL + _BAKERY_POOL_2023_ONLY)
+    response = client.get("/metrics/risk?region_code=R1")
+    assert response.status_code == 200
+    body = response.json()
+    assert [row["industry_id"] for row in body] == ["bakery", "cafe"]
+    assert body[0]["score"] == 75.0
+    assert body[1]["score"] == 16.7

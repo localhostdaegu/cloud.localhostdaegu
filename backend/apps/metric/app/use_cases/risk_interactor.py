@@ -51,16 +51,18 @@ class RiskInteractor(RiskUseCase):
         return None if row is None else _to_dto(row, pool)
 
     def rank_by_industry(self, region_code: str, year: int | None) -> list[RiskScoreDto]:
-        target_year = year if year is not None else self._repository.latest_year()
-        if target_year is None:
-            return []
-        region_rows = _rankable(
-            self._repository.list_by_region_year(region_code, target_year)
-        )
+        # year 미지정 시 업종마다 최신 연도가 다를 수 있어(예: A업종 2025, B업종 2023)
+        # 전역 latest_year() 하나로 필터링하면 다른 연도의 업종 행이 조용히 누락된다.
+        # 각 행 자신의 year(list_latest_by_region가 업종별로 고른 최신 연도)를 그대로
+        # 풀 조회에 사용해 업종별 연도 불일치를 허용한다.
+        if year is not None:
+            region_rows = _rankable(self._repository.list_by_region_year(region_code, year))
+        else:
+            region_rows = _rankable(self._repository.list_latest_by_region(region_code))
         scored = [
             _to_dto(
                 row,
-                _rankable(self._repository.list_by_industry_year(row.industry_id, target_year)),
+                _rankable(self._repository.list_by_industry_year(row.industry_id, row.year)),
             )
             for row in region_rows
         ]

@@ -35,6 +35,15 @@ class RegionIndustryMetricRepositoryPort(ABC):
     ) -> list[RegionIndustryMetric]:
         """해당 region의 해당 연도 전 업종 지표를 industry_id 순으로 반환한다 (risk API용)."""
 
+    @abstractmethod
+    def list_latest_by_region(self, region_code: str) -> list[RegionIndustryMetric]:
+        """해당 region의 업종별 최신(최대) year 행을 1개씩 반환한다.
+
+        업종마다 최신 연도가 다를 수 있으므로(예: A업종 2025, B업종 2023) 단일
+        year로 필터링하지 않는다 — region 전체 업종 랭킹(risk API)에서 다른
+        연도의 업종이 조용히 누락되는 것을 막기 위함.
+        """
+
 
 class StoreStatsPort(ABC):
     @abstractmethod
