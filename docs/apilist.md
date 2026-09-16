@@ -14,7 +14,7 @@ RONE_API_KEY=             # 한국부동산원 R-ONE (§2)
 ECOS_API_KEY=             # 한국은행 ECOS (§3)
 BIZINFO_API_KEY=          # 기업마당 (§4)
 YOUTHCENTER_API_KEY=      # 온통청년 (§5)
-# NAVER_NCP_API_KEY_ID / NAVER_NCP_API_KEY — 2026-09-16 구글 뉴스 RSS로 교체, 미사용 (§6)
+# 뉴스: 구글 뉴스 RSS — 키 없음 (§6)
 VWORLD_API_KEY=           # 브이월드 (§7)
 KOSIS_API_KEY=            # KOSIS (§8, P2)
 SGIS_SERVICE_ID=          # SGIS 지오코딩 fallback (§9, P3)
@@ -24,7 +24,7 @@ GEMINI_API_KEY=           # LLM — RAG 해석·리포트 생성 (수치 계산 
 
 # 추가 설정
 REGION=daegu
-NAVER_NEWS_KEYWORDS_FILE=config/news_keywords_daegu.json
+NEWS_KEYWORDS_FILE=config/news_keywords_daegu.json
 
 # 데이터 스토어 (로컬 기본값 — backend/.env에 채워져 있음)
 DATABASE_URL=postgresql+psycopg://localhostdaegu:localhostdaegu@localhost:5437/localhostdaegu
