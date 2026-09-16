@@ -1,5 +1,5 @@
 """대구 지역 구성 — 서울 상수를 대체하는 단일 원천.
-opn_authority_code는 LOCALDATA 체계 추정값 — 인허가 첫 실호출(Task 4)에서 확정 후 갱신."""
+opn_authority_code는 2026-09-16 인허가 실호출로 8개 전부 확정 (docs/apilist.md §11)."""
 from dataclasses import dataclass
 
 REGION_NAME = "대구"
