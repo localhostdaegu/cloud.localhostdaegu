@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * 깔때기 E2E 스모크 (headless, mock API 기준).
+ * 깔때기 E2E 스모크 (headless, 기본 mock API — E2E_API_BASE=http://localhost:8300 으로 실백엔드 스모크).
  *
  * 여정: /(채팅 랜딩) → 입력("서문시장 근처 카페, 예산 5천") → /map?district=27110...
- *      → 지도에서 대신동(region_code 2711053500) 폴리곤 클릭 → side-panel CTA 클릭
- *      → /simulate?... → 폼 제출 → "부족한" 헤드라인(funding_gap) 노출.
+ *      → 지도에서 대신동(region_code 2711059500) 폴리곤 클릭 → side-panel CTA 클릭
+ *      → /simulate?... → 폼 제출 → 결론 헤드라인("부족한 …" 또는 "자기자본으로 충분해요") 노출.
  *
  * 루트 CLAUDE.md 브라우저 규약: headless: true 필수, 서버 준비 확인은 HTTP 폴링,
  * try/finally로 브라우저·dev 서버를 항상 정리한다.
@@ -18,13 +18,15 @@ const FRONTEND_DIR = path.resolve(__dirname, "..");
 const PORT = 3300;
 const BASE_URL = `http://localhost:${PORT}`;
 const SERVER_READY_TIMEOUT_MS = 60_000;
+// 실백엔드 연동 스모크: E2E_API_BASE=http://localhost:8300 node tests/funnel.cjs (백엔드는 미리 기동)
+const API_BASE = process.env.E2E_API_BASE || "/api/mock";
 
 // map-view.tsx DISTRICTS["27110"].center / flyTo zoom(13) — 클릭 좌표 계산에 쓰는 최종 카메라 상태.
 const DISTRICT_CENTER = [128.606, 35.869];
 const DISTRICT_ZOOM = 13;
-// fixtures.ts REGION_SEEDS의 대신동(intent mock의 region_name과 일치) — "서문시장" 텍스트가 매핑되는 행정동.
-const TARGET_REGION_CODE = "2711053500";
-const TARGET_REGION_CENTER = [128.578, 35.867];
+// 대신동 — 실DB region_code(2711059500, mock fixtures.ts와 동일) — "서문시장" 텍스트가 매핑되는 행정동.
+const TARGET_REGION_CODE = "2711059500";
+const TARGET_REGION_CENTER = [128.578, 35.868]; // 실경계(data/geojson/regions/2711059500.json) bbox 중심과 일치
 
 let failed = false;
 
@@ -71,10 +73,10 @@ function project([lng, lat], zoom) {
 }
 
 async function main() {
-  console.log(`[INFO] dev 서버 기동: npm run dev (cwd=${FRONTEND_DIR}, port=${PORT})`);
+  console.log(`[INFO] dev 서버 기동: npm run dev (cwd=${FRONTEND_DIR}, port=${PORT}, api=${API_BASE})`);
   const server = spawn("npm", ["run", "dev"], {
     cwd: FRONTEND_DIR,
-    env: { ...process.env, NEXT_PUBLIC_API_BASE: "/api/mock" },
+    env: { ...process.env, NEXT_PUBLIC_API_BASE: API_BASE },
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -153,8 +155,11 @@ async function main() {
     const submitButton = page.getByRole("button", { name: "시뮬레이션 실행" });
     await submitButton.waitFor({ state: "visible", timeout: 15_000 });
     await submitButton.click();
-    await page.getByText("부족한", { exact: false }).waitFor({ state: "visible", timeout: 15_000 });
-    step("⑤ 폼 제출 → '부족한' 헤드라인 노출", true);
+    // 결론 화면 헤드라인은 funding_gap>0 이면 "부족한 …", 0이면 "자기자본으로 충분해요"(result-view.tsx).
+    // mock은 gap 고정(2,000만)이라 전자, 실백엔드는 프리필(CAPEX 0)이라 후자 — 둘 다 결론 도달로 판정한다.
+    const headline = page.getByText(/부족한|자기자본으로 충분해요/);
+    await headline.first().waitFor({ state: "visible", timeout: 15_000 });
+    step("⑤ 폼 제출 → 결론 헤드라인 노출", true, (await headline.first().textContent())?.trim());
   } catch (err) {
     step("예외 발생", false, err && err.stack ? err.stack : String(err));
   } finally {

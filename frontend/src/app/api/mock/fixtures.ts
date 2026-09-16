@@ -21,7 +21,7 @@ type RegionSeed = RegionProperties & { center: [number, number] };
  *  실 경계는 백엔드 GET /regions/geojson 연동 시 대체된다 — 여기서는 화면 개발용 사각 폴리곤 스텁만 제공. */
 const REGION_SEEDS: RegionSeed[] = [
   { region_code: "2711051000", name: "성내1동", center: [128.593, 35.870] },
-  { region_code: "2711053500", name: "대신동", center: [128.578, 35.867] },
+  { region_code: "2711059500", name: "대신동", center: [128.578, 35.867] },
   { region_code: "2711054000", name: "동인동", center: [128.605, 35.874] },
   { region_code: "2726052500", name: "상동", center: [128.614, 35.855] },
   { region_code: "2714052000", name: "신암동", center: [128.615, 35.885] },
