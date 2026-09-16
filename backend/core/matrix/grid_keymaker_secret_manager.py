@@ -1,6 +1,6 @@
 """전역 Secret 매니저 — .env / 환경변수를 단일 창구로 제공한다.
 
-우선순위: OS 환경변수(도커 컴포즈 주입) > backend/.env (로컬 실행).
+우선순위: OS 환경변수(도커 컴포즈 주입) > backend/.env > 루트 .env (도커 컴포즈 공용 파일, 로컬 실행 시 API 키 원본).
 """
 
 from functools import lru_cache
@@ -8,13 +8,15 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+_BACKEND_DIR = Path(__file__).resolve().parents[2]
+_ENV_FILES = (_BACKEND_DIR.parent / ".env", _BACKEND_DIR / ".env")  # 뒤가 우선
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=_ENV_FILE,
+        env_file=_ENV_FILES,
         env_file_encoding="utf-8",
+        env_ignore_empty=True,  # backend/.env 의 빈 KEY= 자리표시자가 루트 .env 값을 가리지 않게
         extra="ignore",
     )
 
