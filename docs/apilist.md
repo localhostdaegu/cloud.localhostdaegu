@@ -148,7 +148,7 @@ DEAL_YMD = 201701 … 202608   (월 루프)
 키: `YOUTHCENTER_API_KEY` / **P2** — 청년(예비·초기창업)일 때만
 
 - ✅ 2026-09-16 키 발급·실호출 확인 (`getPlcy` resultCode 200). 지역 파라미터는 `zipCd` = **행안부 시군구 5자리**(콤마 구분, 예: `27110`). `zipCd=27110` 필터 464건, `plcyNm=창업` 228건. 시도 `27`은 안 됨(광주 반환)
-- 백엔드 어댑터 미이식(P2) — 적재 시 `apps/funding`에 youthcenter 게이트웨이 추가 후 대구 8구·군 zipCd 루프
+- ✅ 어댑터 이식 완료 (`apps/funding/.../youthcenter_gateway.py`, 2026-09-16): 8구·군 zipCd 순회 + 서버측 `mclsfNm=창업` 필터 + plcyNo 중복 제거 → `funding_program` source=`youthcenter` **63건(미만료 23)**. `url`은 정책별 상세 페이지 `/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/{plcyNo}` (신청 URL은 정책 간 공유라 유니크 충돌). 짧은 시간 수십 회 호출 시 403 → 구·군 사이 1초 대기
 - 대구시 청년창업 지원사업이 여기서 잡힘. 누락분은 수기 JSON(`daegu_youth_startup.json`)으로 보완
 
 ## 6. 구글 뉴스 RSS — news.google.com (2026-09-16 네이버에서 교체)
