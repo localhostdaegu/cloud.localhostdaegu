@@ -1,0 +1,7 @@
+{
+  "remote.autoForwardPortsSource": "hybrid",
+  "remote.portsAttributes": {
+    "3300": { "label": "frontend (next dev)", "onAutoForward": "silent" },
+    "8300": { "label": "backend (uvicorn)", "onAutoForward": "silent" }
+  }
+}
