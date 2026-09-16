@@ -14,8 +14,7 @@ RONE_API_KEY=             # 한국부동산원 R-ONE (§2)
 ECOS_API_KEY=             # 한국은행 ECOS (§3)
 BIZINFO_API_KEY=          # 기업마당 (§4)
 YOUTHCENTER_API_KEY=      # 온통청년 (§5)
-NAVER_NCP_API_KEY_ID=     # 네이버 뉴스 (§6)
-NAVER_NCP_API_KEY=
+# NAVER_NCP_API_KEY_ID / NAVER_NCP_API_KEY — 2026-09-16 구글 뉴스 RSS로 교체, 미사용 (§6)
 VWORLD_API_KEY=           # 브이월드 (§7)
 KOSIS_API_KEY=            # KOSIS (§8, P2)
 SGIS_SERVICE_ID=          # SGIS 지오코딩 fallback (§9, P3)
@@ -151,13 +150,17 @@ DEAL_YMD = 201701 … 202608   (월 루프)
 - 지역 파라미터 대구 `27` `[파라미터명 확인]`
 - 대구시 청년창업 지원사업이 여기서 잡힘. 누락분은 수기 JSON(`daegu_youth_startup.json`)으로 보완
 
-## 6. 네이버 뉴스 검색 — openapi.naver.com
+## 6. 구글 뉴스 RSS — news.google.com (2026-09-16 네이버에서 교체)
 
-키: `NAVER_NCP_API_KEY_ID` / `NAVER_NCP_API_KEY` / **P1** — 상권 이슈 컨텍스트
+키: **없음** (쿼터 없음) / **P1** — 상권 이슈 컨텍스트
 
-- 엔드포인트: `GET https://openapi.naver.com/v1/search/news.json`
-- 키워드 세트 교체 (`config/news_keywords_daegu.json`): `동성로 상권`, `서문시장`, `칠성시장`, `대구 자영업`, `대구 소상공인`, `대구로`, `iM뱅크 소상공인` 등
-- ⚠️ **소급 불가** — D-5(9/15)부터 즉시 폴링 가동
+- 엔드포인트: `GET https://news.google.com/rss/search?q={키워드}&hl=ko&gl=KR&ceid=KR:ko`
+- 어댑터: `apps/news/adapter/outbound/gateways/google_news_gateway.py` (`GoogleNewsRssGateway`). 네이버 어댑터는 코드만 잔존, 조립에서 제외
+- 응답: `title`("제목 - 언론사" → 접미 제거) · `link`(구글 리다이렉트 주소, 원문 복원 안 함) · `pubDate`(GMT → KST naive) · `source`(언론사명 → `press`) · `description`(앵커 HTML → 텍스트)
+- 실측(2026-09-16): "서문시장 상권" 61건, "수성구 상권" 71건 → 폴러 1회 61건 적재 확인
+- 기본 키워드: district 마스터의 구·군명 + "상권" (8회/실행). 랜드마크 키워드(동성로·서문시장·칠성시장·대구로 등)는 CLI 인자로 추가
+- ⚠️ 네이버와 동일하게 **소급 범위 제한**(검색당 최대 ~100건) — 폴링 즉시 가동
+- 네이버 검색 API(NAVER API HUB)는 키 문제로 미사용. 되살릴 경우 조립 지점 2곳(`news_article_dependencies.py`, `news_poller.py`)만 교체
 
 ## 7. 브이월드 — www.vworld.kr
 
@@ -285,7 +288,7 @@ DEAL_YMD = 201701 … 202608   (월 루프)
 ## 15. D-5 즉시 실행 체크리스트
 
 - [ ] data.go.kr 활용신청 5종: 전통시장·온누리·백년가게·나들가게·대구교통공사 승하차 (§1-6)
-- [ ] 네이버 뉴스 대구 키워드 폴링 **즉시 가동** (소급 불가)
+- [x] 구글 뉴스 대구 키워드 폴링 **즉시 가동** (2026-09-16 서문시장 61건 적재)
 - [ ] 인허가 대구 1건 실호출 → `OPN_ATMY_GRP_CD` 실값 확정 → §11 갱신
 - [ ] R-ONE 대구 상권 목록 1회 호출 → 상권 수·빈티지 확인
 

@@ -1,7 +1,7 @@
 """뉴스 폴링 수집기 (Driving Adapter, CLI — 크론 주기 실행 대상).
 
-기본 키워드: 서울 25개 자치구명 + "상권" (district 마스터에서 로드).
-호출량: 25회/실행 — 시간당 1회 크론 기준 일 600회 (일 한도 25,000회 내).
+기본 키워드: 대구 구·군명 + "상권" (district 마스터에서 로드).
+소스: 구글 뉴스 RSS (키·쿼터 없음). 호출량: 구·군 수(8)회/실행.
 
 실행: python -m apps.news.adapter.inbound.cli.news_poller [키워드 ...]
 """
@@ -11,7 +11,7 @@ import sys
 from sqlalchemy import select
 
 from apps.master.adapter.outbound.orms.district_orm import DistrictOrm
-from apps.news.adapter.outbound.gateways.naver_news_gateway import NaverNewsGateway
+from apps.news.adapter.outbound.gateways.google_news_gateway import GoogleNewsRssGateway
 from apps.news.adapter.outbound.repositories.news_article_repository import (
     SqlAlchemyNewsArticleRepository,
 )
@@ -28,7 +28,7 @@ def _default_keywords() -> list[str]:
 def main(keywords: list[str]) -> None:
     interactor = NewsArticleInteractor(
         repository=SqlAlchemyNewsArticleRepository(),
-        gateway=NaverNewsGateway(),
+        gateway=GoogleNewsRssGateway(),
     )
     inserted = interactor.ingest(keywords or _default_keywords())
     print(f"news poller: 신규 {inserted}건 적재")
