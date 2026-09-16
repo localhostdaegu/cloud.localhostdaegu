@@ -77,8 +77,11 @@ def test_ingest_upserts_new_and_changed_rows():
 def test_latest_source_updated_at_returns_cursor():
     _cleanup()
     repository = SqlAlchemyStoreRepository()
+    # 실수집 데이터와 같은 DB를 쓴다 — (업종×구) 기존 최댓값이 있으면 그것과 픽스처 중 큰 쪽이 커서
+    before = repository.latest_source_updated_at(_TARGET.industry_id, _TARGET.district_code)
+    fixture_cursor = datetime(2026, 8, 3, 12, 0)
     StoreInteractor(repository, FakeGateway([_store(1, updated=3)])).ingest([_TARGET])
 
     cursor = repository.latest_source_updated_at(_TARGET.industry_id, _TARGET.district_code)
-    assert cursor == datetime(2026, 8, 3, 12, 0)
+    assert cursor == max(d for d in (before, fixture_cursor) if d is not None)
     _cleanup()

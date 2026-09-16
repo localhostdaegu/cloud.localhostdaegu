@@ -15,3 +15,7 @@ def test_settings_reads_root_env_then_backend_env():
 def test_settings_ignores_empty_values_so_backend_env_placeholder_does_not_mask_root():
     # backend/.env 의 'KEY=' 빈 줄이 루트 .env 값을 빈 문자열로 덮어쓰면 안 된다
     assert Settings.model_config["env_ignore_empty"] is True
+
+
+def test_settings_declares_youthcenter_key():
+    assert "youthcenter_api_key" in Settings.model_fields
