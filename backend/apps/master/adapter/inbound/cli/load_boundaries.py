@@ -30,10 +30,7 @@ _GEOJSON_DIR = _REPO_ROOT / "data" / "geojson" / "regions"
 
 # 분동(2024-07 이후)으로 행정동 WFS에 경계가 없는 region — 법정동 경계로 보충
 # (2026-08-26 실호출: 동대문구 법정동 신설동=11230101, 용두동=11230102)
-_LEGAL_DONG_SUPPLEMENTS = {
-    "1123051500": "11230101",  # 신설동
-    "1123053300": "11230102",  # 용두동
-}
+_LEGAL_DONG_SUPPLEMENTS: dict[str, str] = {}  # 대구: 2024-06-30 이후 분동 없음 (서울 신설동·용두동 항목 제거)
 
 
 def normalize_wfs_name(name: str) -> str:

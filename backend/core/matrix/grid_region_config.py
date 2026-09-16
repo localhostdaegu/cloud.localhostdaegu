@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 REGION_NAME = "대구"
 CSV_SIDO_PREFIX = "대구"          # 주민등록 CSV 행 필터 ("대구광역시 …")
-SIDO_ADM_PREFIX = "27"            # 통계청/행안부 시도코드
+SIDO_ADM_PREFIX = "27"            # 행안부 시도코드 (region_code·주민등록·인허가)
+KOSTAT_SIDO_PREFIX = "22"         # 통계청 시도코드 — 브이월드 lt_c_cademd adm_cd 앞 2자리 (서울은 11로 동일해 구분 안 됐음)
 LAT_RANGE = (35.60, 36.02)
 LNG_RANGE = (128.35, 128.77)
 MAP_CENTER = (128.60, 35.87)      # (lng, lat)

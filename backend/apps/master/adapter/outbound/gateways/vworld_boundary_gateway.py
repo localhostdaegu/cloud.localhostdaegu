@@ -9,7 +9,7 @@
 import httpx
 
 from core.matrix.grid_keymaker_secret_manager import get_settings
-from core.matrix.grid_region_config import SIDO_ADM_PREFIX
+from core.matrix.grid_region_config import KOSTAT_SIDO_PREFIX
 
 _WFS_URL = "https://api.vworld.kr/req/wfs"
 _DATA_URL = "https://api.vworld.kr/req/data"
@@ -17,7 +17,7 @@ _TIMEOUT = 60.0
 # 행정동 필터 — 통계청 시도코드 prefix
 _ADMIN_DONG_FILTER = (
     '<Filter><PropertyIsLike wildCard="*" singleChar="." escape="!">'
-    f"<PropertyName>adm_cd</PropertyName><Literal>{SIDO_ADM_PREFIX}*</Literal>"
+    f"<PropertyName>adm_cd</PropertyName><Literal>{KOSTAT_SIDO_PREFIX}*</Literal>"
     "</PropertyIsLike></Filter>"
 )
 
