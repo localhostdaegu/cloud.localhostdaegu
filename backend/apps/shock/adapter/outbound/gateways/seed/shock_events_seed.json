@@ -1,6 +1,63 @@
 {
-  "_doc": "특이변수 ①계층(정책·규제) 시드 — API 미커버 구간·공표 시행일 기반. 각 행은 source(근거 출처) 필수. 적재: python -m apps.shock.adapter.inbound.cli.seed_shock_events",
+  "_doc": "특이변수 시드 — 대구 서비스 지역 기준 타임라인(코로나19 대구 확산·특별재난지역·대구 적용 거리두기 단계)과 전국 공통 정책(최저임금·주 52시간제·재난지원금·손실보상). 각 행은 source(근거 출처)·source_url 필수. 적재: python -m apps.shock.adapter.inbound.cli.seed_shock_events",
   "events": [
+    {
+      "event_id": "daegu-outbreak-20200218",
+      "layer": "regional",
+      "name": "대구 첫 확진(31번 환자)·신천지 대구교회 집단감염 확산",
+      "start_date": "2020-02-18",
+      "end_date": "2020-04-09",
+      "scope": "대구",
+      "source": "서울신문 2020-02-20 보도(31번 환자 2020-02-18 확진, 신천지 대구교회 누적 38명)",
+      "source_url": "https://www.seoul.co.kr/news/society/health-medical/2020/02/20/20200220800022",
+      "description": "대구 지역 대면 소비 급감 구간. 종료일은 대구 신규 확진 0명 첫 기록(2020-04-10, 첫 확진 후 52일 만)의 전날 — 근거: 서울신문 2020-04-10 https://www.seoul.co.kr/news/society/2020/04/10/20200410500065",
+      "industry_impacts": [
+        {
+          "industry_id": "academy",
+          "severity": "medium"
+        },
+        {
+          "industry_id": "billiard",
+          "severity": "high"
+        },
+        {
+          "industry_id": "cafe",
+          "severity": "high"
+        },
+        {
+          "industry_id": "gym",
+          "severity": "high"
+        },
+        {
+          "industry_id": "hair_salon",
+          "severity": "medium"
+        },
+        {
+          "industry_id": "karaoke",
+          "severity": "high"
+        },
+        {
+          "industry_id": "pc_bang",
+          "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "high"
+        }
+      ]
+    },
+    {
+      "event_id": "daegu-special-disaster-zone-20200315",
+      "layer": "policy",
+      "name": "대구·경북 일부 특별재난지역 선포 (감염병 최초)",
+      "start_date": "2020-03-15",
+      "end_date": "2020-03-15",
+      "scope": "대구",
+      "source": "서울신문 2020-03-15 보도 — 대통령 재가, 대구 전역·경북 경산·청도·봉화",
+      "source_url": "https://www.seoul.co.kr/news/politics/president/2020/03/15/20200315500069",
+      "description": "선포일 표지(시점 이벤트) — 중대본 건의·중앙안전관리위원회 심의를 거친 감염병 첫 특별재난지역. 지원 내역·기간은 이 행에 담지 않는다",
+      "industry_impacts": []
+    },
     {
       "event_id": "covid-distancing-20200322",
       "layer": "policy",
@@ -8,9 +65,9 @@
       "start_date": "2020-03-22",
       "end_date": "2020-05-05",
       "scope": "전국",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "종교시설·실내체육시설·유흥시설 운영중단 강력 권고 (2020-03-21 발표, 2주 시행 후 2020-05-05까지 연장)",
+      "source": "대한민국 정책브리핑(korea.kr) 2020-03-21 — 2020-03-22~04-05 종교·실내체육·유흥시설 운영중단 권고",
+      "source_url": "http://www.korea.kr/news/policyNewsView.do?newsId=148870670",
+      "description": "종교시설·실내체육시설·유흥시설 운영중단 강력 권고 (2020-03-21 발표, 2주 시행 후 완화된 형태로 2020-05-05까지 연장 — 근거: 서울신문 2020-04-19 https://www.seoul.co.kr/news/society/2020/04/19/20200419500097)",
       "industry_impacts": [
         {
           "industry_id": "billiard",
@@ -31,6 +88,10 @@
         {
           "industry_id": "pc_bang",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -39,11 +100,11 @@
       "layer": "policy",
       "name": "생활 속 거리두기 전환",
       "start_date": "2020-05-06",
-      "end_date": "2020-08-15",
-      "scope": "전국",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "생활방역 체계 전환 — 시설 운영 재개, 방역수칙 준수 전제 (2020-05-03 발표)",
+      "end_date": "2020-08-22",
+      "scope": "대구",
+      "source": "서울신문 2020-05-03 보도 — 국무총리 '6일부터 생활 속 거리두기로 전환'",
+      "source_url": "https://www.seoul.co.kr/news/politics/2020/05/03/20200503500059",
+      "description": "생활방역 체계 전환 — 시설 운영 재개, 방역수칙 준수 전제 (2020-05-03 발표). 대구는 2020-08-23 전국 2단계 확대 전까지 이 단계 유지",
       "industry_impacts": [
         {
           "industry_id": "billiard",
@@ -64,85 +125,23 @@
         {
           "industry_id": "pc_bang",
           "severity": "medium"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "low"
         }
       ]
     },
     {
-      "event_id": "covid-distancing-20200816",
+      "event_id": "covid-distancing-20200823",
       "layer": "policy",
-      "name": "수도권 사회적 거리두기 2단계",
-      "start_date": "2020-08-16",
-      "end_date": "2020-08-29",
-      "scope": "수도권",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "서울·경기 2단계 격상 (2020-08-15 발표) — 노래연습장·PC방 등 고위험시설 12종 집합금지",
-      "industry_impacts": [
-        {
-          "industry_id": "billiard",
-          "severity": "high"
-        },
-        {
-          "industry_id": "cafe",
-          "severity": "medium"
-        },
-        {
-          "industry_id": "gym",
-          "severity": "high"
-        },
-        {
-          "industry_id": "karaoke",
-          "severity": "critical"
-        },
-        {
-          "industry_id": "pc_bang",
-          "severity": "critical"
-        }
-      ]
-    },
-    {
-      "event_id": "covid-distancing-20200830",
-      "layer": "policy",
-      "name": "수도권 강화된 2단계(2.5단계)",
-      "start_date": "2020-08-30",
-      "end_date": "2020-09-13",
-      "scope": "수도권",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "실내체육시설 집합금지, 프랜차이즈형 카페 포장·배달만 허용 (2020-08-28 발표)",
-      "industry_impacts": [
-        {
-          "industry_id": "billiard",
-          "severity": "critical"
-        },
-        {
-          "industry_id": "cafe",
-          "severity": "high"
-        },
-        {
-          "industry_id": "gym",
-          "severity": "critical"
-        },
-        {
-          "industry_id": "karaoke",
-          "severity": "critical"
-        },
-        {
-          "industry_id": "pc_bang",
-          "severity": "critical"
-        }
-      ]
-    },
-    {
-      "event_id": "covid-distancing-20200914",
-      "layer": "policy",
-      "name": "수도권 사회적 거리두기 2단계 완화",
-      "start_date": "2020-09-14",
+      "name": "사회적 거리두기 2단계 (전국 확대)",
+      "start_date": "2020-08-23",
       "end_date": "2020-10-11",
-      "scope": "수도권",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "고위험시설 일부 운영 재개 — 핵심 방역수칙 의무화 (2020-09-13 발표)",
+      "scope": "대구",
+      "source": "대한민국 정책브리핑(korea.kr) — 2020-08-23 0시 사회적 거리두기 2단계 전국 확대",
+      "source_url": "https://www.korea.kr/news/policyNewsView.do?newsId=148876519",
+      "description": "노래연습장 등 고위험시설 집합금지, 음식점 등 핵심 방역수칙 의무화, 실내 50인·실외 100인 이상 집합 금지. 2020-10-12 2단계→1단계 하향으로 종료 — 근거: 정책브리핑 2020-10-11 https://m.korea.kr/news/policyNewsView.do?newsId=148878604",
       "industry_impacts": [
         {
           "industry_id": "billiard",
@@ -158,24 +157,28 @@
         },
         {
           "industry_id": "karaoke",
-          "severity": "high"
+          "severity": "critical"
         },
         {
           "industry_id": "pc_bang",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
     {
       "event_id": "covid-distancing-20201012",
       "layer": "policy",
-      "name": "전국 사회적 거리두기 1단계",
+      "name": "사회적 거리두기 1단계",
       "start_date": "2020-10-12",
-      "end_date": "2020-11-18",
-      "scope": "전국",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "전국 1단계 완화 (2020-10-11 발표)",
+      "end_date": "2020-11-30",
+      "scope": "대구",
+      "source": "대한민국 정책브리핑(korea.kr) 2020-10-11 — 12일부터 2단계에서 1단계로 하향",
+      "source_url": "https://m.korea.kr/news/policyNewsView.do?newsId=148878604",
+      "description": "고위험시설 집합금지 해제 (2020-10-11 발표). 2020-11-07 5단계 체계 개편 후에도 전국 1단계 유지 — 근거: 정책브리핑 2020-11-06 https://www.korea.kr/news/policyNewsView.do?newsId=148879573",
       "industry_impacts": [
         {
           "industry_id": "billiard",
@@ -196,72 +199,47 @@
         {
           "industry_id": "pc_bang",
           "severity": "medium"
-        }
-      ]
-    },
-    {
-      "event_id": "covid-distancing-20201119",
-      "layer": "policy",
-      "name": "수도권 사회적 거리두기 1.5단계",
-      "start_date": "2020-11-19",
-      "end_date": "2020-11-23",
-      "scope": "수도권",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "수도권 1.5단계 격상 (2020-11-17 발표)",
-      "industry_impacts": [
-        {
-          "industry_id": "billiard",
-          "severity": "medium"
         },
         {
-          "industry_id": "cafe",
+          "industry_id": "restaurant",
           "severity": "low"
-        },
-        {
-          "industry_id": "gym",
-          "severity": "medium"
-        },
-        {
-          "industry_id": "karaoke",
-          "severity": "medium"
-        },
-        {
-          "industry_id": "pc_bang",
-          "severity": "medium"
         }
       ]
     },
     {
-      "event_id": "covid-distancing-20201124",
+      "event_id": "covid-distancing-20201201",
       "layer": "policy",
-      "name": "수도권 사회적 거리두기 2단계",
-      "start_date": "2020-11-24",
+      "name": "사회적 거리두기 1.5단계 (대구·경북 격상)",
+      "start_date": "2020-12-01",
       "end_date": "2020-12-07",
-      "scope": "수도권",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "수도권 2단계 격상 (2020-11-22 발표) — 카페 포장·배달만 허용. 이후 구간(2020-12-08~2021-10-31)은 data.go.kr 15098772 API 적재분이 담당",
+      "scope": "대구",
+      "source": "서울신문 2020-11-29 보도 — 중대본, 대전·충청·대구·경북·제주 등 12월 1일부터 1.5단계 격상",
+      "source_url": "https://www.seoul.co.kr/news/society/2020/11/29/20201129500076",
+      "description": "대구 1.5단계 구간. 2020-12-08부터는 대구형 2단계 격상(대구시 발표)이며 이후 일별 단계는 data.go.kr 15098772 API 적재분(dagLvl)이 담당",
       "industry_impacts": [
         {
           "industry_id": "billiard",
-          "severity": "high"
+          "severity": "medium"
         },
         {
           "industry_id": "cafe",
-          "severity": "high"
+          "severity": "low"
         },
         {
           "industry_id": "gym",
-          "severity": "high"
+          "severity": "medium"
         },
         {
           "industry_id": "karaoke",
-          "severity": "high"
+          "severity": "medium"
         },
         {
           "industry_id": "pc_bang",
-          "severity": "high"
+          "severity": "medium"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "low"
         }
       ]
     },
@@ -272,9 +250,9 @@
       "start_date": "2021-11-01",
       "end_date": "2021-12-17",
       "scope": "전국",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "거리두기 해제·방역패스 도입 — §5.4 회복 판정의 기점 구간 (2021-10-29 발표)",
+      "source": "대한민국 정책브리핑(korea.kr) 2021-10-29 — 11월 1일부터 단계적 일상회복 1단계",
+      "source_url": "https://www.korea.kr/news/policyNewsView.do?newsId=148894947",
+      "description": "거리두기 체계 해제·방역패스 도입 — §5.4 회복 판정의 기점 구간 (2021-10-29 발표)",
       "industry_impacts": [
         {
           "industry_id": "billiard",
@@ -294,6 +272,10 @@
         },
         {
           "industry_id": "pc_bang",
+          "severity": "low"
+        },
+        {
+          "industry_id": "restaurant",
           "severity": "low"
         }
       ]
@@ -305,9 +287,9 @@
       "start_date": "2021-12-18",
       "end_date": "2022-04-17",
       "scope": "전국",
-      "source": "질병관리청·중앙재난안전대책본부 보도자료",
-      "source_url": "https://www.kdca.go.kr/board/board.es?mid=a20501010000&bid=0015",
-      "description": "사적모임 4인·21시 영업제한으로 재강화 (2021-12-16 발표). 기간 중 사적모임 4→6→8→10인, 영업시간 21→22→23시 수차례 조정, 2022-04-18 전면 해제",
+      "source": "대한민국 정책브리핑(korea.kr) 2021-12-16 — 18일부터 사적모임 4인·식당·카페 밤 9시까지 영업",
+      "source_url": "https://www.korea.kr/news/policyNewsView.do?newsId=148896885",
+      "description": "사적모임 4인·식당·카페 21시 영업제한으로 재강화 (2021-12-16 발표, 당초 2022-01-02까지). 이후 조정을 거쳐 해제 직전 사적모임 10인·영업시간 24시였고 2022-04-18 전면 해제 — 근거: 정책브리핑 2022-04-15 https://www.korea.kr/news/policyNewsView.do?newsId=148900782",
       "industry_impacts": [
         {
           "industry_id": "billiard",
@@ -327,6 +309,10 @@
         },
         {
           "industry_id": "pc_bang",
+          "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
           "severity": "high"
         }
       ]
@@ -349,6 +335,10 @@
         {
           "industry_id": "convenience_store",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -370,6 +360,10 @@
         {
           "industry_id": "convenience_store",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -391,6 +385,10 @@
         {
           "industry_id": "convenience_store",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -412,6 +410,10 @@
         {
           "industry_id": "convenience_store",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -433,6 +435,10 @@
         {
           "industry_id": "convenience_store",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -454,6 +460,10 @@
         {
           "industry_id": "convenience_store",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -475,6 +485,10 @@
         {
           "industry_id": "convenience_store",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -496,6 +510,10 @@
         {
           "industry_id": "convenience_store",
           "severity": "high"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -516,6 +534,10 @@
         },
         {
           "industry_id": "karaoke",
+          "severity": "medium"
+        },
+        {
+          "industry_id": "restaurant",
           "severity": "medium"
         }
       ]
@@ -538,6 +560,10 @@
         {
           "industry_id": "karaoke",
           "severity": "medium"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -558,6 +584,10 @@
         },
         {
           "industry_id": "karaoke",
+          "severity": "medium"
+        },
+        {
+          "industry_id": "restaurant",
           "severity": "medium"
         }
       ]
@@ -612,6 +642,10 @@
         {
           "industry_id": "real_estate",
           "severity": "medium"
+        },
+        {
+          "industry_id": "restaurant",
+          "severity": "medium"
         }
       ]
     },
@@ -664,6 +698,10 @@
         },
         {
           "industry_id": "real_estate",
+          "severity": "medium"
+        },
+        {
+          "industry_id": "restaurant",
           "severity": "medium"
         }
       ]

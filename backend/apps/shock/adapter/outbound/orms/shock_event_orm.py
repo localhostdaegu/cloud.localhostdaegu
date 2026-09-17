@@ -23,7 +23,7 @@ class ShockEventOrm(OrmBase):
     name: Mapped[str]
     start_date: Mapped[date]  # 시행일
     end_date: Mapped[date | None]  # 진행 중·상시 효과는 NULL
-    scope: Mapped[str]  # 전국/서울/수도권 등
+    scope: Mapped[str]  # 전국/대구 등
     source: Mapped[str]  # 근거 출처 (기관·고시·API명) — 전 행 필수
     source_url: Mapped[str | None]
     description: Mapped[str | None]  # 지원금 왜곡 주의(§5.2 ⚠️) 등 분석 참고사항

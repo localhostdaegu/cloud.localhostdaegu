@@ -44,7 +44,7 @@ class ShockEventInteractor(ShockEventUseCase):
             name="shock BC 배선 검증",
             start_date=date(2026, 9, 7),
             scope="전국",
-            source="beyondfacade",
+            source="localhostdaegu",
         )
 
     def ingest(self) -> tuple[int, int]:

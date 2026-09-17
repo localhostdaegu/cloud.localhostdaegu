@@ -13,6 +13,7 @@ def test_shock_myself_wiring_returns_200():
     assert body["event_id"] == "myself"
     assert body["name"]
     assert body["layer"]
+    assert body["source"] == "localhostdaegu"  # 프로젝트명 — 이전 프로젝트명(beyondfacade) 잔재 금지
 
 
 def test_shock_list_rejects_invalid_limit():
