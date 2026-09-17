@@ -19,3 +19,7 @@ def test_settings_ignores_empty_values_so_backend_env_placeholder_does_not_mask_
 
 def test_settings_declares_youthcenter_key():
     assert "youthcenter_api_key" in Settings.model_fields
+
+
+def test_settings_declares_gemini_report_model_with_default():
+    assert Settings.model_fields["gemini_report_model"].default == "gemini-2.5-flash"
