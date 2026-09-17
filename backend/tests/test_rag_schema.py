@@ -15,3 +15,13 @@ def test_rag_chunk_hnsw_index_exists():
             "SELECT count(*) FROM pg_indexes WHERE tablename='rag_chunk' AND indexdef ILIKE '%hnsw%'"
         )).scalar()
     assert n == 1
+
+def test_rag_chunk_orm_declares_hnsw_index_matching_migration():
+    """ORM이 HNSW 인덱스를 선언해야 alembic autogenerate가 ix_rag_chunk_embedding_hnsw를 drop하지 않는다."""
+    from apps.rag.adapter.outbound.orms.rag_chunk_orm import RagChunkOrm
+
+    indexes = {index.name: index for index in RagChunkOrm.__table__.indexes}
+    hnsw = indexes["ix_rag_chunk_embedding_hnsw"]
+    assert [column.name for column in hnsw.columns] == ["embedding"]
+    assert hnsw.dialect_options["postgresql"]["using"] == "hnsw"
+    assert hnsw.dialect_options["postgresql"]["ops"] == {"embedding": "vector_cosine_ops"}

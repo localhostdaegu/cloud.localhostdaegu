@@ -85,3 +85,56 @@ def test_gemini_adapter_splits_250_inputs_into_3_batches(monkeypatch):
     assert len(captured_batches) == 3
     assert [len(batch) for batch in captured_batches] == [100, 100, 50]
     assert len(vectors) == 250
+
+
+def test_gemini_adapter_retries_5xx_server_error_then_succeeds(monkeypatch):
+    """GeminiEmbeddingAdapter: 일시적 5xx(ServerError)도 429처럼 백오프 재시도한다."""
+    from google.genai import errors
+
+    from apps.rag.adapter.outbound.embeddings import gemini_embedding_adapter as module
+
+    adapter = module.GeminiEmbeddingAdapter(api_key="test-key")
+    calls = []
+    sleeps = []
+
+    def flaky_embed_content(model, contents, config):
+        calls.append(contents)
+        if len(calls) == 1:
+            raise errors.ServerError(503, {"error": {"code": 503, "message": "unavailable"}})
+        return _FakeEmbedResult(len(contents))
+
+    monkeypatch.setattr(adapter._client.models, "embed_content", flaky_embed_content)
+    monkeypatch.setattr(module.time, "sleep", sleeps.append)
+
+    vectors = adapter.embed_documents(["문서"])
+
+    assert len(calls) == 2
+    assert len(sleeps) == 1
+    assert len(vectors) == 1
+
+
+def test_gemini_adapter_does_not_retry_non_429_client_error(monkeypatch):
+    """4xx(429 제외)는 재시도해도 풀리지 않는다 — 즉시 전파."""
+    from google.genai import errors
+
+    from apps.rag.adapter.outbound.embeddings import gemini_embedding_adapter as module
+
+    adapter = module.GeminiEmbeddingAdapter(api_key="test-key")
+    calls = []
+
+    def bad_request(model, contents, config):
+        calls.append(contents)
+        raise errors.ClientError(400, {"error": {"code": 400, "message": "bad request"}})
+
+    monkeypatch.setattr(adapter._client.models, "embed_content", bad_request)
+    monkeypatch.setattr(module.time, "sleep", lambda _: None)
+
+    with pytest.raises(errors.ClientError):
+        adapter.embed_documents(["문서"])
+    assert len(calls) == 1
+
+
+def test_gemini_adapter_logger_uses_project_namespace():
+    from apps.rag.adapter.outbound.embeddings.gemini_embedding_adapter import LOGGER
+
+    assert LOGGER.name == "localhostdaegu.rag.embedding"

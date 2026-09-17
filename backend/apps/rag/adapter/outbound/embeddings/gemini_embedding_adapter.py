@@ -12,7 +12,7 @@ from google.genai import errors, types
 from apps.rag.app.ports.output.rag_port import EmbeddingPort
 from core.matrix.grid_keymaker_secret_manager import get_settings
 
-LOGGER = logging.getLogger("beyondfacade.rag.embedding")
+LOGGER = logging.getLogger("localhostdaegu.rag.embedding")
 
 EMBEDDING_DIM = 1536
 _GEMINI_BATCH_LIMIT = 100
@@ -27,7 +27,7 @@ _RETRY_BUDGET_SECONDS = 30.0
 
 
 class GeminiEmbeddingAdapter(EmbeddingPort):
-    """Gemini 임베딩 어댑터 — 쿼리 및 문서 벡터화 (배치 100 + 429 재시도)."""
+    """Gemini 임베딩 어댑터 — 쿼리 및 문서 벡터화 (배치 100 + 429·5xx 재시도)."""
 
     MODEL_NAME = "gemini-embedding-001"
     PROVIDER = "gemini"
@@ -54,7 +54,7 @@ class GeminiEmbeddingAdapter(EmbeddingPort):
         return vectors
 
     def _embed_batch_with_retry(self, batch: list[str], task_type: str):
-        # 전역 공용 쿼터(429) 대비 — 지수 백오프로 예산 안에서 재시도
+        # 전역 공용 쿼터(429)·일시적 5xx 대비 — 지수 백오프로 예산 안에서 재시도
         waited = 0.0
         attempt = 0
         while True:
@@ -68,18 +68,27 @@ class GeminiEmbeddingAdapter(EmbeddingPort):
                     ),
                 )
             except errors.ClientError as exc:
-                delay = min(_RETRY_BASE_DELAY * 2**attempt, _RETRY_MAX_DELAY)
-                if exc.code != 429 or waited + delay > _RETRY_BUDGET_SECONDS:
-                    if exc.code == 429:
-                        LOGGER.warning(
-                            "임베딩 429 재시도 예산 %.1fs 소진 (%d회) — 호출부가 폴백한다",
-                            waited,
-                            attempt + 1,
-                        )
-                    raise
-                time.sleep(delay)
-                waited += delay
-                attempt += 1
+                if exc.code != 429:
+                    raise  # 429 외 4xx는 재시도해도 풀리지 않는다
+                waited = self._back_off_or_raise(exc, waited, attempt)
+            except errors.ServerError as exc:
+                waited = self._back_off_or_raise(exc, waited, attempt)
+            attempt += 1
+
+    @staticmethod
+    def _back_off_or_raise(exc: errors.APIError, waited: float, attempt: int) -> float:
+        """예산 안이면 대기 후 누적 대기시간을 돌려주고, 예산을 넘기면 원 예외를 올린다."""
+        delay = min(_RETRY_BASE_DELAY * 2**attempt, _RETRY_MAX_DELAY)
+        if waited + delay > _RETRY_BUDGET_SECONDS:
+            LOGGER.warning(
+                "임베딩 %s 재시도 예산 %.1fs 소진 (%d회) — 호출부가 폴백한다",
+                exc.code,
+                waited,
+                attempt + 1,
+            )
+            raise exc
+        time.sleep(delay)
+        return waited + delay
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         return self._embed(texts, task_type="RETRIEVAL_DOCUMENT")

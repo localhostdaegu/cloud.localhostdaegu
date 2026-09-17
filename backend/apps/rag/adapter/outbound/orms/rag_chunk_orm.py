@@ -21,14 +21,21 @@ class RagChunkOrm(OrmBase):
     __table_args__ = (
         # 소스 기반 조회 (source_type + source_id 조합)
         Index("ix_rag_chunk_source", "source_type", "source_id"),
+        # 코사인 유사도 ANN — 마이그레이션 66a23fb0c6e9와 동일 선언 (autogenerate가 drop하지 않도록)
+        Index(
+            "ix_rag_chunk_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
     )
 
     chunk_id: Mapped[str] = mapped_column(primary_key=True)  # unique chunk ID
-    source_type: Mapped[str]  # 소스 유형 (예: "article", "store", "metric")
+    source_type: Mapped[str]  # 소스 유형 (예: "funding", "news")
     source_id: Mapped[str]  # 소스 ID (해당 테이블의 PK)
     content: Mapped[str]  # 청크 텍스트
     embedding: Mapped[Vector | None] = mapped_column(Vector(1536), nullable=True)  # 1536-dim 벡터
-    embedded_by: Mapped[str | None]  # 임베딩 모델명 (예: "qwen2.5-text-3b", "all-minilm-l6-v2")
+    embedded_by: Mapped[str | None]  # 임베딩 모델명 (예: "gemini-embedding-001") — 검색 시 쿼리 임베더와 일치하는 행만 비교
     published_at: Mapped[datetime | None]  # 원본 발행 시간
     org: Mapped[str | None]  # 발행 기관/출처
     url: Mapped[str | None]  # 원본 URL
