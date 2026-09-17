@@ -22,6 +22,7 @@
 
 - 첫 진입이 채팅(`/`)인데 지도 탐색 이후 돌아갈 버튼이 없음 → 상단 바 `TABS` 맨 앞에 **홈**(`/`) 추가. vitest 78/78, tsc clean, headless 확인(`/map`에서 홈 클릭 → `/` 복귀·"무엇을 알아볼까요?" 노출·홈 aria-current).
 - **BI 로고 = 홈 버튼**: 사용자 제공 BI(1448×1086, 투명 여백 큼)를 실내용 영역으로 잘라 높이 96px(표시 32px × 3배) PNG 2종 `public/brand/logo-{light,dark}.png`(각 ~30KB) 생성. 워드마크 진청록(#024D4A)이 다크 상단 바(#171F20)에 묻혀 다크용은 저휘도 픽셀을 #ECF3F2로 치환. 상단 바(50px)에서 로고 링크(`aria-label="홈"`)가 `localhostdaegu` 텍스트와 홈 텍스트 탭을 대체, `data-theme`로 한 장만 표시. next/image 최적화가 192px로 줄여 레티나에서 흐려 `unoptimized`로 원본 사용. vitest 78/78, tsc clean, headless 양 테마 캡처·홈 이동 확인.
+- **민트 홈 디자인**(스펙 `docs/superpowers/specs/2026-09-17-mint-home-design.md`, 계획 `docs/superpowers/plans/2026-09-17-mint-home.md`): 팔레트 민트 #34C8B0·딥그린 #004D46·소프트민트 #E8F7F2·캔버스 #F7F8F3로 `tokens.css` 교체(라이트/다크). `ChatLanding` 상태·라우팅은 유지하고 히어로(Blender 렌더 핀 `public/brand/brand-pin.png`, `scripts/render-brand-pin.py`) + 기능 소개 3카드 + 푸터를 CSS 모듈로 구성, 예시 수치는 모두 "예시" 표기. 상단 바 반응형·테마 토글 정리. 검증(22:14~): vitest **84/84**, tsc clean, headless `tests/home-design.cjs` 1440/1024/390/320 × 라이트·다크 PASS(가로 스크롤 없음·예시 칩 입력·키보드 제출·reduced-motion), 실백엔드 `E2E_REUSE_SERVER=1 node tests/funnel.cjs` PASS(결론 "자기자본으로 충분해요"). `funnel.cjs`에 실행 중 서버 재사용 옵션 추가. 검증 중 발견: 좁은 화면에서 `<br>`이 숨겨져 "때까지.창업"으로 붙음 → 공백 추가. 프론트엔드에 ESLint 설정 파일이 없어 lint는 미실행. 참고 이미지 `frontend/docs/`는 커밋 제외.
 - `docs/handoff.md` 9/17 기준 갱신: 수집·RAG·테스트 DB 완료 반영, 남은 일 우선순위(§0-1) — `/analysis` SSE → 수기 금융상품 JSON → 배포·시연 영상 → 최종 리뷰·머지 → 제출.
 
 ## 2026-09-16

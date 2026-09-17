@@ -1,0 +1,92 @@
+.header {
+  display: grid;
+  flex: none;
+  grid-template-areas:
+    "brand theme"
+    "nav nav";
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.logo {
+  grid-area: brand;
+  display: flex;
+  width: fit-content;
+  min-width: 0;
+  height: 3.5rem;
+  align-items: center;
+  margin-left: 1rem;
+  border-radius: 0.25rem;
+}
+
+.logo:focus-visible,
+.navLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.logo:focus-visible {
+  outline-offset: 4px;
+}
+
+.nav {
+  grid-area: nav;
+  display: flex;
+  height: 2.75rem;
+  align-items: stretch;
+  gap: 0.125rem;
+  padding-inline: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  padding-inline: 0.75rem;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.navLink:hover {
+  color: var(--text-primary);
+}
+
+.navLink.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.themeSlot {
+  grid-area: theme;
+  display: flex;
+  height: 3.5rem;
+  align-items: center;
+  margin-right: 0.75rem;
+}
+
+@media (min-width: 48rem) {
+  .header {
+    grid-template-areas: "brand nav . theme";
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    min-height: 4.5rem;
+    padding-inline: 2rem;
+    column-gap: 2.25rem;
+  }
+
+  .logo,
+  .nav,
+  .themeSlot {
+    height: 4.5rem;
+    margin: 0;
+  }
+
+  .nav {
+    padding: 0;
+    border-top: 0;
+  }
+}

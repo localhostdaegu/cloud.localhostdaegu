@@ -20,6 +20,8 @@ const BASE_URL = `http://localhost:${PORT}`;
 const SERVER_READY_TIMEOUT_MS = 60_000;
 // 실백엔드 연동 스모크: E2E_API_BASE=http://localhost:8300 node tests/funnel.cjs (백엔드는 미리 기동)
 const API_BASE = process.env.E2E_API_BASE || "/api/mock";
+// 실행 중인 서버를 사용할 때는 그 서버의 API 설정을 그대로 사용하며 종료하지 않는다.
+const REUSE_SERVER = process.env.E2E_REUSE_SERVER === "1";
 
 // map-view.tsx DISTRICTS["27110"].center / flyTo zoom(13) — 클릭 좌표 계산에 쓰는 최종 카메라 상태.
 const DISTRICT_CENTER = [128.606, 35.869];
@@ -73,15 +75,20 @@ function project([lng, lat], zoom) {
 }
 
 async function main() {
-  console.log(`[INFO] dev 서버 기동: npm run dev (cwd=${FRONTEND_DIR}, port=${PORT}, api=${API_BASE})`);
-  const server = spawn("npm", ["run", "dev"], {
-    cwd: FRONTEND_DIR,
-    env: { ...process.env, NEXT_PUBLIC_API_BASE: API_BASE },
-    detached: true,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  server.stdout.on("data", (d) => process.stdout.write(`[dev] ${d}`));
-  server.stderr.on("data", (d) => process.stderr.write(`[dev] ${d}`));
+  let server = null;
+  if (REUSE_SERVER) {
+    console.log(`[INFO] 실행 중인 서버 사용: ${BASE_URL}`);
+  } else {
+    console.log(`[INFO] dev 서버 기동: npm run dev (cwd=${FRONTEND_DIR}, port=${PORT}, api=${API_BASE})`);
+    server = spawn("npm", ["run", "dev"], {
+      cwd: FRONTEND_DIR,
+      env: { ...process.env, NEXT_PUBLIC_API_BASE: API_BASE },
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    server.stdout.on("data", (d) => process.stdout.write(`[dev] ${d}`));
+    server.stderr.on("data", (d) => process.stderr.write(`[dev] ${d}`));
+  }
 
   let browser = null;
 
@@ -168,7 +175,7 @@ async function main() {
     }
     // detached: true로 띄웠으므로 pid == pgid — 음수 pid로 프로세스 그룹 전체(npm + next dev)를 종료한다.
     try {
-      process.kill(-server.pid, "SIGTERM");
+      if (server) process.kill(-server.pid, "SIGTERM");
     } catch {
       // 이미 종료된 경우 무시.
     }

@@ -7,6 +7,7 @@ vi.mock("next/navigation", () => ({
 
 it("현재 경로의 탭에 aria-current가 표시된다", () => {
   render(<TopBar />);
+  expect(screen.getByRole("navigation", { name: "주요 메뉴" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "AI 분석" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("link", { name: "지도 탐색" })).not.toHaveAttribute("aria-current");
 });

@@ -1,0 +1,255 @@
+.landing {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  padding: 0 40px;
+  color: var(--text-primary);
+}
+
+.landing :is(button, a, input):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.08fr 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 84px 0 72px;
+}
+
+.heroCopy { min-width: 0; }
+.eyebrow, .sectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: .02em;
+}
+.eyebrow > span { width: 7px; height: 7px; border-radius: 50%; background: var(--brand-mint); }
+.hero h1 { margin-top: 22px; font-size: clamp(32px, 3.7vw, 52px); line-height: 1.28; font-weight: 750; letter-spacing: -.065em; word-break: keep-all; }
+.hero h1 > span { color: var(--accent); }
+.intro { margin-top: 23px; color: var(--text-secondary); font-size: 17px; line-height: 1.8; letter-spacing: -.025em; word-break: keep-all; }
+.searchForm { margin-top: 33px; scroll-margin-top: 100px; }
+.searchForm label { display: block; margin-bottom: 10px; font-size: 13px; font-weight: 600; }
+.searchBox { display: flex; align-items: center; gap: 8px; padding: 7px; border: 1px solid var(--border); border-radius: 17px; background: var(--bg-surface); box-shadow: 0 5px 22px #004d4606; }
+.searchBox input { width: 100%; min-width: 0; padding: 12px 8px; background: transparent; font-size: 14px; outline: none; }
+.searchBox input::placeholder { color: var(--text-secondary); opacity: .85; }
+.searchBox button { display: flex; justify-content: center; align-items: center; gap: 12px; flex-shrink: 0; padding: 13px 18px; border-radius: 11px; background: var(--brand-mint); color: var(--brand-ink); font-size: 14px; font-weight: 700; cursor: pointer; transition: filter 180ms; }
+.searchBox button > span { font-size: 18px; line-height: 1; }
+.searchBox button:hover { filter: brightness(.94); }
+.searchBox button:disabled { opacity: .55; cursor: default; }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+.chip { max-width: 100%; padding: 7px 11px; border: 1px solid var(--border); border-radius: 20px; color: var(--text-secondary); font-size: 11px; text-align: left; cursor: pointer; transition: border-color 180ms, color 180ms; }
+.chip:hover { color: var(--accent); border-color: var(--accent); }
+.textLink { display: inline-flex; align-items: center; gap: 20px; margin-top: 23px; font-size: 13px; font-weight: 600; }
+.textLink:hover, .footer a:hover { color: var(--accent); }
+.error { margin-top: 14px; font-size: 13px; color: var(--danger); }
+.industryPrompt { margin-top: 18px; padding: 16px; background: var(--brand-soft); border-radius: 16px; font-size: 14px; }
+.industryPrompt .chip { background: var(--bg-surface); font-size: 12px; }
+
+.heroVisual { position: relative; min-width: 0; height: 490px; isolation: isolate; }
+.visualHalo { position: absolute; z-index: -2; top: 38px; right: 26px; width: 360px; max-width: 85%; aspect-ratio: 1; border-radius: 50%; border: 1px solid var(--border); background: var(--brand-soft); opacity: .6; }
+.heroMap { position: absolute; z-index: -1; width: 100%; height: auto; left: 0; bottom: 19px; }
+.brandPin { position: absolute; top: -20px; right: 13px; width: 420px; max-width: 92%; height: auto; filter: drop-shadow(0 22px 18px #004d4610); animation: floatPin 7s ease-in-out infinite; }
+.previewCard { position: absolute; padding: 17px; border: 1px solid var(--border); border-radius: 20px; background: var(--bg-surface); box-shadow: 0 14px 36px #004d4610, 0 2px 4px #004d4605; }
+.locationCard { bottom: 57px; left: 0; width: 218px; transform: rotate(-3deg); }
+.previewCardHeading { display: flex; align-items: center; justify-content: space-between; gap: 7px; font-size: 11px; font-weight: 550; color: var(--text-secondary); }
+.locationIcon { color: var(--accent); font-size: 20px; line-height: 1; }
+.sampleBadge { flex-shrink: 0; display: inline-block; padding: 3px 6px; border-radius: 6px; background: var(--bg-raised); color: var(--text-secondary); font-size: 10px; line-height: 1.25; font-weight: 500; }
+.previewCard > strong { display: block; margin-top: 15px; font-size: 23px; letter-spacing: -.035em; }
+.locationCard > strong > span { color: var(--border); padding: 0 5px; }
+.previewCard > p { color: var(--text-secondary); font-size: 10px; margin-top: 5px; }
+.miniChart { display: flex; align-items: flex-end; gap: 7px; height: 42px; margin-top: 16px; border-bottom: 1px solid var(--border); }
+.miniChart > i { flex: 1; height: 40%; border-radius: 3px 3px 0 0; background: var(--brand-mint); opacity: .55; }
+.miniChart > i:nth-child(3n) { height: 85%; opacity: 1; }
+.miniChart > i:nth-child(3n + 1) { height: 65%; }
+.cardCaption { display: flex; justify-content: space-between; margin-top: 8px; font-size: 9px; color: var(--text-secondary); }
+.fundingCard { top: 30px; right: -2px; width: 194px; transform: rotate(4deg); }
+.fundingCard > strong { font-size: 28px; }
+.fundingCard > strong > span { font-size: 13px; font-weight: 500; padding-left: 5px; }
+.fundingRule { height: 6px; margin-top: 13px; border-radius: 8px; background: var(--bg-raised); }
+.fundingRule > span { display: block; width: 70%; height: 100%; border-radius: inherit; background: var(--brand-mint); }
+.fundingCard > p { margin-top: 10px; font-size: 9px; }
+.visualCaption { position: absolute; right: 26px; bottom: 18px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-secondary); }
+.visualCaption > span { font-size: 23px; color: var(--accent); }
+
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; padding: 30px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.steps > li { display: flex; align-items: center; gap: 17px; }
+.stepNumber { align-self: flex-start; padding-top: 1px; font-size: 12px; color: var(--accent); font-weight: 600; }
+.steps h2 { font-size: 16px; font-weight: 650; letter-spacing: -.03em; }
+.steps p { margin-top: 6px; color: var(--text-secondary); font-size: 12px; word-break: keep-all; }
+.stepArrow { margin-left: auto; color: var(--text-secondary); font-size: 21px; }
+.features { padding: 90px 0 88px; }
+.sectionHeading { display: flex; justify-content: space-between; align-items: flex-end; gap: 25px; margin-bottom: 34px; }
+.sectionHeading h2 { margin-top: 16px; font-size: clamp(29px, 3vw, 38px); line-height: 1.3; font-weight: 700; letter-spacing: -.05em; }
+.sectionHeading > p { padding-bottom: 3px; color: var(--text-secondary); font-size: 14px; line-height: 1.8; word-break: keep-all; }
+.featureGrid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+.featureGrid > article { min-width: 0; position: relative; overflow: hidden; padding: 32px; border: 1px solid var(--border); border-radius: 26px; }
+.featureNumber { margin-bottom: 19px; color: var(--accent); font-size: 11px; font-weight: 650; letter-spacing: .02em; }
+.featureGrid h3 { font-size: 28px; line-height: 1.3; font-weight: 700; letter-spacing: -.045em; word-break: keep-all; }
+.featureDescription { margin-top: 15px; color: var(--text-secondary); font-size: 13px; line-height: 1.8; word-break: keep-all; }
+.featureLink { display: inline-flex; gap: 26px; margin-top: 23px; font-size: 12px; font-weight: 650; }
+.featureLink:hover { text-decoration: underline; text-underline-offset: 4px; }
+.featureLink > span { font-size: 15px; }
+.mapFeature { grid-row: span 2; background: var(--brand-soft); }
+.mapPreview { position: relative; margin: 33px -10px -72px 6px; padding-bottom: 15px; border: 1px solid var(--border); border-radius: 18px; background: var(--bg-surface); box-shadow: 0 14px 30px #004d460d; transform: rotate(-3deg); overflow: hidden; }
+.previewToolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 18px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+.previewToolbar > span:first-child { display: flex; align-items: center; gap: 8px; }
+.previewToolbar i { width: 7px; height: 7px; background: var(--brand-mint); border-radius: 50%; }
+.districtMap { width: 100%; height: auto; margin-top: 12px; }
+.mapCallout { position: absolute; top: 56%; right: 6%; padding: 13px 17px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-surface); box-shadow: 0 8px 18px #004d460c; }
+.mapCallout > span { color: var(--accent); font-size: 10px; }
+.mapCallout > strong { display: block; margin-top: 4px; font-size: 13px; font-weight: 650; }
+.mapCallout > p { color: var(--text-secondary); font-size: 9px; margin-top: 6px; }
+.mapDisclaimer { margin-top: 20px; color: var(--text-secondary); font-size: 10px; }
+.financeFeature { display: flex; align-items: center; gap: 18px; background: var(--bg-surface); }
+.financeFeature > div:first-child { flex: 1; }
+.financeFeature h3, .evidenceFeature h3 { font-size: 25px; }
+.budgetPreview { width: 180px; flex-shrink: 0; padding: 19px 15px; background: var(--bg-base); border: 1px solid var(--border); border-radius: 18px; transform: rotate(5deg); }
+.budgetPreview > div:first-child { display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
+.budgetPreview > strong { display: block; margin-top: 20px; font-size: 29px; font-weight: 700; letter-spacing: -.04em; }
+.budgetPreview > strong > span { margin-left: 4px; font-size: 12px; font-weight: 500; }
+.budgetBar { display: flex; gap: 3px; height: 10px; margin-top: 17px; border-radius: 3px; overflow: hidden; }
+.budgetBar > i { flex: 3; background: var(--brand-mint); }
+.budgetBar > i:nth-child(2) { flex: 4; background: var(--accent); }
+.budgetBar > i:nth-child(3) { background: var(--border); }
+.budgetPreview > p { display: flex; justify-content: space-between; margin-top: 8px; font-size: 9px; color: var(--text-secondary); }
+.evidenceFeature { background: var(--brand-ink); color: #f0faf5; }
+.landing .evidenceFeature a:focus-visible { outline-color: var(--brand-mint); }
+.evidenceFeature .featureNumber { color: #8ae2d0; }
+.evidenceFeature .featureDescription { color: #c0ddd4; }
+.evidenceMark { position: absolute; right: 35px; top: 55px; width: 125px; height: 155px; transform: rotate(12deg); }
+.evidenceMark > span { display: grid; place-items: center; width: 85px; height: 85px; border: 1px solid #70cdb655; border-radius: 22px; background: #125e52; color: #92dfca; font-size: 43px; }
+.evidenceMark > span:last-child { position: absolute; right: 0; bottom: 0; background: #34c8b0; color: #004d46; }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 34px 0 38px; border-top: 1px solid var(--border); }
+.footer strong { font-size: 18px; letter-spacing: -.04em; }
+.footer strong > span { color: var(--accent); }
+.footer p { margin-top: 6px; color: var(--text-secondary); font-size: 11px; }
+.footer > span { color: var(--text-secondary); font-size: 11px; }
+.footer > a { font-size: 12px; }
+
+@keyframes floatPin { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
+
+@media (max-width: 1100px) {
+  .landing { padding: 0 32px; }
+  .hero { gap: 18px; padding-top: 62px; }
+  .heroVisual { height: 440px; }
+  .brandPin { top: 3px; right: 0; }
+  .fundingCard { top: 15px; width: 174px; }
+  .locationCard { width: 196px; bottom: 48px; }
+  .searchBox button { gap: 8px; padding-inline: 13px; }
+  .searchBox input { font-size: 12px; padding-inline: 5px; }
+  .featureGrid > article { padding: 27px; }
+  .financeFeature { gap: 12px; }
+  .budgetPreview { width: 140px; padding: 15px 11px; }
+  .budgetPreview > strong { font-size: 25px; }
+  .financeFeature h3, .evidenceFeature h3 { font-size: 23px; }
+  .evidenceMark { right: 20px; transform: scale(.8) rotate(12deg); transform-origin: right center; }
+}
+
+@media (max-width: 850px) {
+  .hero { grid-template-columns: minmax(0, 1fr); max-width: 600px; margin: 0 auto; gap: 14px; padding-top: 52px; padding-bottom: 40px; }
+  .hero h1 { font-size: clamp(32px, 6.3vw, 48px); }
+  .heroVisual { width: min(510px, 100%); height: 470px; margin: 0 auto; }
+  .brandPin { top: -2px; right: 20px; }
+  .fundingCard { top: 40px; right: 4px; }
+  .searchBox input { font-size: 14px; padding-inline: 8px; }
+  .steps { gap: 16px; }
+  .steps > li { gap: 10px; }
+  .steps h2 { font-size: 14px; }
+  .stepArrow { display: none; }
+  .steps p { font-size: 11px; line-height: 1.6; }
+  .sectionHeading { align-items: flex-start; }
+  .sectionHeading > p { max-width: 230px; padding-top: 34px; }
+  .sectionHeading > p > br { display: none; }
+  .featureGrid { grid-template-columns: minmax(0, 1fr); }
+  .mapFeature { grid-row: auto; }
+  .mapPreview { max-width: 480px; margin: 30px 0 -95px auto; }
+  .financeFeature { justify-content: space-between; }
+  .budgetPreview { width: 200px; margin-right: 12px; padding: 23px 18px; }
+  .budgetPreview > strong { font-size: 32px; }
+  .evidenceMark { right: 55px; transform: rotate(12deg); }
+  .footer > span { display: none; }
+}
+
+@media (max-width: 520px) {
+  .landing { padding: 0 20px; }
+  .hero { padding-top: 39px; padding-bottom: 28px; }
+  .eyebrow { font-size: 11px; }
+  .hero h1 { margin-top: 18px; font-size: clamp(29px, 7.7vw, 38px); line-height: 1.32; }
+  .intro { margin-top: 18px; font-size: 14px; }
+  .searchForm { margin-top: 26px; }
+  .searchForm label { font-size: 12px; }
+  .searchBox { flex-wrap: wrap; gap: 3px; padding: 6px; border-radius: 16px; }
+  .searchBox input { flex-basis: 100%; font-size: 14px; padding: 12px 8px; }
+  .searchBox button { width: 100%; padding: 12px 16px; }
+  .chips { gap: 6px; margin-top: 11px; }
+  .chip { padding: 7px 10px; font-size: 10px; }
+  .textLink { margin-top: 20px; font-size: 12px; }
+  .heroVisual { height: 390px; margin-top: 8px; }
+  .visualHalo { top: 25px; right: 8px; width: 280px; }
+  .brandPin { top: 6px; right: 2px; width: 330px; }
+  .heroMap { bottom: 38px; width: 100%; }
+  .locationCard { bottom: 51px; width: 166px; padding: 13px; }
+  .previewCardHeading { font-size: 9px; gap: 5px; }
+  .locationIcon { font-size: 17px; }
+  .previewCard > strong { margin-top: 11px; font-size: 20px; }
+  .previewCard > p { font-size: 9px; }
+  .sampleBadge { font-size: 8px; padding: 3px 5px; }
+  .miniChart { margin-top: 11px; height: 30px; gap: 5px; }
+  .fundingCard { top: 22px; right: 0; width: 143px; padding: 13px; }
+  .fundingCard > strong { font-size: 23px; }
+  .fundingCard > strong > span { font-size: 11px; }
+  .fundingCard > p { font-size: 8px; }
+  .visualCaption { right: 2px; bottom: 11px; font-size: 10px; }
+  .steps { grid-template-columns: minmax(0, 1fr); gap: 23px; padding: 25px 0; }
+  .steps > li { gap: 16px; }
+  .steps h2 { font-size: 15px; }
+  .steps p { margin-top: 3px; font-size: 12px; }
+  .stepNumber { padding-top: 3px; }
+  .features { padding: 55px 0 47px; }
+  .sectionHeading { display: block; margin-bottom: 26px; }
+  .sectionLabel { font-size: 11px; }
+  .sectionHeading h2 { margin-top: 13px; font-size: 29px; }
+  .sectionHeading > p { margin-top: 16px; max-width: none; padding-top: 0; font-size: 13px; }
+  .featureGrid { gap: 15px; }
+  .featureGrid > article { padding: 25px; border-radius: 23px; }
+  .featureNumber { font-size: 10px; margin-bottom: 16px; }
+  .featureGrid h3 { font-size: 25px; }
+  .featureDescription { font-size: 12px; margin-top: 13px; }
+  .desktopBreak { display: none; }
+  .featureLink { margin-top: 20px; }
+  .mapPreview { margin: 27px -10px -48px -5px; }
+  .previewToolbar { padding: 12px; font-size: 10px; }
+  .mapCallout { top: 48%; right: 4%; padding: 10px 12px; }
+  .mapCallout > strong { font-size: 11px; }
+  .mapCallout > p { font-size: 8px; }
+  .financeFeature { flex-wrap: wrap; }
+  .financeFeature > div:first-child { flex-basis: 100%; }
+  .budgetPreview { width: 200px; margin: 16px 0 0 auto; }
+  .evidenceMark { right: 19px; top: 35px; transform: scale(.55) rotate(12deg); opacity: .7; }
+  .evidenceFeature .featureDescription { max-width: 220px; }
+  .footer { flex-wrap: wrap; padding-top: 27px; padding-bottom: 28px; gap: 22px; }
+  .footer strong { font-size: 17px; }
+  .footer p { font-size: 10px; }
+  .footer > a { font-size: 11px; }
+}
+
+@media (max-width: 360px) {
+  .landing { padding: 0 16px; }
+  .hero h1 { font-size: 28px; }
+  .heroVisual { height: 350px; }
+  .brandPin { top: 17px; right: -3px; }
+  .locationCard { bottom: 36px; width: 154px; }
+  .fundingCard { width: 132px; right: 0; top: 12px; }
+  .visualCaption { bottom: 0; }
+  .evidenceMark { right: 10px; opacity: .4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brandPin { animation: none; }
+  .landing :is(button, a, input) { transition: none; }
+}
