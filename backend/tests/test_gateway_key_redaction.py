@@ -9,9 +9,16 @@ import traceback
 import httpx
 import pytest
 
+from apps.convenience.adapter.outbound.gateways import semas_convenience_gateway
 from apps.funding.adapter.outbound.gateways import bizinfo_gateway, youthcenter_gateway
+from apps.master.adapter.outbound.gateways import vworld_boundary_gateway
 from apps.rent.adapter.outbound.gateways import rone_gateway
-from apps.store.adapter.outbound.gateways import mois_permit_gateway
+from apps.shock.adapter.outbound.gateways import covid_distancing_gateway
+from apps.store.adapter.outbound.gateways import (
+    mois_permit_gateway,
+    molit_broker_gateway,
+    seoul_academy_gateway,
+)
 from apps.store.app.dtos.store_dto import IngestTarget
 
 _KEY = "SECRET-KEY-DO-NOT-LOG"
@@ -24,6 +31,10 @@ _MOIS_EMPTY = {"response": {"body": {"items": {"item": []}, "totalCount": 0}}}
 
 def _settings(field: str):
     return lambda: type("S", (), {field: _KEY})()
+
+
+def _settings_with(**fields):
+    return lambda: type("S", (), fields)()
 
 
 def _mock_client(handler):
@@ -76,6 +87,74 @@ def test_youthcenter_http_error_hides_key(monkeypatch):
 
     _assert_key_hidden(excinfo.value)
     assert "403" in str(excinfo.value) and "/go/ythip/getPlcy" in str(excinfo.value)
+
+
+def test_covid_distancing_http_error_hides_key(monkeypatch):
+    monkeypatch.setattr(covid_distancing_gateway, "get_settings", _settings("data_go_kr_api_key"))
+    _patch_module_get(monkeypatch, covid_distancing_gateway, _status(500))
+
+    with pytest.raises(Exception) as excinfo:
+        covid_distancing_gateway.CovidDistancingGateway().fetch_events()
+
+    _assert_key_hidden(excinfo.value)
+    assert "500" in str(excinfo.value) and "/1352000/ODMS_COVID_12/callCovid12Api" in str(excinfo.value)
+
+
+def test_vworld_boundary_http_error_hides_key(monkeypatch):
+    monkeypatch.setattr(
+        vworld_boundary_gateway,
+        "get_settings",
+        _settings_with(vworld_api_key=_KEY, vworld_service_domain="example.com"),
+    )
+    _patch_module_get(monkeypatch, vworld_boundary_gateway, _status(403))
+
+    with pytest.raises(Exception) as excinfo:
+        vworld_boundary_gateway.VworldBoundaryGateway().fetch_admin_dongs()
+
+    _assert_key_hidden(excinfo.value)
+    assert "403" in str(excinfo.value) and "/req/wfs" in str(excinfo.value)
+
+
+def test_semas_convenience_http_error_hides_key(monkeypatch):
+    monkeypatch.setattr(semas_convenience_gateway, "get_settings", _settings("data_go_kr_api_key"))
+    monkeypatch.setattr(semas_convenience_gateway.time, "sleep", lambda seconds: None)
+    _patch_client(monkeypatch, semas_convenience_gateway, _status(500))
+
+    with pytest.raises(Exception) as excinfo:
+        list(semas_convenience_gateway.SemasConvenienceGateway().iter_stores("2711051500"))
+
+    _assert_key_hidden(excinfo.value)
+    assert "500" in str(excinfo.value) and "/B553077/api/open/sdsc2/storeListInDong" in str(excinfo.value)
+
+
+def test_molit_broker_http_error_hides_key(monkeypatch):
+    monkeypatch.setattr(
+        molit_broker_gateway,
+        "get_settings",
+        _settings_with(vworld_api_key=_KEY, vworld_service_domain="example.com"),
+    )
+    monkeypatch.setattr(molit_broker_gateway.time, "sleep", lambda seconds: None)
+    _patch_client(monkeypatch, molit_broker_gateway, _status(500))
+
+    with pytest.raises(Exception) as excinfo:
+        list(molit_broker_gateway.MolitBrokerGateway().iter_offices("real_estate", "27110"))
+
+    _assert_key_hidden(excinfo.value)
+    assert "500" in str(excinfo.value) and "/ned/data/getEBOfficeInfo" in str(excinfo.value)
+
+
+def test_seoul_academy_http_error_hides_key(monkeypatch):
+    """키가 URL 경로 세그먼트에 있다 — translate_http_errors(secrets=...) 로 경로도 가린다."""
+    monkeypatch.setattr(seoul_academy_gateway, "get_settings", _settings("seoul_open_data_api_key"))
+    monkeypatch.setattr(seoul_academy_gateway.time, "sleep", lambda seconds: None)
+    _patch_client(monkeypatch, seoul_academy_gateway, _status(500))
+
+    with pytest.raises(Exception) as excinfo:
+        list(seoul_academy_gateway.SeoulAcademyGateway({}).iter_academies())
+
+    _assert_key_hidden(excinfo.value)
+    assert "500" in str(excinfo.value)
+    assert "***" in str(excinfo.value)
 
 
 def test_youthcenter_request_error_hides_key(monkeypatch):

@@ -17,6 +17,7 @@ from apps.store.app.dtos.academy_course_dto import AcademyRecord
 from apps.store.app.ports.output.academy_course_port import AcademyGatewayPort
 from apps.store.domain.entities.academy_course_entity import AcademyCourse
 from apps.store.domain.entities.store_entity import Store
+from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 
 _BASE_URL = "http://openapi.seoul.go.kr:8088"
@@ -118,19 +119,21 @@ class SeoulAcademyGateway(AcademyGatewayPort):
 
     @staticmethod
     def _get_with_retry(client: httpx.Client, url: str, attempts: int = 3) -> httpx.Response:
-        """타임아웃·5xx는 지수 백오프 재시도, 4xx는 즉시 전파 (MOIS 게이트웨이 전례)."""
-        for attempt in range(attempts):
-            try:
-                response = client.get(url)
-                response.raise_for_status()
-                return response
-            except httpx.HTTPStatusError as error:
-                if error.response.status_code < 500 or attempt == attempts - 1:
-                    raise
-            except httpx.TimeoutException:
-                if attempt == attempts - 1:
-                    raise
-            time.sleep(2**attempt)
+        """타임아웃·5xx는 지수 백오프 재시도, 4xx는 즉시 전파 (MOIS 게이트웨이 전례).
+        인증키가 URL 경로 세그먼트에 있다 — 전파 오류는 secrets 로 그 자리를 가린 메시지로 번역한다."""
+        with translate_http_errors(secrets=(get_settings().seoul_open_data_api_key,)):
+            for attempt in range(attempts):
+                try:
+                    response = client.get(url)
+                    response.raise_for_status()
+                    return response
+                except httpx.HTTPStatusError as error:
+                    if error.response.status_code < 500 or attempt == attempts - 1:
+                        raise
+                except httpx.TimeoutException:
+                    if attempt == attempts - 1:
+                        raise
+                time.sleep(2**attempt)
         raise RuntimeError("unreachable")
 
     def _to_record(self, item: dict) -> AcademyRecord | None:

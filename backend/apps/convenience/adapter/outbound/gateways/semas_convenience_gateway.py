@@ -19,6 +19,7 @@ from apps.convenience.domain.entities.convenience_store_entity import (
     ConvenienceStore,
     extract_brand,
 )
+from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 
 _BASE_URL = "https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInDong"
@@ -72,19 +73,21 @@ class SemasConvenienceGateway(ConvenienceGatewayPort):
     def _get_with_retry(
         client: httpx.Client, url: str, params: dict, attempts: int = 3
     ) -> httpx.Response:
-        """타임아웃·5xx는 지수 백오프 재시도, 4xx는 즉시 전파 (MOIS 게이트웨이 전례)."""
-        for attempt in range(attempts):
-            try:
-                response = client.get(url, params=params)
-                response.raise_for_status()
-                return response
-            except httpx.HTTPStatusError as error:
-                if error.response.status_code < 500 or attempt == attempts - 1:
-                    raise
-            except httpx.TimeoutException:
-                if attempt == attempts - 1:
-                    raise
-            time.sleep(2**attempt)
+        """타임아웃·5xx는 지수 백오프 재시도, 4xx는 즉시 전파 (MOIS 게이트웨이 전례).
+        전파 오류는 serviceKey 가 빠진 메시지로 번역한다."""
+        with translate_http_errors():
+            for attempt in range(attempts):
+                try:
+                    response = client.get(url, params=params)
+                    response.raise_for_status()
+                    return response
+                except httpx.HTTPStatusError as error:
+                    if error.response.status_code < 500 or attempt == attempts - 1:
+                        raise
+                except httpx.TimeoutException:
+                    if attempt == attempts - 1:
+                        raise
+                time.sleep(2**attempt)
         raise RuntimeError("unreachable")
 
     @staticmethod

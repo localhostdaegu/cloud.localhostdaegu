@@ -8,6 +8,7 @@
 
 import httpx
 
+from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 from core.matrix.grid_region_config import KOSTAT_SIDO_PREFIX
 
@@ -30,44 +31,46 @@ class VworldBoundaryGateway:
 
     def fetch_admin_dongs(self) -> list[dict]:
         """지역 전체 행정동 경계 GeoJSON Feature 목록 (1회 호출, 문서상 1,000피처 한도 내)."""
-        response = httpx.get(
-            _WFS_URL,
-            params={
-                "SERVICE": "WFS",
-                "REQUEST": "GetFeature",
-                "VERSION": "1.1.0",
-                "TYPENAME": "lt_c_cademd",
-                "FILTER": _ADMIN_DONG_FILTER,
-                "SRSNAME": "EPSG:4326",
-                "OUTPUT": "application/json",
-                "MAXFEATURES": "1000",
-                "key": self._key,
-                "domain": self._domain,
-            },
-            timeout=_TIMEOUT,
-        )
-        response.raise_for_status()
+        with translate_http_errors():  # 오류 메시지 URL 에 key 노출 차단
+            response = httpx.get(
+                _WFS_URL,
+                params={
+                    "SERVICE": "WFS",
+                    "REQUEST": "GetFeature",
+                    "VERSION": "1.1.0",
+                    "TYPENAME": "lt_c_cademd",
+                    "FILTER": _ADMIN_DONG_FILTER,
+                    "SRSNAME": "EPSG:4326",
+                    "OUTPUT": "application/json",
+                    "MAXFEATURES": "1000",
+                    "key": self._key,
+                    "domain": self._domain,
+                },
+                timeout=_TIMEOUT,
+            )
+            response.raise_for_status()
         body = response.json()  # 인증 실패 시 XML → json 파싱 에러로 즉시 드러남
         return body["features"]
 
     def fetch_legal_dong(self, emd_cd: str) -> dict:
         """법정동 1건의 경계 GeoJSON Feature (emd_cd 8자리 정확 일치)."""
-        response = httpx.get(
-            _DATA_URL,
-            params={
-                "service": "data",
-                "request": "GetFeature",
-                "data": "LT_C_ADEMD_INFO",
-                "attrFilter": f"emd_cd:=:{emd_cd}",
-                "crs": "EPSG:4326",
-                "format": "json",
-                "size": "1",
-                "key": self._key,
-                "domain": self._domain,
-            },
-            timeout=_TIMEOUT,
-        )
-        response.raise_for_status()
+        with translate_http_errors():  # 오류 메시지 URL 에 key 노출 차단
+            response = httpx.get(
+                _DATA_URL,
+                params={
+                    "service": "data",
+                    "request": "GetFeature",
+                    "data": "LT_C_ADEMD_INFO",
+                    "attrFilter": f"emd_cd:=:{emd_cd}",
+                    "crs": "EPSG:4326",
+                    "format": "json",
+                    "size": "1",
+                    "key": self._key,
+                    "domain": self._domain,
+                },
+                timeout=_TIMEOUT,
+            )
+            response.raise_for_status()
         body = response.json()["response"]
         if body["status"] != "OK":
             raise RuntimeError(f"LT_C_ADEMD_INFO {emd_cd} 조회 실패: {body.get('error')}")

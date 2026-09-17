@@ -14,6 +14,7 @@ import httpx
 from apps.shock.app.ports.output.shock_event_port import ShockEventSourcePort
 from apps.shock.domain.entities.shock_event_entity import IndustryImpact, ShockEvent
 from apps.shock.domain.value_objects.shock_layer import Severity, ShockLayer
+from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 
 _ENDPOINT = "https://apis.data.go.kr/1352000/ODMS_COVID_12/callCovid12Api"
@@ -84,17 +85,18 @@ class CovidDistancingGateway(ShockEventSourcePort):
         self._region = region
 
     def fetch_events(self) -> list[ShockEvent]:
-        response = httpx.get(
-            _ENDPOINT,
-            params={
-                "serviceKey": get_settings().data_go_kr_api_key,
-                "pageNo": 1,
-                "numOfRows": _NUM_ROWS,
-                "apiType": "JSON",
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
+        with translate_http_errors():  # 오류 메시지 URL 에 serviceKey 노출 차단
+            response = httpx.get(
+                _ENDPOINT,
+                params={
+                    "serviceKey": get_settings().data_go_kr_api_key,
+                    "pageNo": 1,
+                    "numOfRows": _NUM_ROWS,
+                    "apiType": "JSON",
+                },
+                timeout=60,
+            )
+            response.raise_for_status()
         body = response.json()
         items = body.get("items", [])
         print(f"거리두기 API 호출 1건 — 일별 {len(items)}행 수신 (totalCount {body.get('totalCount')})")
