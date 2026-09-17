@@ -1,5 +1,7 @@
 """metric build 검증 — 연도별 지표 계산(폐업률·성장률·전년 0 가드)과 멱등성 (Fake 포트)."""
 
+from datetime import date
+
 from apps.metric.app.dtos.region_industry_metric_dto import YearlyStoreStat
 from apps.metric.app.ports.output.region_industry_metric_port import (
     IndustryCatalogPort,
@@ -40,7 +42,9 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
     ) -> RegionIndustryMetric | None:
         return self.rows.get((region_code, industry_id, year))
 
-    def latest_year(self, industry_id: str | None = None) -> int | None:
+    def latest_year(
+        self, industry_id: str | None = None, until_year: int | None = None
+    ) -> int | None:
         raise NotImplementedError
 
     def list_by_region_year(
@@ -48,7 +52,9 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
     ) -> list[RegionIndustryMetric]:
         raise NotImplementedError
 
-    def list_latest_by_region(self, region_code: str) -> list[RegionIndustryMetric]:
+    def list_latest_by_region(
+        self, region_code: str, until_year: int | None = None
+    ) -> list[RegionIndustryMetric]:
         raise NotImplementedError
 
 
@@ -60,6 +66,9 @@ class FakeStoreStats(StoreStatsPort):
     def yearly_stats(self, years: list[int]) -> list[YearlyStoreStat]:
         self.requested_years = years
         return [s for s in self._stats if s.year in years]
+
+    def latest_record_date(self) -> date | None:
+        raise NotImplementedError
 
 
 class FakeIndustryCatalog(IndustryCatalogPort):

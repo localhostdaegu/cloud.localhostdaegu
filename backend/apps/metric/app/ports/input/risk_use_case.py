@@ -12,7 +12,10 @@ from apps.metric.app.dtos.region_industry_metric_dto import RiskScoreDto
 class RiskUseCase(ABC):
     @abstractmethod
     def rank_by_region(self, industry_id: str, year: int | None) -> list[RiskScoreDto]:
-        """업종 고정 — 전 region 위험도 내림차순 랭킹. 데이터 없으면 빈 배열."""
+        """업종 고정 — 전 region 위험도 내림차순 랭킹. 데이터 없으면 빈 배열.
+
+        year 미지정(세 메서드 공통) 시 마지막 완결 연도 이하의 최신 연도 — 부분 연도 제외.
+        """
 
     @abstractmethod
     def score_for(

@@ -1,5 +1,7 @@
 """metric 조회 검증 — GET /metrics 값 추출·None 제외·404 에러 바디 (프론트엔드 계약)."""
 
+from datetime import date
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -26,6 +28,7 @@ from apps.metric.domain.entities.region_industry_metric_entity import (
     RegionIndustryMetric,
 )
 from apps.metric.domain.errors import IndustryNotFoundError, MetricNotFoundError
+from apps.metric.domain.reporting_year import last_complete_year
 from main import app
 
 
@@ -56,21 +59,37 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
             None,
         )
 
-    def latest_year(self, industry_id: str | None = None) -> int | None:
-        raise NotImplementedError
+    def latest_year(
+        self, industry_id: str | None = None, until_year: int | None = None
+    ) -> int | None:
+        years = [
+            m.year
+            for m in self._metrics
+            if (industry_id is None or m.industry_id == industry_id)
+            and (until_year is None or m.year <= until_year)
+        ]
+        return max(years) if years else None
 
     def list_by_region_year(
         self, region_code: str, year: int
     ) -> list[RegionIndustryMetric]:
         raise NotImplementedError
 
-    def list_latest_by_region(self, region_code: str) -> list[RegionIndustryMetric]:
+    def list_latest_by_region(
+        self, region_code: str, until_year: int | None = None
+    ) -> list[RegionIndustryMetric]:
         raise NotImplementedError
 
 
 class FakeStoreStats(StoreStatsPort):
+    def __init__(self, latest: date | None = None) -> None:
+        self._latest = latest
+
     def yearly_stats(self, years: list[int]) -> list[YearlyStoreStat]:
         return []
+
+    def latest_record_date(self) -> date | None:
+        return self._latest
 
 
 class FakeIndustryCatalog(IndustryCatalogPort):
@@ -78,11 +97,13 @@ class FakeIndustryCatalog(IndustryCatalogPort):
         return industry_id == "cafe"
 
 
-def _metric(region_code: str, closure_rate: float | None) -> RegionIndustryMetric:
+def _metric(
+    region_code: str, closure_rate: float | None, year: int = 2025
+) -> RegionIndustryMetric:
     return RegionIndustryMetric(
         region_code=region_code,
         industry_id="cafe",
-        year=2025,
+        year=year,
         store_count=10,
         open_count=1,
         close_count=1,
@@ -91,10 +112,12 @@ def _metric(region_code: str, closure_rate: float | None) -> RegionIndustryMetri
     )
 
 
-def _interactor(metrics: list[RegionIndustryMetric]) -> RegionIndustryMetricInteractor:
+def _interactor(
+    metrics: list[RegionIndustryMetric], latest: date | None = None
+) -> RegionIndustryMetricInteractor:
     return RegionIndustryMetricInteractor(
         repository=FakeRepository(metrics),
-        store_stats=FakeStoreStats(),
+        store_stats=FakeStoreStats(latest),
         industry_catalog=FakeIndustryCatalog(),
     )
 
@@ -121,6 +144,30 @@ def test_find_returns_dto_or_none():
     assert isinstance(dto, RegionIndustryMetricDto)
     assert dto.closure_rate == 0.1
     assert interactor.find("1111051500", "cafe", 2025) is None
+
+
+def test_last_complete_year_excludes_year_of_latest_record():
+    assert last_complete_year(date(2026, 9, 14)) == 2025
+    assert last_complete_year(date(2026, 1, 1)) == 2025
+
+
+def test_find_without_year_uses_last_complete_year():
+    """사이드패널 카드 — 부분 연도(2026) 대신 원천 최신 기록일 기준 마지막 완결 연도(2025)."""
+    interactor = _interactor(
+        [_metric("2711059500", 0.1, year=2025), _metric("2711059500", 0.9, year=2026)],
+        latest=date(2026, 9, 14),
+    )
+    assert interactor.find("2711059500", "cafe", None).year == 2025
+    assert interactor.find("2711059500", "cafe", 2026).year == 2026  # 명시 연도는 그대로
+
+
+def test_find_without_year_none_when_no_metrics():
+    assert _interactor([], latest=date(2026, 9, 14)).find("2711059500", "cafe", None) is None
+
+
+def test_data_years_runs_through_latest_record_year():
+    assert _interactor([], latest=date(2026, 9, 14)).data_years(2019) == list(range(2019, 2027))
+    assert _interactor([], latest=None).data_years(2019) == []
 
 
 def _client(metrics: list[RegionIndustryMetric]) -> TestClient:
