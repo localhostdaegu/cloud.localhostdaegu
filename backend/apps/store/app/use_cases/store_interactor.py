@@ -31,13 +31,13 @@ class StoreInteractor(StoreUseCase):
             store_id="myself",
             name="store BC 배선 검증",
             industry_id="cafe",
-            district_code="11110",
+            district_code="27110",
             open_date=date(2026, 8, 25),
             close_date=None,
             status_code="01",
             status_name="영업",
-            lat=37.5,
-            lng=127.0,
+            lat=35.87,
+            lng=128.6,
             source_updated_at=datetime(2026, 8, 25),
         )
 

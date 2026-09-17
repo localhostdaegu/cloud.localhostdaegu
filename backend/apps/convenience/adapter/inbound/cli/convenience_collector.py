@@ -3,8 +3,8 @@
 - 원천: 소진공 상가정보 sdsc2 storeListInDong(indsSclsCd=G20405) — 현행 스냅샷 전량,
   매 실행 멱등 재수집. 개폐업 시계열 불가(api.md §2-3)이므로 소실은 last_seen_on
   정지로만 남는다 (판정 없음 — tobacco_retailer가 개폐업 이력 담당)
-- 수집 단위 = 행정동(region) 427회/스냅샷 (일 한도 10,000회의 4.3%) — 순차 호출
-- 실행: python -m apps.convenience.adapter.inbound.cli.convenience_collector [--region 역삼1동]
+- 수집 단위 = 행정동(region) 144회/스냅샷 (일 한도 10,000회의 1.4%) — 순차 호출
+- 실행: python -m apps.convenience.adapter.inbound.cli.convenience_collector [--region 동인동]
 """
 
 import argparse
@@ -39,7 +39,7 @@ def _target_regions(region_name: str | None) -> list[tuple[str, str]]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--region", help="행정동명 (예: 역삼1동) — 생략 시 427개 전체")
+    parser.add_argument("--region", help="행정동명 (예: 동인동) — 생략 시 144개 전체")
     args = parser.parse_args()
 
     observed_on = date.today()

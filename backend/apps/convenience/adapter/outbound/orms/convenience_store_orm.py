@@ -11,7 +11,7 @@ from core.matrix.grid_oracle_database_manager import OrmBase
 class ConvenienceStoreOrm(OrmBase):
     """편의점 현행 스냅샷 — ERD 15테이블 밖 보조 테이블 (erd.md §2 편의점 축 2단계).
 
-    원천: 소진공 상가정보 sdsc2 storeListInDong × 행정동 427 (indsSclsCd=G20405).
+    원천: 소진공 상가정보 sdsc2 storeListInDong × 행정동 144 (indsSclsCd=G20405).
     store에 넣지 않는 근거: 상가정보는 개폐업 시계열 불가(api.md §2-3) — store에 섞으면
     region_industry_metric 개폐업 지표가 오염된다. 개폐업 이력은 tobacco_retailer 담당.
     §13 연결 원칙: region FK 필수(요청 행정동 — adongCd 프리픽스 유일 실측)로 허브 연결.

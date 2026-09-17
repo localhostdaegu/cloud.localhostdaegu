@@ -2,10 +2,10 @@
 
 - 엔드포인트: apis.data.go.kr/B553077/api/open/sdsc2/storeListInDong (2026-09-07 실호출 검증)
 - 필터: indsSclsCd=G20405(체인화 편의점) 고정, divId=adongCd
-- adongCd 8자리 = region_code 앞 8자리 (427개 행정동 프리픽스 유일 — DB 실측),
+- adongCd 8자리 = region_code 앞 8자리 (대구 144개 행정동 프리픽스 유일 — 2026-09-18 DB 실측),
   응답 좌표는 WGS84 원값(변환 불요, 역삼1동 149건 채움 100%)
 - numOfRows=1000 실호출 검증 (역삼1동 149건 1페이지 수신) — 페이징은 방어적으로 유지
-- 인증: DATA_GO_KR_API_KEY (일 10,000회 한도 — 서울 전량 427회/스냅샷 = 4.3%)
+- 인증: DATA_GO_KR_API_KEY (일 10,000회 한도 — 대구 전량 144회/스냅샷 = 1.4%)
 """
 
 import time

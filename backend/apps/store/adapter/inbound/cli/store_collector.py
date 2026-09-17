@@ -2,7 +2,7 @@
 
 - 수집 단위 = 업종(industry_source_code의 mois_permit 매핑) × 자치구(district.opn_authority_code)
 - 증분: DB의 (업종×자치구) 최근 갱신시점 커서 — 첫 실행은 전체 초기적재
-- 실행: python -m apps.store.adapter.inbound.cli.store_collector [--district 강남구] [--industry karaoke]
+- 실행: python -m apps.store.adapter.inbound.cli.store_collector [--district 중구] [--industry karaoke]
 """
 
 import argparse
@@ -50,7 +50,7 @@ def _build_targets(district_name: str | None, industry_id: str | None) -> list[I
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--district", help="자치구명 (예: 강남구) — 생략 시 25개 전체")
+    parser.add_argument("--district", help="구·군명 (예: 중구) — 생략 시 8개 전체")
     parser.add_argument("--industry", help="industry_id (예: karaoke) — 생략 시 인허가 6종 전체")
     parser.add_argument("--full", action="store_true", help="증분 커서 무시, 전체 재수집 (부분 적재 복구용)")
     args = parser.parse_args()

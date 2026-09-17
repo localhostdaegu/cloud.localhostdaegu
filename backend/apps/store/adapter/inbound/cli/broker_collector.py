@@ -3,7 +3,7 @@
 - 원천: 브이월드 NED getEBOfficeInfo (data.go.kr 15123990 LINK 실체) — 현행 스냅샷 전량,
   매 실행 멱등 재수집. 원천이 폐업분을 제공하지 않아 폐업은 스냅샷 소실 기반 추정
 - 수집 단위 = industry_source_code의 스냅샷 원천(source_system) × 자치구(district_code=ldCode)
-- 실행: python -m apps.store.adapter.inbound.cli.broker_collector [--district 강남구]
+- 실행: python -m apps.store.adapter.inbound.cli.broker_collector [--district 중구]
 """
 
 import argparse
@@ -53,7 +53,7 @@ def _build_targets(district_name: str | None) -> list[tuple[str, str, str]]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--district", help="자치구명 (예: 강남구) — 생략 시 25개 전체")
+    parser.add_argument("--district", help="구·군명 (예: 중구) — 생략 시 8개 전체")
     args = parser.parse_args()
 
     observed_on = date.today()

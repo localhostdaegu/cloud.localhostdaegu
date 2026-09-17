@@ -22,7 +22,7 @@ from apps.store.adapter.outbound.orms.store_orm import StoreOrm
 from core.matrix.grid_oracle_database_manager import session_scope
 
 _REPO_ROOT = Path(__file__).resolve().parents[6]
-# 경계 틈·좌표 변환 오차 흡수 스냅 한계 — 서울 위도에서 0.0005° ≈ 44~56m
+# 경계 틈·좌표 변환 오차 흡수 스냅 한계 — 대구 위도(35.9°)에서 0.0005° ≈ 45~56m
 # (EPSG:5174→WGS84 변환 오차 ±3m 실측 + 인접 폴리곤 사이 미세 틈 대비)
 _NEAREST_TOLERANCE_DEG = 0.0005
 _UPDATE_CHUNK = 10_000
