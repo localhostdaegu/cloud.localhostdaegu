@@ -67,13 +67,21 @@ def parse_rates(body: dict, series: EcosSeries = BASE_SERIES) -> list[InterestRa
 
 def _fetch_series(client: httpx.Client, series: EcosSeries) -> list[InterestRate]:
     end_period = f"{date.today():%Y%m}"
-    url = (
-        f"https://ecos.bok.or.kr/api/StatisticSearch/{get_settings().ecos_api_key}"
+    # 인증키가 URL 경로 세그먼트에 들어간다 — 오류 메시지에는 키를 가린 경로만 남긴다
+    path = (
         f"/json/kr/1/{_MAX_ROWS}/{series.stat_code}/M/{_START_PERIOD}/{end_period}"
         f"/{series.item_code}"
     )
-    response = client.get(url)
-    response.raise_for_status()
+    response = client.get(
+        f"https://ecos.bok.or.kr/api/StatisticSearch/{get_settings().ecos_api_key}{path}"
+    )
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError:
+        # from None — 키가 담긴 원 예외(URL 포함)를 체인으로 남기지 않는다
+        raise RuntimeError(
+            f"ECOS HTTP {response.status_code}: StatisticSearch/***{path}"
+        ) from None
     return parse_rates(response.json(), series)
 
 
