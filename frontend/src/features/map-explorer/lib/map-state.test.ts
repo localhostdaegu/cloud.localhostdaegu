@@ -5,11 +5,11 @@ it("YEARS는 2019~2026 8개년을 제공한다 (백엔드 지표 범위와 일�
   expect(YEARS).toEqual([2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]);
 });
 
-it("기본값: 파라미터 없으면 industry=null(미지정)/closure_rate/2026/null", () => {
+it("기본값: 파라미터 없으면 industry=null(미지정)/closure_rate/2025(마지막 완결 연도)/null", () => {
   expect(parseMapState(new URLSearchParams())).toEqual({
     industry: null,
     metric: "closure_rate",
-    year: 2026,
+    year: 2025,
     region: null,
     district: null,
     budget: null,

@@ -5,6 +5,10 @@ export const METRICS = ["closure_rate", "growth_rate", "store_count"] as const;
 
 export const YEARS = Array.from({ length: 8 }, (_, i) => 2019 + i);
 
+/** YEARS의 최신 연도는 집계 중인 부분 연도 — 백엔드 기본값(마지막 완결 연도, backend/apps/metric/domain/reporting_year.py
+ *  last_complete_year)과 맞추기 위해 그 직전 연도를 기본값으로 쓴다. */
+export const DEFAULT_YEAR = YEARS[YEARS.length - 2];
+
 /** 화면 표기용 한국어 라벨. URL 파라미터·API 값은 영문 id를 그대로 쓴다. */
 export const METRIC_LABELS: Record<(typeof METRICS)[number], string> = {
   closure_rate: "폐업률",
@@ -31,7 +35,7 @@ export const DEFAULT_INDUSTRY = "cafe";
 export const DEFAULT_STATE: MapState = {
   industry: null,
   metric: "closure_rate",
-  year: 2026,
+  year: DEFAULT_YEAR,
   region: null,
   district: null,
   budget: null,

@@ -70,7 +70,7 @@ export function ControlBar({ state, onChange }: ControlBarProps) {
         >
           {YEARS.map((year) => (
             <option key={year} value={year}>
-              {year}
+              {year === YEARS[YEARS.length - 1] ? `${year} (집계 중)` : year}
             </option>
           ))}
         </select>
