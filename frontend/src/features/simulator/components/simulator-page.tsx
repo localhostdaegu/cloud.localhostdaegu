@@ -5,6 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { industryLabel } from "@/shared/industries";
 import { encodeFinanceParam } from "@/shared/finance-param";
 import { buildDefaults } from "../lib/form-defaults";
+import { useLatestLoanRate } from "../hooks/use-latest-loan-rate";
 import { simulateFinance } from "../api";
 import { SimulatorForm } from "./simulator-form";
 import { ResultView } from "./result-view";
@@ -15,7 +16,8 @@ export function SimulatorPage() {
   const industry = searchParams.get("industry");
   const district = searchParams.get("district");
   const region = searchParams.get("region");
-  const defaults = buildDefaults({ budget: searchParams.get("budget"), industry });
+  const loanRate = useLatestLoanRate();
+  const defaults = buildDefaults({ budget: searchParams.get("budget"), industry, loanRate });
 
   const mutation = useMutation({ mutationFn: simulateFinance });
 

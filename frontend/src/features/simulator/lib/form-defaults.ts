@@ -12,14 +12,16 @@ const COST_RATIO_BY_INDUSTRY: Record<string, number> = {
 };
 const DEFAULT_COST_RATIO = 0.4;
 const FEE_RATIO = 0.03;
-const LOAN_RATE = 0.045;
+const LOAN_RATE = 0.045; // 최신 금리 조회 전(로딩)·실패 시 폴백
 
 export interface BuildDefaultsParams {
   budget?: string | null;
   industry?: string | null;
+  /** ECOS 최신 중소기업대출 금리(비율). 없으면 LOAN_RATE. */
+  loanRate?: number | null;
 }
 
-/** URL 파라미터(budget·industry) → FinanceInput 초기값. 자기자본=budget, 원가율은 업종 벤치마크, 나머지 0. */
+/** URL 파라미터(budget·industry)·최신 금리 → FinanceInput 초기값. 자기자본=budget, 원가율은 업종 벤치마크, 나머지 0. */
 export function buildDefaults(params: BuildDefaultsParams): FinanceInput {
   const budget = params.budget ? Number(params.budget) : NaN;
   const equity = Number.isFinite(budget) ? budget : 0;
@@ -39,7 +41,7 @@ export function buildDefaults(params: BuildDefaultsParams): FinanceInput {
     fee_ratio: FEE_RATIO,
     equity,
     desired_loan: 0,
-    loan_rate: LOAN_RATE,
+    loan_rate: params.loanRate ?? LOAN_RATE,
     expected_monthly_revenue: 0,
   };
 }
