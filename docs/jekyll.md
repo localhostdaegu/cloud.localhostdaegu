@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-09-17
+
+### 백엔드 — 적재 점검·온통청년 수집 안정화·RAG 색인 완료
+
+- 적재 현황(11:48 실측): store 161,115 · population_stat 48,174 · region_industry_metric 7,856 · news_article 1,915 · funding_program 1,641 · rent_price 786 · interest_rate 365 · shock_event 23. 빈 테이블: shock_event_region·academy_course·tobacco_retailer·convenience_store. 크론 4종(news 매시·store 04:20·funding 05:10·interest 월 05:20) 정상 가동, `rag-indexer.sh`는 crontab 미등록.
+- **05:10 funding 수집 실패 원인**: 온통청년이 유효 키로도 `400`(27140)을 반환 → 재시도 없어 온통청년 수집 중단 + 이어지는 만료 갱신까지 생략. 재현 시 24회 연속 200, 직전 한 순회에선 27230이 `500` — 원천 간헐 오류(전날 403 포함). `_get_with_retry`(4xx 포함 지수 백오프 4회) 추가.
+- **크론 로그 `exit 0` 결함**: `|| echo "[$(date)] … (exit $?)"`에서 `$(date)` 명령 치환이 `$?`를 0으로 덮음 → 스크립트 5종 모두 `|| { rc=$?; …; }`로 수정(모의 실패 exit 3 기록 확인).
+- **온통청년 조회 8회 → 1회**: 실측 — `zipCd` 서버 필터는 동작(대구 63·서울 67·무필터 340), 대구 63건은 전국 60 + 대구 전역 3(구 전용 0). 전국엔 단일 구·군 전용 창업 정책 105건이라 대표 구 1회 조회는 누락 위험. `pageSize=500` 허용 → **전국 1회 조회 후 항목 `zipCd` ∩ 대구 구·군(군위 27720 포함) 필터**, 서버 필터 63건과 일치. 전역 `DISTRICTS`는 군위 제외 유지(설정 테스트가 명시). 실수집 63건, 테스트 210 통과.
+- **RAG 색인 완료**: Gemini 임베딩 유료 키로 교체(사용자) → 증분 1회로 news 잔여 1,595건 69.3초 처리. rag_chunk funding 1,641 · news 1,915(= news_article 전량).
+- Neo4j 컨테이너 기동(7476 HTTP 200, cypher-shell 응답). 노드 0 — 백엔드 코드에 Neo4j 사용처 없음.
+- 미결: `rag-indexer.sh`는 무료 등급 전제(16:10·정체 감지) — 유료 키 기준 스케줄로 crontab 등록 필요 / funding 수집 재실행마다 "신규 만료 22건"이 반복 집계됨(멱등성 확인 필요).
+
 ## 2026-09-16
 
 ### 백엔드 — 키 투입·수집 1차 가동 (인허가는 활용신청 대기)
