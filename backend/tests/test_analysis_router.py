@@ -85,3 +85,8 @@ def test_events_404_for_unknown_or_consumed_id():
 
 def test_post_rejects_missing_industry():
     assert _client().post("/analysis", json={"region": "2711059500"}).status_code == 422
+
+
+def test_post_rejects_overlong_question():
+    body = {"region": "2711059500", "industry": "cafe", "question": "가" * 501}
+    assert _client().post("/analysis", json=body).status_code == 422
