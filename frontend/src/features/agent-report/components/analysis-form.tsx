@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { industryLabel } from "@/shared/industries";
+import type { FinanceInput } from "@/shared/api/types";
 import type { StartAnalysisParams } from "../hooks/use-agent-report";
 
 interface AnalysisFormProps {
   initialRegion: string;
   initialIndustry: string;
+  finance?: FinanceInput;
   onSubmit: (params: StartAnalysisParams) => void;
   disabled?: boolean;
 }
@@ -14,7 +16,7 @@ interface AnalysisFormProps {
 const FIELD =
   "rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]";
 
-export function AnalysisForm({ initialRegion, initialIndustry, onSubmit, disabled }: AnalysisFormProps) {
+export function AnalysisForm({ initialRegion, initialIndustry, finance, onSubmit, disabled }: AnalysisFormProps) {
   const [region, setRegion] = useState(initialRegion);
   const [industry, setIndustry] = useState(initialIndustry);
   const [question, setQuestion] = useState("");
@@ -24,7 +26,7 @@ export function AnalysisForm({ initialRegion, initialIndustry, onSubmit, disable
       className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit({ region, industry, question: question.trim() || undefined });
+        onSubmit({ region, industry, question: question.trim() || undefined, ...(finance ? { finance } : {}) });
       }}
     >
       <div className="grid gap-4 sm:grid-cols-2">
@@ -45,6 +47,11 @@ export function AnalysisForm({ initialRegion, initialIndustry, onSubmit, disable
           </span>
         </label>
       </div>
+      {finance && (
+        <p className="rounded-md border border-[var(--border)] bg-[var(--bg-raised)] px-3 py-2 text-xs text-[var(--text-secondary)]">
+          시뮬레이션 입력이 함께 전달돼요 — 리포트에 재무 시뮬레이션 계산표가 추가됩니다.
+        </p>
+      )}
       <label className="flex flex-col gap-1.5 text-xs font-medium tracking-wide text-[var(--text-secondary)]">
         추가 질문 (선택)
         <textarea

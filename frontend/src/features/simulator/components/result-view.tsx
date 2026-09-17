@@ -11,6 +11,8 @@ interface ResultViewProps {
   category?: string;
   /** 루프백(⑤) — "조건 바꿔보기" 링크. 시뮬레이터 폼으로 복귀. */
   backHref?: string;
+  /** AI 리포트 CTA — 시뮬레이션 입력을 실어 /analysis로 이동. 없으면 링크를 그리지 않는다. */
+  analysisHref?: string;
 }
 
 const SUMMARY_ITEMS: { key: "capex" | "monthly_fixed" | "bep_revenue"; label: string }[] = [
@@ -21,7 +23,7 @@ const SUMMARY_ITEMS: { key: "capex" | "monthly_fixed" | "bep_revenue"; label: st
 
 /** 결론 화면(기획서 §4 ④) — 요약 스트립 → 3시나리오 카드 → Funding Gap 헤드라인 → 매칭 상품 → 루프백 링크.
  *  MatchingCards는 react-query를 쓰므로, 페이지 전역 Provider 없이도 단독 렌더될 수 있도록 자체 QueryClient를 둔다. */
-export function ResultView({ result, category, backHref = "/simulate" }: ResultViewProps) {
+export function ResultView({ result, category, backHref = "/simulate", analysisHref }: ResultViewProps) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
 
   return (
@@ -77,9 +79,16 @@ export function ResultView({ result, category, backHref = "/simulate" }: ResultV
         )}
       </div>
 
-      <a href={backHref} className="self-start text-sm text-[var(--accent)] underline underline-offset-4">
-        조건 바꿔보기 →
-      </a>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <a href={backHref} className="text-sm text-[var(--accent)] underline underline-offset-4">
+          조건 바꿔보기 →
+        </a>
+        {analysisHref && (
+          <a href={analysisHref} className="text-sm font-semibold text-[var(--accent)] underline underline-offset-4">
+            AI 리포트로 자세히 보기 →
+          </a>
+        )}
+      </div>
     </div>
   );
 }

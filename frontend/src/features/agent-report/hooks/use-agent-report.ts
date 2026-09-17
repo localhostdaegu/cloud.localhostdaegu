@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiPost } from "@/shared/api/client";
 import { config } from "@/shared/config";
-import type { AgentEvent } from "@/shared/api/types";
+import type { AgentEvent, FinanceInput } from "@/shared/api/types";
 import { applyAgentEvent, initialAgentState, type AgentState } from "../lib/agent-events";
 
 export interface StartAnalysisParams {
   region: string;
   industry: string;
   question?: string;
+  /** 시뮬레이터에서 넘어온 재무 입력 — 있으면 백엔드가 재무 시뮬레이션(calculator) 섹션을 추가한다. */
+  finance?: FinanceInput;
 }
 
 const EVENT_TYPES: AgentEvent["type"][] = ["agent_status", "tool_call", "report_delta", "report_done"];

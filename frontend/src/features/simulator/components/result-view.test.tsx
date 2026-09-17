@@ -29,3 +29,13 @@ test("funding_gap이 0이면 자기자본 문구만 보여주고 매칭 섹션�
   expect(screen.queryByText(/이렇게 메울 수 있어요/)).not.toBeInTheDocument();
   expect(screen.queryByText(/상품을 찾는 중/)).not.toBeInTheDocument();
 });
+
+test("analysisHref가 있을 때만 AI 리포트 CTA 링크를 렌더한다", () => {
+  const href = "/analysis?region=2711059500&industry=cafe&finance=%7B%7D";
+  const { unmount } = render(<ResultView result={{ ...RESULT, funding_gap: 0 }} analysisHref={href} />);
+  expect(screen.getByRole("link", { name: /AI 리포트로 자세히 보기/ })).toHaveAttribute("href", href);
+  unmount();
+
+  render(<ResultView result={{ ...RESULT, funding_gap: 0 }} />);
+  expect(screen.queryByRole("link", { name: /AI 리포트로 자세히 보기/ })).not.toBeInTheDocument();
+});

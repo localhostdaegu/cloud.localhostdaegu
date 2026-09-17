@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { industryLabel } from "@/shared/industries";
+import { encodeFinanceParam } from "@/shared/finance-param";
 import { buildDefaults } from "../lib/form-defaults";
 import { simulateFinance } from "../api";
 import { SimulatorForm } from "./simulator-form";
@@ -13,9 +14,16 @@ export function SimulatorPage() {
   const searchParams = useSearchParams();
   const industry = searchParams.get("industry");
   const district = searchParams.get("district");
+  const region = searchParams.get("region");
   const defaults = buildDefaults({ budget: searchParams.get("budget"), industry });
 
   const mutation = useMutation({ mutationFn: simulateFinance });
+
+  // 결론을 만든 마지막 제출값(mutation.variables)을 그대로 리포트에 넘긴다 — 폼을 고친 뒤 미제출 값은 싣지 않는다.
+  const analysisHref =
+    mutation.variables && region && industry
+      ? `/analysis?${new URLSearchParams({ region, industry, finance: encodeFinanceParam(mutation.variables) }).toString()}`
+      : undefined;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-8">
@@ -44,6 +52,7 @@ export function SimulatorPage() {
           result={mutation.data}
           category={industry ?? undefined}
           backHref={`/simulate?${searchParams.toString()}`}
+          analysisHref={analysisHref}
         />
       )}
     </div>

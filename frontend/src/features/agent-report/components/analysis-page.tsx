@@ -1,6 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
+import { parseFinanceParam } from "@/shared/finance-param";
 import { AnalysisForm } from "./analysis-form";
 import { ProgressPanel } from "./progress-panel";
 import { ReportView } from "./report-view";
@@ -10,6 +11,7 @@ import { useAgentReport } from "../hooks/use-agent-report";
 export function AnalysisPage() {
   const searchParams = useSearchParams();
   const { state, start, loading } = useAgentReport();
+  const finance = parseFinanceParam(searchParams.get("finance"));
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8">
@@ -17,6 +19,7 @@ export function AnalysisPage() {
         <AnalysisForm
           initialRegion={searchParams.get("region") ?? ""}
           initialIndustry={searchParams.get("industry") ?? ""}
+          finance={finance}
           onSubmit={start}
           disabled={loading}
         />
