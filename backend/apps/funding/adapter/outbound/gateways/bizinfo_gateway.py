@@ -12,6 +12,7 @@ import httpx
 
 from apps.funding.app.ports.output.funding_program_port import FundingSearchGatewayPort
 from apps.funding.domain.entities.funding_program_entity import FundingProgram
+from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 
 _ENDPOINT = "https://www.bizinfo.go.kr/uss/rss/bizinfoApi.do"
@@ -89,16 +90,17 @@ def to_entity(item: dict) -> FundingProgram | None:
 
 class BizinfoGateway(FundingSearchGatewayPort):
     def fetch_all(self) -> list[FundingProgram]:
-        response = httpx.get(
-            _ENDPOINT,
-            params={
-                "crtfcKey": get_settings().bizinfo_api_key,
-                "dataType": "json",
-                "searchCnt": _SEARCH_CNT,
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
+        with translate_http_errors():  # 오류 메시지 URL 에 crtfcKey 노출 차단
+            response = httpx.get(
+                _ENDPOINT,
+                params={
+                    "crtfcKey": get_settings().bizinfo_api_key,
+                    "dataType": "json",
+                    "searchCnt": _SEARCH_CNT,
+                },
+                timeout=60,
+            )
+            response.raise_for_status()
         programs = []
         for item in response.json().get("jsonArray", []):
             entity = to_entity(item)

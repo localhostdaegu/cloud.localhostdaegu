@@ -17,6 +17,7 @@ import httpx
 from apps.funding.adapter.outbound.gateways.bizinfo_gateway import parse_period
 from apps.funding.app.ports.output.funding_program_port import FundingSearchGatewayPort
 from apps.funding.domain.entities.funding_program_entity import FundingProgram
+from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 from core.matrix.grid_region_config import DISTRICTS
 
@@ -102,17 +103,19 @@ def to_entity(item: dict) -> FundingProgram | None:
 class YouthcenterGateway(FundingSearchGatewayPort):
     @staticmethod
     def _get_with_retry(params: dict) -> httpx.Response:
-        """타임아웃·HTTP 오류는 지수 백오프 재시도. MOIS·MOLIT 전례와 달리 4xx 도 재시도 —
-        유효 키로도 400·403·500 이 간헐 반환되고 재호출하면 200 (2026-09-17 실측)."""
-        for attempt in range(_ATTEMPTS):
-            try:
-                response = httpx.get(_ENDPOINT, params=params, timeout=60)
-                response.raise_for_status()
-                return response
-            except (httpx.HTTPStatusError, httpx.TimeoutException):
-                if attempt == _ATTEMPTS - 1:
-                    raise
-            time.sleep(2**attempt)
+        """타임아웃·연결/읽기 오류·HTTP 오류는 지수 백오프 재시도. MOIS·MOLIT 전례와 달리 4xx 도 재시도 —
+        유효 키로도 400·403·500 이 간헐 반환되고 재호출하면 200 (2026-09-17 실측).
+        최종 실패는 apiKeyNm 이 빠진 오류로 번역해 올린다."""
+        with translate_http_errors():
+            for attempt in range(_ATTEMPTS):
+                try:
+                    response = httpx.get(_ENDPOINT, params=params, timeout=60)
+                    response.raise_for_status()
+                    return response
+                except (httpx.HTTPStatusError, httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
+                    if attempt == _ATTEMPTS - 1:
+                        raise
+                time.sleep(2**attempt)
         raise RuntimeError("unreachable")
 
     def _fetch_nationwide(self) -> list[dict]:

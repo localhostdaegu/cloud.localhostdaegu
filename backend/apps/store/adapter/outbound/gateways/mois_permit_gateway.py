@@ -16,6 +16,7 @@ from pyproj import Transformer
 from apps.store.app.dtos.store_dto import IngestTarget
 from apps.store.app.ports.output.store_port import StorePermitGatewayPort
 from apps.store.domain.entities.store_entity import Store
+from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 from core.matrix.grid_region_config import LAT_RANGE as _LAT_RANGE
 from core.matrix.grid_region_config import LNG_RANGE as _LNG_RANGE
@@ -94,19 +95,21 @@ class MoisPermitGateway(StorePermitGatewayPort):
     def _get_with_retry(
         client: httpx.Client, url: str, params: dict, attempts: int = 3
     ) -> httpx.Response:
-        """타임아웃·5xx는 지수 백오프 재시도, 4xx는 즉시 전파."""
-        for attempt in range(attempts):
-            try:
-                response = client.get(url, params=params)
-                response.raise_for_status()
-                return response
-            except httpx.HTTPStatusError as error:
-                if error.response.status_code < 500 or attempt == attempts - 1:
-                    raise
-            except httpx.TimeoutException:
-                if attempt == attempts - 1:
-                    raise
-            time.sleep(2**attempt)
+        """타임아웃·연결/읽기 오류·5xx는 지수 백오프 재시도, 4xx는 즉시 전파.
+        전파 오류는 serviceKey 가 빠진 메시지로 번역한다."""
+        with translate_http_errors():
+            for attempt in range(attempts):
+                try:
+                    response = client.get(url, params=params)
+                    response.raise_for_status()
+                    return response
+                except httpx.HTTPStatusError as error:
+                    if error.response.status_code < 500 or attempt == attempts - 1:
+                        raise
+                except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
+                    if attempt == attempts - 1:
+                        raise
+                time.sleep(2**attempt)
         raise RuntimeError("unreachable")
 
     @staticmethod

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 import httpx
 
 from apps.rent.domain.entities.rent_price_entity import RentObservation
+from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 from core.matrix.grid_region_config import REGION_NAME
 
@@ -126,18 +127,19 @@ class RoneRentGateway:
                 page = 1
                 table_observations: list[RentObservation] = []
                 while True:
-                    response = client.get(
-                        _BASE_URL,
-                        params={
-                            "KEY": key,
-                            "Type": "json",
-                            "pIndex": page,
-                            "pSize": _PAGE_SIZE,
-                            "STATBL_ID": table.statbl_id,
-                            "DTACYCLE_CD": "QY",
-                        },
-                    )
-                    response.raise_for_status()
+                    with translate_http_errors():  # 오류 메시지 URL 에 KEY 노출 차단
+                        response = client.get(
+                            _BASE_URL,
+                            params={
+                                "KEY": key,
+                                "Type": "json",
+                                "pIndex": page,
+                                "pSize": _PAGE_SIZE,
+                                "STATBL_ID": table.statbl_id,
+                                "DTACYCLE_CD": "QY",
+                            },
+                        )
+                        response.raise_for_status()
                     calls += 1
                     total, rows = parse_page(response.json())
                     fetched += len(rows)
