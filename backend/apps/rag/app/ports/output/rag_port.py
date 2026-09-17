@@ -45,14 +45,18 @@ class RagRepositoryPort(ABC):
 
     @abstractmethod
     def existing_ids(self, source_type: str) -> set[str]:
-        """해당 source_type의 기존 청크 ID 집합 조회."""
+        """해당 source_type에서 임베딩까지 끝난 청크 ID 집합 조회 (embedding NULL 행 제외)."""
 
     @abstractmethod
     def search(
         self,
         embedding: list[float],
+        embedded_by: str,
         top_k: int,
         source_type: str | None = None,
         exclude_expired_funding: bool = True,
     ) -> list[RagHit]:
-        """벡터 유사도 검색 — 상위 K개 결과 반환 (Task 5에서 구현)."""
+        """벡터 유사도 검색 — embedded_by 모델이 색인한 청크 중 상위 K개 반환.
+
+        서로 다른 임베딩 모델의 벡터 공간은 비교할 수 없으므로 쿼리 임베더의 모델명으로 반드시 거른다.
+        """

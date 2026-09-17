@@ -16,9 +16,16 @@ _FUNDING_PREFIX = "test-rag-repo-"
 # 결정적 축 벡터 — e0·e1은 직교(orthogonal), 코사인 거리 1(score 0.0); 자기 자신은 거리 0(score 1.0)
 _E0 = [1.0] + [0.0] * 1535
 _E1 = [0.0, 1.0] + [0.0] * 1534
+_MODEL = "test-embedder-a"
 
 
-def _chunk(chunk_id: str, source_type: str, source_id: str, embedding: list[float]) -> RagChunk:
+def _chunk(
+    chunk_id: str,
+    source_type: str,
+    source_id: str,
+    embedding: list[float] | None,
+    embedded_by: str | None = _MODEL,
+) -> RagChunk:
     return RagChunk(
         chunk_id=f"{_PREFIX}{chunk_id}",
         source_type=source_type,
@@ -28,6 +35,7 @@ def _chunk(chunk_id: str, source_type: str, source_id: str, embedding: list[floa
         org=None,
         url=None,
         embedding=embedding,
+        embedded_by=embedded_by,
     )
 
 
@@ -52,7 +60,7 @@ def test_search_orders_by_cosine_similarity_and_scores_self_match_near_one():
             ]
         )
 
-        hits = repo.search(embedding=_E0, top_k=2, source_type="test_axis")
+        hits = repo.search(embedding=_E0, embedded_by=_MODEL, top_k=2, source_type="test_axis")
         ours = [h for h in hits if h.chunk_id.startswith(_PREFIX)]
 
         assert ours[0].chunk_id == f"{_PREFIX}e0"
@@ -71,7 +79,7 @@ def test_search_default_filter_does_not_drop_non_funding_chunks():
     try:
         repo.upsert_chunks([_chunk("news1", "news", "n1", _E0)])
 
-        hits = repo.search(embedding=_E0, top_k=5, exclude_expired_funding=True)
+        hits = repo.search(embedding=_E0, embedded_by=_MODEL, top_k=5, exclude_expired_funding=True)
         ids = {h.chunk_id for h in hits}
 
         assert f"{_PREFIX}news1" in ids
@@ -90,7 +98,7 @@ def test_search_source_type_filter():
             ]
         )
 
-        hits = repo.search(embedding=_E0, top_k=10, source_type="academy")
+        hits = repo.search(embedding=_E0, embedded_by=_MODEL, top_k=10, source_type="academy")
         ids = {h.chunk_id for h in hits}
 
         assert f"{_PREFIX}academy1" in ids
@@ -119,8 +127,8 @@ def test_search_excludes_expired_funding_chunk_by_default():
             [_chunk("funding-expired", "funding", f"{_FUNDING_PREFIX}expired1", _E0)]
         )
 
-        excluded = repo.search(embedding=_E0, top_k=10, exclude_expired_funding=True)
-        included = repo.search(embedding=_E0, top_k=10, exclude_expired_funding=False)
+        excluded = repo.search(embedding=_E0, embedded_by=_MODEL, top_k=10, exclude_expired_funding=True)
+        included = repo.search(embedding=_E0, embedded_by=_MODEL, top_k=10, exclude_expired_funding=False)
 
         assert f"{_PREFIX}funding-expired" not in {h.chunk_id for h in excluded}
         assert f"{_PREFIX}funding-expired" in {h.chunk_id for h in included}
@@ -162,5 +170,46 @@ def test_upsert_chunks_updates_existing_row_on_second_call():
         with session_scope() as session:
             row = session.get(RagChunkOrm, f"{_PREFIX}upsert1")
             assert row.content == "changed"
+    finally:
+        _cleanup()
+
+
+def test_search_returns_only_chunks_embedded_by_the_query_model():
+    """임베더 혼용 차단 — 다른 모델이 만든 벡터 공간끼리의 코사인 비교는 무의미하다."""
+    _cleanup()
+    repo = SqlAlchemyRagRepository()
+    try:
+        repo.upsert_chunks(
+            [
+                _chunk("model-a", "test_embedder", "ma", _E0, embedded_by="test-embedder-a"),
+                _chunk("model-b", "test_embedder", "mb", _E0, embedded_by="test-embedder-b"),
+            ]
+        )
+
+        hits = repo.search(
+            embedding=_E0, embedded_by="test-embedder-a", top_k=10, source_type="test_embedder"
+        )
+
+        assert [h.chunk_id for h in hits] == [f"{_PREFIX}model-a"]
+    finally:
+        _cleanup()
+
+
+def test_existing_ids_skips_rows_without_embedding():
+    """임베딩이 NULL인 행은 증분 색인에서 '이미 색인됨'으로 치지 않는다 — 재임베딩 대상."""
+    _cleanup()
+    repo = SqlAlchemyRagRepository()
+    try:
+        repo.upsert_chunks(
+            [
+                _chunk("embedded", "news", "e1", _E0),
+                _chunk("pending", "news", "p1", None, embedded_by=None),
+            ]
+        )
+
+        ids = repo.existing_ids("news")
+
+        assert f"{_PREFIX}embedded" in ids
+        assert f"{_PREFIX}pending" not in ids
     finally:
         _cleanup()

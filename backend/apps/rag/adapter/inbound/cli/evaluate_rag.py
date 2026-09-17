@@ -7,7 +7,8 @@ status=confirmed만 본지표로 집계한다 — candidate는 gemma3가 자동 
 품질이 보증되지 않으므로, 전체(confirmed+candidate) 수치는 "(참고)" 라벨로만 표시한다.
 confirmed 승격은 사용자 검수 몫(이 CLI의 범위 밖 — backend_ver_log.md v0.19.0 참고).
 
-provider는 검색(query) 임베더만 스왑한다(색인은 이미 완료된 벡터를 그대로 검색) —
+provider는 검색(query) 임베더를 고른다 — 같은 모델이 색인한 청크만 검색되므로(embedded_by 필터)
+해당 provider로 색인된 코퍼스가 있어야 수치가 나온다. 기본은 운영 코퍼스 모델 gemini.
 dependencies의 레지스트리(get_rag_search_use_case)를 재사용해 어댑터 구성을 중복하지 않는다.
 
 실행: python -m apps.rag.adapter.inbound.cli.evaluate_rag \
@@ -85,7 +86,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--evalset", default="data/eval/rag_evalset.jsonl")
     parser.add_argument(
-        "--provider", default="ollama", choices=["ollama", "fp16", "gemini"]
+        "--provider", default="gemini", choices=["ollama", "fp16", "gemini"]
     )
     args = parser.parse_args()
 
