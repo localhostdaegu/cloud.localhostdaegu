@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # 브이월드 인증키에 등록된 서비스URL — 데이터·WFS API는 domain 불일치 시 INCORRECT_KEY
     vworld_service_domain: str = "beyondfacade.cloud"
     gemini_api_key: str = ""
-    gemini_report_model: str = "gemini-2.5-flash"  # AI 리포트 생성 모델 — 환경변수 GEMINI_REPORT_MODEL 로 교체
+    gemini_report_model: str = "gemini-3.8-flash"  # AI 리포트 생성 모델 — 환경변수 GEMINI_REPORT_MODEL 로 교체
     region: str = "daegu"
 
 

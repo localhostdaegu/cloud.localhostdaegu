@@ -1,7 +1,7 @@
 """Driven Adapter — Gemini 스트리밍 생성으로 ReportWriterPort 구현.
 
-thinking_budget=0: 해석 문단 수준이라 추론 토큰 없이 첫 토큰 지연을 줄인다(2.5 Flash 계열 전제 —
-모델을 바꾸면 해당 모델의 thinking 설정 지원 여부를 확인할 것).
+thinking_budget=0: 해석 문단 수준이라 추론 토큰 없이 첫 토큰 지연을 줄인다(gemini-3.8-flash에서 수용 실측
+2026-09-17 — 모델을 바꾸면 해당 모델의 thinking 설정 지원 여부를 확인할 것).
 """
 
 from collections.abc import Iterator

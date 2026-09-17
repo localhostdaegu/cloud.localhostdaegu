@@ -22,4 +22,4 @@ def test_settings_declares_youthcenter_key():
 
 
 def test_settings_declares_gemini_report_model_with_default():
-    assert Settings.model_fields["gemini_report_model"].default == "gemini-2.5-flash"
+    assert Settings.model_fields["gemini_report_model"].default == "gemini-3.8-flash"
