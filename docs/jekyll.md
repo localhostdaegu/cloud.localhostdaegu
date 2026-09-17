@@ -6,6 +6,17 @@
 
 ## 2026-09-17
 
+### 백엔드·프론트 — AI 리포트 /analysis SSE
+
+- **엔드포인트 2종**: `POST /analysis` `{region, industry, question?, finance?}` → `{analysis_id}` / `GET /analysis/{id}/events` SSE(1회 소비, 없거나 이미 소비된 id는 404 `ANALYSIS_NOT_FOUND`, `X-Accel-Buffering: no`). 이벤트 계약은 프론트 `AgentEvent` 그대로 — `agent_status`(orchestrator·market·shock·funding × running/done/error) · `tool_call` · `report_delta`(section, markdown) · `report_done`(report_id, citations[title·url·grade]). 섹션 Strategy: verdict·market·shock·funding(+ `finance`가 있으면 계산표 섹션 "재무 시뮬레이션"). 각 섹션 첫머리(제목·위험도 점수·지표표·매칭 상품 목록)는 코드가 즉시 내보내고 해석 문단만 Gemini 스트림, LLM 실패 시 섹션 폴백 문구.
+- **질의 임베더 gemini 고정**: rag_chunk 3,560행이 전량 `gemini-embedding-001`로 색인돼 있어 질의도 같은 임베더여야 함 → `get_rag_search_use_case(provider="gemini")`. `apps/rag/dependencies/rag_dependencies.py` 독스트링("운영 기본값은 항상 ollama")은 analysis 경로 기준으로는 낡음(rag 파일은 손대지 않음).
+- **리포트 모델**: 사용자 결정 "최신 GA Flash" — 모델 목록 조회(생성 호출 없음)에서 preview·exp·lite·image·tts·live·audio 제외 최신은 `gemini-3.8-flash` → `backend/.env`에 `GEMINI_REPORT_MODEL=gemini-3.8-flash`(커밋 제외, 코드 기본값은 `gemini-2.5-flash` 유지). `ThinkingConfig(thinking_budget=0)` 거부 없음. 다만 스트림 청크마다 SDK 경고 `non-text parts in the response: ['thought_signature']`가 `logs/uvicorn.log`에 찍힘 — `.text`는 정상 반환, 기능 영향 없음.
+- **백엔드 재시작(사용자 사전 승인)**: :8300은 `--reload`가 아니라 재시작. `pkill -f` 패턴이 기존 기동 래퍼 셸(프론트 dev 서버의 부모)에도 걸려 uvicorn PID만 종료 → `setsid nohup`으로 재기동, `/health` `{"status":"ok"}`·`/analysis/myself` `{"app":"analysis","status":"wired"}`. :3300은 건드리지 않음.
+- **curl 스모크(실 Gemini 1회, 대신동 2711059500·cafe, finance 없음)**: 이벤트 **52건**(agent_status 8 · tool_call 5 · report_delta 38 · report_done 1), 스트림 **10.4초**, 마지막 `report_done`. 섹션 verdict·market·shock·funding, 폴백 문구 0, `"status": "error"` 0, "서울" 0. 첫 줄 "대신동 카페 · 위험도 67.1점 — 보통". tool_call: 뉴스 RAG 5건 · 금융상품 매칭 **10건**(대구신보 5 · iM뱅크 2 · 중진공 청년전용창업자금 · 대구시 경영안정자금 2) · 정책자금 공고 RAG 5건. 인용 **10건**(bizinfo 공고 fact 5 · 뉴스 signal 5). 금리는 청년전용창업자금 2.5% 외 "미정". `localhostdaegu.analysis` 예외 로그 없음(청크 `.text` 예외가 섹션 폴백에 흡수된 흔적 없음). 원문 `.superpowers/sdd/2026-09-17-analysis-sse/analysis-smoke.txt`.
+- **headless E2E `frontend/tests/analysis.cjs`**(실행 중 :3300 재사용 전용): `/analysis?region=2711059500&industry=cafe&finance=<13필드>` → 분석 시작 → POST가 `http://localhost:8300/analysis`로 나감 → 오케스트레이터 완료 **9.9초** → 제목 5개(종합 진단·상권 진단·충격 분석·정책자금·재무 시뮬레이션) · 에러 alert 없음 · 참고 자료 블록 → **RESULT: PASS**. 1차 실행은 "에러 alert 없음"만 FAIL — Next.js 라우트 아나운서(`<next-route-announcer>` open shadow DOM의 `role="alert"`)가 항상 존재해서였고(분석 시작 전 로드만으로 alert 1건 재현, 아나운서 제외 시 0건), 앱 결함이 아님 → 셀렉터에서 `#__next-route-announcer__` 제외 후 재실행 PASS. `orchestrator done`이 `report_done`보다 먼저 와서 참고 자료는 최대 10초 대기.
+- 회귀: `E2E_REUSE_SERVER=1 E2E_API_BASE=http://localhost:8300 node tests/funnel.cjs` PASS(결론 "자기자본으로 충분해요"). 단위: pytest **268 passed / 1 skipped**, vitest **92/92**, tsc clean(Task 1~10 시점, 이번 작업은 앱 코드 변경 없음).
+- 미결: 인메모리 요청 저장소라 **단일 uvicorn 워커 전제**(워커를 늘리면 POST·GET이 갈라져 404 → Redis 어댑터 필요). `GEMINI_API_KEY`가 없으면 `get_analysis_use_case`(lru_cache)에서 POST가 500 — 실키로는 정상. RAG 검색에 지역·기간 필터가 없어 전국·오래된 뉴스가 섞일 수 있음. 본문 인용 번호 `[n]`은 섹션별 문서 목록 기준이라 하단 "참고 자료"(번호 없음, 공고 → 뉴스 순)와 직접 대응하지 않고, funding 해석은 모든 항목에 같은 `[5]`를 붙임. 배포 프록시(Cloudflare Tunnel)의 SSE 버퍼링은 배포 후 확인 필요.
+
 ### 매칭 — 수기 금융상품 JSON 실값 반영
 
 - 조사 초안(`docs/research/finance-products/`, 확인일 9/17)을 운영 `data/manual/*.json`에 반영: iM뱅크 3 · 대구신보 5 · 정책자금 4 = 12건(자리표시자 5건 대체). 사용자 결정 — 중진공·소진공 등 대구 전용이 아닌 상품 포함, 대구시 경영안정자금(youth-3/4)은 청년창업 파일에 둠, 북구 청년창업 특례보증(youth-1)은 `category=[]`로 매칭 차단, 다른 구·군 특례보증은 범위 밖.

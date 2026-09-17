@@ -15,7 +15,7 @@
 | RAG 색인 | ✅ 완료 — Gemini 유료 키, rag_chunk 3,560(funding·news 전량), 크론 매일 05:30 |
 | 프론트엔드 "한 문장 깔때기" | ✅ 완료 — vitest **78/78**, tsc clean. 9/17 상단 바 **홈 탭** 추가(지도 탐색 → 채팅 첫 화면 복귀) |
 | 실백엔드 연동 스모크 | ✅ 9/16 PASS (intent→map→simulate 완주) |
-| **AI 리포트 SSE `/analysis`** | 📋 **미착수 — 최우선**. 백엔드 경로 없음, 프론트는 mock SSE. 계획 필요 (§4-1) |
+| **AI 리포트 SSE `/analysis`** | ✅ 완료 (9/17) — `POST /analysis` + `GET /analysis/{id}/events` SSE(Gemini `gemini-3.8-flash`, RAG gemini 임베더), 프론트 실백엔드 연결·시뮬레이터 CTA 재무 계산표. 실스모크 52이벤트·10.4초·인용 10·매칭 10건, headless `tests/analysis.cjs` PASS. 단일 워커 전제(인메모리 저장소) |
 | 수기 금융상품 JSON | ✅ 9/17 실상품 12건 반영(iM뱅크 3·대구신보 5·정책 4, 조사 `docs/research/finance-products/`) + 업종 id 통일·연령 미수집 시 비제외·카드 null 금리 "은행별 상이". 서버 재시작 후 반영(lru_cache) |
 | 신규 활용신청 5종 적재 | 📋 미착수 (§4-2) |
 | 백엔드 최종 리뷰·브랜치 정리 | 📋 미착수 (§3) |
@@ -25,7 +25,7 @@
 
 ### 0-1. 남은 일 (2026-09-17 점검, 추천 순서)
 
-1. **AI 리포트 `/analysis` SSE** (9/17~18) — RAG 색인 완료로 착수 가능. writing-plans 먼저 (§4-1)
+1. ~~**AI 리포트 `/analysis` SSE**~~ — ✅ 9/17 완료(devlog 2026-09-17 "AI 리포트 /analysis SSE")
 2. **수기 금융상품 JSON 실값** — iM뱅크·대구신보·대구 청년창업 실상품 5~10개 조사 → 사용자 확인. 1과 병렬 가능
 3. **배포(localhostdaegu.cloud) + 시연 영상** (9/19) — 둘 다 미착수
 4. **백엔드 whole-branch 최종 리뷰 → 브랜치 정리/머지** (9/19, §3)
