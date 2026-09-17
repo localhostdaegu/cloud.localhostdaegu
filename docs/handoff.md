@@ -34,7 +34,7 @@
    - 배포 메모(`/analysis`): 백엔드 환경변수 `GEMINI_API_KEY`·`GEMINI_REPORT_MODEL`(=gemini-3.8-flash) 필수 — 키가 없으면 `POST /analysis`가 500 · CORS `allow_origins`에 운영 오리진(https://localhostdaegu.cloud) 추가 · uvicorn **단일 워커**(분석 요청 저장소가 인메모리) · 리버스 프록시 뒤에서 SSE 버퍼링 끄기 확인(예: nginx `proxy_buffering off`)
 4. ~~**백엔드 whole-branch 최종 리뷰**~~ — ✅ 9/18 완료. **브랜치 정리/main 병합**만 남음(사용자 결정)
 5. **제출 서류·접수** (9/20) — 참가신청서(초안 있음)·서약서·개인정보 동의서·제안요약서 → im-challenge.com (§6)
-6. **(사람 작업) 온통청년 API 키 재발급 권장** — 9/17 05:10 funding 수집 실패 때 httpx 예외 메시지(요청 URL 전체)에 `apiKeyNm` 값이 담겨 `logs/funding-collector.log`에 기록됨(9/18 백엔드 최종 리뷰에서 발견). `logs/`는 git 미추적이라 커밋되지 않았고 로그의 해당 값은 `***`로 치환, 게이트웨이 예외 메시지에서 키 제거 수정 완료(9/18, youthcenter·인허가·기업마당·R-ONE·ECOS). 재발급 후 `YOUTHCENTER_API_KEY`(루트 `.env` 또는 `backend/.env`) 교체 → 다음 05:10 크론 또는 수동 수집으로 확인
+6. **(사람 작업) 온통청년 API 키 재발급 권장** — 9/17 05:10 funding 수집 실패 때 httpx 예외 메시지(요청 URL 전체)에 `apiKeyNm` 값이 담겨 `logs/funding-collector.log`에 기록됨(9/18 백엔드 최종 리뷰에서 발견). `logs/`는 git 미추적이라 커밋되지 않았고 로그의 해당 값은 `***`로 치환, 게이트웨이 예외 메시지에서 키 제거 수정 완료(9/18, youthcenter·인허가·기업마당·R-ONE·ECOS, 9/18 추가로 거리두기·브이월드·semas·molit·서울 학원(경로 키 `***`) — URL에 키를 넣는 게이트웨이 전부). 재발급 후 `YOUTHCENTER_API_KEY`(루트 `.env` 또는 `backend/.env`) 교체 → 다음 05:10 크론 또는 수동 수집으로 확인
 7. 여력 시: 활용신청 5종 적재 · 빈 테이블(`shock_event_region` 충격↔지역 연결, `tobacco_retailer` 수동 파일, `academy_course`·`convenience_store`는 서울 원본 잔재로 대구 수집기 없음) · Neo4j 사용처 결정(컨테이너 기동 중, 노드 0, 코드 사용처 없음 → 쓰거나 compose 에서 제외)
 
 동작 확인 명령:
@@ -183,7 +183,7 @@ cd frontend && npm run dev &                              # :3300 (브라우저 
 
 - 프론트: ResultView 자체 QueryClient 제거 권장(3줄), formatKrw 밴드 불일치, MoneyField 소수 입력, B유형 헤더 region 이름(백엔드 랭킹 응답에 name 추가 필요), 스펙 갭 3건(A유형 대안 업종·결론 AI 리포트 CTA·stress 렌더), T7 redoceanmap 차트(P1)
 - 백엔드: `/metrics/risk` OpenAPI 스키마 부재(response_model=None), rank_by_industry N+1, tobacco 하이브리드 픽스처, s4u 수기 샘플 노출 여부(기획서 §10 미결 3)
-- 9/18 최종 리뷰 이월(LEAVE 판정·범위 밖): covid·vworld·semas·서울 학원·molit 게이트웨이의 URL 키 노출 가능성(경로에 키가 든 API는 현 마스킹으로 못 가림) / 뉴스 폴러는 전 키워드 실패여도 exit 0 / 예외 체인(`__context__`)·httpx INFO 로그로 URL 노출 여지 / 동대구역 랜드마크 = 신암4동(좌표 기준, 점포 밀집은 신천4동) / intent 라우터 ORM 직접 접근·matcher Specification 미적용 / 테스트가 git 미추적 `data/raw` 필요(신규 클론·CI 불가) / store 증분 커서 누락 가능(주 1회 `--full` 검토) / R-ONE 레벨 docstring·픽스처 3단 가정
+- 9/18 최종 리뷰 이월(LEAVE 판정·범위 밖): 뉴스 폴러는 전 키워드 실패여도 exit 0 / 예외 체인(`__context__`)·httpx INFO 로그로 URL 노출 여지 / 동대구역 랜드마크 = 신암4동(좌표 기준, 점포 밀집은 신천4동) / intent 라우터 ORM 직접 접근·matcher Specification 미적용 / 테스트가 git 미추적 `data/raw` 필요(신규 클론·CI 불가) / store 증분 커서 누락 가능(주 1회 `--full` 검토) / R-ONE 레벨 docstring·픽스처 3단 가정
 - 저장소: `부트캠프 과제.pdf`(1.2MB) 커밋에 포함됨 — 제출 저장소 정리 시 제거 검토
 - 9/17 해결분(참고): 온통청년 간헐 400/403/500 → 재시도 + 전국 1회 조회·대구(군위 포함) 필터 / 크론 로그 `exit 0` 오표기 수정 / "신규 만료 22건" 반복 = 테스트가 개발 DB 오염 → 테스트 DB 분리 / 프론트 브이월드 키는 새 키와 동일 확인(9/16 미결 해소)
 - 팀 구성(1~4인)·참가신청서 — 기획서 §10 미결 2
