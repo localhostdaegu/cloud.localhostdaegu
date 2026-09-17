@@ -141,7 +141,7 @@
       "scope": "대구",
       "source": "대한민국 정책브리핑(korea.kr) — 2020-08-23 0시 사회적 거리두기 2단계 전국 확대",
       "source_url": "https://www.korea.kr/news/policyNewsView.do?newsId=148876519",
-      "description": "노래연습장 등 고위험시설 집합금지, 음식점 등 핵심 방역수칙 의무화, 실내 50인·실외 100인 이상 집합 금지. 2020-10-12 2단계→1단계 하향으로 종료 — 근거: 정책브리핑 2020-10-11 https://m.korea.kr/news/policyNewsView.do?newsId=148878604",
+      "description": "노래연습장 등 고위험시설 12종 집합금지, 음식점 등 핵심 방역수칙 의무화, 실내 50인·실외 100인 이상 집합 금지(이데일리 2020-08-22 https://edaily.co.kr/News/Read?mediaCodeNo=257&newsId=01492406625869944). 2020-10-12 2단계→1단계 하향으로 종료 — 근거: 정책브리핑 2020-10-11 https://m.korea.kr/news/policyNewsView.do?newsId=148878604",
       "industry_impacts": [
         {
           "industry_id": "billiard",
@@ -215,7 +215,7 @@
       "scope": "대구",
       "source": "서울신문 2020-11-29 보도 — 중대본, 대전·충청·대구·경북·제주 등 12월 1일부터 1.5단계 격상",
       "source_url": "https://www.seoul.co.kr/news/society/2020/11/29/20201129500076",
-      "description": "대구 1.5단계 구간. 2020-12-08부터는 대구형 2단계 격상(대구시 발표)이며 이후 일별 단계는 data.go.kr 15098772 API 적재분(dagLvl)이 담당",
+      "description": "대구 1.5단계 구간. 2020-12-08 이후 일별 단계는 data.go.kr 15098772 API 적재분(dagLvl)이 담당",
       "industry_impacts": [
         {
           "industry_id": "billiard",
