@@ -1,6 +1,7 @@
 """뉴스 폴링 수집기 (Driving Adapter, CLI — 크론 주기 실행 대상).
 
-기본 키워드: 대구 구·군명 + "상권" (district 마스터에서 로드).
+기본 키워드: "대구 " + 구·군명 + " 상권" (district 마스터에서 로드).
+지역명 접두 — "북구 상권"만으로는 광주·부산 등 동명 구 기사가 섞임 (2026-09-18 587건 중 519건 비대구 정리).
 소스: 구글 뉴스 RSS (키·쿼터 없음). 호출량: 구·군 수(8)회/실행.
 
 실행: python -m apps.news.adapter.inbound.cli.news_poller [키워드 ...]
@@ -17,12 +18,13 @@ from apps.news.adapter.outbound.repositories.news_article_repository import (
 )
 from apps.news.app.use_cases.news_article_interactor import NewsArticleInteractor
 from core.matrix.grid_oracle_database_manager import session_scope
+from core.matrix.grid_region_config import REGION_NAME
 
 
 def _default_keywords() -> list[str]:
     with session_scope() as session:
         districts = session.execute(select(DistrictOrm.name).order_by(DistrictOrm.name)).scalars()
-        return [f"{name} 상권" for name in districts]
+        return [f"{REGION_NAME} {name} 상권" for name in districts]
 
 
 def main(keywords: list[str]) -> None:

@@ -62,3 +62,13 @@ def test_ingest_dedups_within_batch_and_across_runs():
         ).scalar()
     assert stored == 3
     _cleanup()
+
+
+def test_default_keywords_are_prefixed_with_region_name():
+    # "북구 상권"만으로는 타 도시(광주 북구 등) 기사가 섞임 — 지역명을 앞에 붙여 대구로 한정
+    from apps.news.adapter.inbound.cli.news_poller import _default_keywords
+
+    keywords = _default_keywords()
+    assert "대구 북구 상권" in keywords
+    assert len(keywords) == 8
+    assert all(keyword.startswith("대구 ") for keyword in keywords)
