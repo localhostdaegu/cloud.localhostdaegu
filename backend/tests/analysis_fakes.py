@@ -3,6 +3,15 @@
 SIMULATION 수치는 FINANCE 입력을 apps.finance.domain.engine.simulate로 계산한 실측값(2026-09-17).
 """
 
+from collections.abc import Iterator
+
+from apps.analysis.app.ports.output.analysis_port import (
+    EvidenceSearchPort,
+    MarketDataPort,
+    ProductMatchingPort,
+    ReportWriterPort,
+    SimulationPort,
+)
 from apps.analysis.domain.analysis_context import (
     AnalysisContext,
     AnalysisRequest,
@@ -84,3 +93,61 @@ def full_context() -> AnalysisContext:
         products=[PRODUCT],
         simulation=SIMULATION,
     )
+
+
+class FakeMarketData(MarketDataPort):
+    def __init__(self, snapshot: MarketSnapshot | None = MARKET) -> None:
+        self.snapshot = snapshot
+        self.calls: list[tuple[str, str]] = []
+
+    def fetch(self, region_code: str, industry_id: str) -> MarketSnapshot | None:
+        self.calls.append((region_code, industry_id))
+        return self.snapshot
+
+
+class ExplodingMarketData(MarketDataPort):
+    def fetch(self, region_code: str, industry_id: str) -> MarketSnapshot | None:
+        raise RuntimeError("DB 장애")
+
+
+class FakeEvidenceSearch(EvidenceSearchPort):
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, int]] = []
+
+    def search(self, query: str, source_type: str, top_k: int) -> list[EvidenceDoc]:
+        self.calls.append((query, source_type, top_k))
+        return {"news": [NEWS_DOC], "funding": [FUNDING_DOC]}[source_type]
+
+
+class FakeSimulation(SimulationPort):
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def simulate(self, finance: dict) -> SimulationSummary:
+        self.calls.append(finance)
+        return SIMULATION
+
+
+class FakeMatching(ProductMatchingPort):
+    def __init__(self) -> None:
+        self.calls: list[tuple[int, str]] = []
+
+    def match(self, funding_gap: int, industry_id: str) -> list[MatchedProduct]:
+        self.calls.append((funding_gap, industry_id))
+        return [PRODUCT]
+
+
+class FakeWriter(ReportWriterPort):
+    def __init__(self, chunks: tuple[str, ...] = ("해석",)) -> None:
+        self.chunks = chunks
+        self.calls: list[tuple[str, str]] = []
+
+    def stream(self, system: str, prompt: str) -> Iterator[str]:
+        self.calls.append((system, prompt))
+        yield from self.chunks
+
+
+class FailingWriter(ReportWriterPort):
+    def stream(self, system: str, prompt: str) -> Iterator[str]:
+        yield "부분"
+        raise RuntimeError("LLM 장애")
