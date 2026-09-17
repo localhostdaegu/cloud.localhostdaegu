@@ -7,12 +7,10 @@ BACKEND_DIR="/home/kimchungsik/projects/cloud.localhostdaegu/backend"
 LOG_DIR="/home/kimchungsik/projects/cloud.localhostdaegu/logs"
 LOG_FILE="${LOG_DIR}/funding-collector.log"
 
-mkdir -p "${LOG_DIR}"
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
+cron_begin "funding collector" "${LOG_FILE}"
 cd "${BACKEND_DIR}"
 
-{
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] funding collector 시작"
-  .venv/bin/python -m apps.funding.adapter.inbound.cli.funding_collector
-} >> "${LOG_FILE}" 2>&1 || { rc=$?; echo "[$(date '+%Y-%m-%d %H:%M:%S')] funding collector 실패 (exit ${rc})" >> "${LOG_FILE}"; }
+step "funding collector" .venv/bin/python -m apps.funding.adapter.inbound.cli.funding_collector
 
-tail -n 2000 "${LOG_FILE}" > "${LOG_FILE}.tmp" && mv "${LOG_FILE}.tmp" "${LOG_FILE}"
+cron_end 2000

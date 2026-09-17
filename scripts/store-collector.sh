@@ -8,16 +8,12 @@ BACKEND_DIR="/home/kimchungsik/projects/cloud.localhostdaegu/backend"
 LOG_DIR="/home/kimchungsik/projects/cloud.localhostdaegu/logs"
 LOG_FILE="${LOG_DIR}/store-collector.log"
 
-mkdir -p "${LOG_DIR}"
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
+cron_begin "store collector" "${LOG_FILE}"
 cd "${BACKEND_DIR}"
 
-{
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] store collector 시작"
-  .venv/bin/python -m apps.store.adapter.inbound.cli.store_collector
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] region 공간조인 (신규분)"
-  .venv/bin/python -m apps.store.adapter.inbound.cli.assign_regions
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] 지표 배치 집계 (region_industry_metric)"
-  .venv/bin/python -m apps.metric.adapter.inbound.cli.build_metrics
-} >> "${LOG_FILE}" 2>&1 || { rc=$?; echo "[$(date '+%Y-%m-%d %H:%M:%S')] store collector 실패 (exit ${rc})" >> "${LOG_FILE}"; }
+step "store collector" .venv/bin/python -m apps.store.adapter.inbound.cli.store_collector
+step "region 공간조인 (신규분)" .venv/bin/python -m apps.store.adapter.inbound.cli.assign_regions
+step "지표 배치 집계 (region_industry_metric)" .venv/bin/python -m apps.metric.adapter.inbound.cli.build_metrics
 
-tail -n 5000 "${LOG_FILE}" > "${LOG_FILE}.tmp" && mv "${LOG_FILE}.tmp" "${LOG_FILE}"
+cron_end 5000

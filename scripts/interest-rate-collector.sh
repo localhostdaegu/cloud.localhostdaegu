@@ -9,16 +9,12 @@ BACKEND_DIR="/home/kimchungsik/projects/cloud.localhostdaegu/backend"
 LOG_DIR="/home/kimchungsik/projects/cloud.localhostdaegu/logs"
 LOG_FILE="${LOG_DIR}/interest-rate-collector.log"
 
-mkdir -p "${LOG_DIR}"
+source "$(dirname "${BASH_SOURCE[0]}")/_lib.sh"
+cron_begin "interest/rent collector" "${LOG_FILE}"
 cd "${BACKEND_DIR}"
 
-{
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] interest rate collector 시작"
-  .venv/bin/python -m apps.shock.adapter.inbound.cli.load_interest_rate
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] loan rate collector 시작"
-  .venv/bin/python -m apps.shock.adapter.inbound.cli.load_loan_rate
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] rent price collector 시작"
-  .venv/bin/python -m apps.rent.adapter.inbound.cli.load_rent_price
-} >> "${LOG_FILE}" 2>&1 || { rc=$?; echo "[$(date '+%Y-%m-%d %H:%M:%S')] interest/rent collector 실패 (exit ${rc})" >> "${LOG_FILE}"; }
+step "interest rate collector" .venv/bin/python -m apps.shock.adapter.inbound.cli.load_interest_rate
+step "loan rate collector" .venv/bin/python -m apps.shock.adapter.inbound.cli.load_loan_rate
+step "rent price collector" .venv/bin/python -m apps.rent.adapter.inbound.cli.load_rent_price
 
-tail -n 2000 "${LOG_FILE}" > "${LOG_FILE}.tmp" && mv "${LOG_FILE}.tmp" "${LOG_FILE}"
+cron_end 2000
