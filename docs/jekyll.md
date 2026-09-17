@@ -6,6 +6,16 @@
 
 ## 2026-09-17
 
+### 매칭 — 수기 금융상품 JSON 실값 반영
+
+- 조사 초안(`docs/research/finance-products/`, 확인일 9/17)을 운영 `data/manual/*.json`에 반영: iM뱅크 3 · 대구신보 5 · 정책자금 4 = 12건(자리표시자 5건 대체). 사용자 결정 — 중진공·소진공 등 대구 전용이 아닌 상품 포함, 대구시 경영안정자금(youth-3/4)은 청년창업 파일에 둠, 북구 청년창업 특례보증(youth-1)은 `category=[]`로 매칭 차단, 다른 구·군 특례보증은 범위 밖.
+- **업종 코드 통일**: 프론트는 `/matching?category=`에 업종 id(`cafe`·`restaurant` 등, `shared/industries.ts`)를 넘기는데 기존 `imbank-1`은 인허가 원천 코드(`general_restaurants`)라 어떤 업종에도 매칭되지 않았음. 새 JSON은 업종 id 기준(현재 값은 전부 `null` 또는 `[]`). `test_matching.py`의 원천 코드도 업종 id로 바꾸고, 운영 JSON의 category가 업종 id 11종 안에 있는지 검사하는 테스트 추가.
+- **연령 미수집 ≠ 자격 없음**: 프론트는 `owner_age`를 보내지 않는데 matcher가 `owner_age=None`이면 연령 상한 상품을 제외해 청년 상품이 나올 수 없었음 → None이면 연령 조건을 건너뜀(알려진 나이가 상한 초과면 계속 제외). `business_age_months=0`(예비창업) 의미는 유지 — 업력 1년 이상 요건인 imbank-3은 나오지 않는 게 맞음.
+- **카드 null 표시**: 금리·한도·보증료 수치가 없으면 null인데 카드가 "금리 null%"를 찍음 → 금리 null은 "금리 은행별 상이", 한도 null은 "한도 미정". `MatchingProduct`의 `loan_limit/interest_rate/guarantee_fee`를 `number | null`로.
+- 매칭 확인(프로세스 내, 새 JSON): `cafe`·부족 2천만원·업력 0개월·나이 없음 → dgsinbo-1~5, imbank-1, imbank-2, youth-2, youth-3, youth-4 (10건). youth-1은 업종 차단, imbank-3은 업력 요건으로 제외.
+- 검증: pytest **220 passed / 1 skipped**(기존 217 + 3), vitest **86/86**(+2), tsc clean. 실행 중 서버(:8300)는 `load_all_products`가 `lru_cache`라 재시작 전까지 옛 JSON을 반환(재시작하지 않음).
+- 미결: 금리 대부분 null(보증상품·변동금리 — 은행 결정), imbank-1/2·youth-1·youth-2·youth-3/4 보증료 null, youth-1은 2025년 공고 기준(2026 시행 미확인), dgsinbo-5 url은 대구신보 메인, 다른 구·군 2026 특례보증 미포함.
+
 ### 백엔드 — 적재 점검·온통청년 수집 안정화·RAG 색인 완료
 
 - 적재 현황(11:48 실측): store 161,115 · population_stat 48,174 · region_industry_metric 7,856 · news_article 1,915 · funding_program 1,641 · rent_price 786 · interest_rate 365 · shock_event 23. 빈 테이블: shock_event_region·academy_course·tobacco_retailer·convenience_store. 크론 4종(news 매시·store 04:20·funding 05:10·interest 월 05:20) 정상 가동, `rag-indexer.sh`는 crontab 미등록.
