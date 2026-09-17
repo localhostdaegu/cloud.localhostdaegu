@@ -21,6 +21,7 @@
 ### 프론트엔드 — 홈 탭 · handoff 갱신
 
 - 첫 진입이 채팅(`/`)인데 지도 탐색 이후 돌아갈 버튼이 없음 → 상단 바 `TABS` 맨 앞에 **홈**(`/`) 추가. vitest 78/78, tsc clean, headless 확인(`/map`에서 홈 클릭 → `/` 복귀·"무엇을 알아볼까요?" 노출·홈 aria-current).
+- **BI 로고 = 홈 버튼**: 사용자 제공 BI(1448×1086, 투명 여백 큼)를 실내용 영역으로 잘라 높이 96px(표시 32px × 3배) PNG 2종 `public/brand/logo-{light,dark}.png`(각 ~30KB) 생성. 워드마크 진청록(#024D4A)이 다크 상단 바(#171F20)에 묻혀 다크용은 저휘도 픽셀을 #ECF3F2로 치환. 상단 바(50px)에서 로고 링크(`aria-label="홈"`)가 `localhostdaegu` 텍스트와 홈 텍스트 탭을 대체, `data-theme`로 한 장만 표시. next/image 최적화가 192px로 줄여 레티나에서 흐려 `unoptimized`로 원본 사용. vitest 78/78, tsc clean, headless 양 테마 캡처·홈 이동 확인.
 - `docs/handoff.md` 9/17 기준 갱신: 수집·RAG·테스트 DB 완료 반영, 남은 일 우선순위(§0-1) — `/analysis` SSE → 수기 금융상품 JSON → 배포·시연 영상 → 최종 리뷰·머지 → 제출.
 
 ## 2026-09-16
