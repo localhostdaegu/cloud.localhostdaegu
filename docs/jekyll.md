@@ -18,6 +18,11 @@
 - **"신규 만료 22건" 반복 원인**: 수집 코드가 아니라 테스트. `test_funding_expiry.py`가 개발 DB에서 `_TODAY=2026-09-07`로 `refresh_expirations`를 호출 — 복원 UPDATE가 테스트 prefix로 한정되지 않아 마감 9/7~9/16 실데이터 22건을 미만료로 되돌림(pytest 전후 expired 62→40 재현). 수집 직전마다 전체 pytest를 돌려 매번 22건 재만료. 정상 배치로 복구(62건). 리포지토리 쓰기 중 범위 무제한은 이 메서드뿐.
 - **테스트 DB 분리**: `backend/tests/conftest.py` — `DATABASE_URL`의 DB명에 `_test`를 붙여 환경변수로 덮고(설정 lru_cache 초기화), 세션 시작 시 `localhostdaegu_test` 생성(없으면) → alembic head → `seed_all()`(마스터 8구·144동·11업종). DB명이 `_test`로 안 끝나면 중단. 빈 테스트 DB 첫 실행에서 academy·broker·convenience·population 11건이 마스터 부재로 실패(기존엔 앞선 시드 테스트 순서에 기대던 것) → 시드 선행으로 해소. DB 드롭 후 재생성 실행 210 통과, 개발 DB는 pytest 전후 불변(만료 62·funding 1,641·rag 3,560·store 161,115). 전날 실데이터 최댓값에 맞춰 느슨하게 했던 `test_latest_source_updated_at_returns_cursor` 보정은 원래 단언(`cursor == 2026-08-03 12:00`)으로 되돌림.
 
+### 프론트엔드 — 홈 탭 · handoff 갱신
+
+- 첫 진입이 채팅(`/`)인데 지도 탐색 이후 돌아갈 버튼이 없음 → 상단 바 `TABS` 맨 앞에 **홈**(`/`) 추가. vitest 78/78, tsc clean, headless 확인(`/map`에서 홈 클릭 → `/` 복귀·"무엇을 알아볼까요?" 노출·홈 aria-current).
+- `docs/handoff.md` 9/17 기준 갱신: 수집·RAG·테스트 DB 완료 반영, 남은 일 우선순위(§0-1) — `/analysis` SSE → 수기 금융상품 JSON → 배포·시연 영상 → 최종 리뷰·머지 → 제출.
+
 ## 2026-09-16
 
 ### 백엔드 — 키 투입·수집 1차 가동 (인허가는 활용신청 대기)
