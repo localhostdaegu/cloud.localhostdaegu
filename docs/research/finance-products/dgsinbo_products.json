@@ -76,7 +76,7 @@
     "region": "대구광역시 달성군",
     "business_age_min": 0,
     "business_age_max": null,
-    "category": null,
+    "category": [],
     "owner_age_max": null,
     "loan_limit": 30000000,
     "interest_rate": null,

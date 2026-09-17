@@ -67,6 +67,18 @@ def test_operational_manual_json_uses_frontend_industry_ids():
     assert used <= _INDUSTRY_IDS, f"업종 id가 아닌 category 코드: {used - _INDUSTRY_IDS}"
 
 
+def test_operational_district_only_products_are_excluded_from_matching():
+    """matcher에 지역 필터가 없으므로 구·군 한정 상품은 category [] 로 매칭에서 뺀다(구·군 특례보증은 범위 밖)."""
+    load_all_products.cache_clear()
+    products = load_all_products()
+    load_all_products.cache_clear()
+
+    district_only = [p for p in products if (p.get("region") or "").startswith("대구광역시 ")]  # 예: "대구광역시 달성군"
+    assert district_only, "구·군 한정 상품 표본이 없음"
+    leaking = [p["product_id"] for p in district_only if p["category"] != []]
+    assert leaking == [], f"구·군 한정인데 매칭에 노출되는 상품: {leaking}"
+
+
 def test_gateway_loads_products_from_json_files(tmp_path):
     """게이트웨이: 실제 JSON 파일들을 로드하고 상품 데이터 검증."""
     # 게이트웨이가 읽는 정확한 경로 구조 생성
