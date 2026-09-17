@@ -28,6 +28,7 @@
 1. ~~**AI 리포트 `/analysis` SSE**~~ — ✅ 9/17 완료(devlog 2026-09-17 "AI 리포트 /analysis SSE")
 2. **수기 금융상품 JSON 실값** — iM뱅크·대구신보·대구 청년창업 실상품 5~10개 조사 → 사용자 확인. 1과 병렬 가능
 3. **배포(localhostdaegu.cloud) + 시연 영상** (9/19) — 둘 다 미착수
+   - 배포 메모(`/analysis`): 백엔드 환경변수 `GEMINI_API_KEY`·`GEMINI_REPORT_MODEL`(=gemini-3.8-flash) 필수 — 키가 없으면 `POST /analysis`가 500 · CORS `allow_origins`에 운영 오리진(https://localhostdaegu.cloud) 추가 · uvicorn **단일 워커**(분석 요청 저장소가 인메모리) · 리버스 프록시 뒤에서 SSE 버퍼링 끄기 확인(예: nginx `proxy_buffering off`)
 4. **백엔드 whole-branch 최종 리뷰 → 브랜치 정리/머지** (9/19, §3)
 5. **제출 서류·접수** (9/20) — 참가신청서(초안 있음)·서약서·개인정보 동의서·제안요약서 → im-challenge.com (§6)
 6. 여력 시: 활용신청 5종 적재 · 빈 테이블(`shock_event_region` 충격↔지역 연결, `tobacco_retailer` 수동 파일, `academy_course`·`convenience_store`는 서울 원본 잔재로 대구 수집기 없음) · Neo4j 사용처 결정(컨테이너 기동 중, 노드 0, 코드 사용처 없음 → 쓰거나 compose 에서 제외)
@@ -94,7 +95,7 @@ cd frontend && npm run dev &                              # :3300 (브라우저 
 
 ## 4. 재개 지점 ④: D-2 계획 (별도 writing-plans 필요 — 미작성) — 9/17 전부 미착수
 
-1. **RAG 색인 + AI 리포트 생성** — rag 앱에 LLM 생성이 없음(임베딩·검색만). 프론트 agent-report는 mock SSE로 동작 중. 백엔드 `/analysis` SSE 엔드포인트(Feature+Finance 결과+RAG 문서 → Gemini 해석) 신규 계획 필요. 계약은 프론트 `shared/api/types.ts`의 `AgentEvent` 참조
+1. ~~**RAG 색인 + AI 리포트 생성**~~ — ✅ 9/17 완료: `/analysis` SSE(Gemini 해석 + RAG 뉴스·공고) 구현, 프론트 agent-report 실백엔드 연결(mock 고정 해제). devlog 2026-09-17 참조
 2. **신규 활용신청 5종 적재** — 승인·데이터셋 ID 확정 후 (전통시장 "반경 500m" 파생변수 포함, apilist §1-6)
 3. **수기 JSON 실값 기입** — `data/manual/*.json` 3파일이 `[확인]` 플레이스홀더 상태. imbank.co.kr·대구신보에서 실상품 5~10개 (기획서 §9 D-2)
 4. (선택) 리포트 해시 앵커링 — 기획서 §5.5, 여력 시에만
