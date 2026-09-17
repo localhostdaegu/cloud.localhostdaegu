@@ -14,26 +14,57 @@ PRODUCTS = [
     {"product_id": "dgsinbo-1", "provider_type": "guarantee", "loan_limit": 30_000_000,
      "category": None, "business_age_min": 0, "business_age_max": None, "owner_age_max": None},
     {"product_id": "imbank-1", "provider_type": "bank", "loan_limit": 50_000_000,
-     "category": ["general_restaurants"], "business_age_min": 0, "business_age_max": None, "owner_age_max": None},
+     "category": ["restaurant"], "business_age_min": 0, "business_age_max": None, "owner_age_max": None},
     {"product_id": "youth-1", "provider_type": "policy", "loan_limit": 20_000_000,
      "category": None, "business_age_min": 0, "business_age_max": 12, "owner_age_max": 39},
 ]
 
 def test_priority_order_guarantee_bank_policy():
-    out = match_products(PRODUCTS, funding_gap=10_000_000, category="general_restaurants",
+    out = match_products(PRODUCTS, funding_gap=10_000_000, category="restaurant",
                          business_age_months=0, owner_age=30)
     assert [p["product_id"] for p in out] == ["dgsinbo-1", "imbank-1", "youth-1"]
 
 def test_filters_apply():
-    out = match_products(PRODUCTS, funding_gap=10_000_000, category="rest_cafes",
+    out = match_products(PRODUCTS, funding_gap=10_000_000, category="cafe",
                          business_age_months=24, owner_age=45)
     # imbank-1은 업종 불일치, youth-1은 업력·연령 초과 → 보증만 남음
     assert [p["product_id"] for p in out] == ["dgsinbo-1"]
 
 def test_limit_filter():
-    out = match_products(PRODUCTS, funding_gap=40_000_000, category="general_restaurants",
+    out = match_products(PRODUCTS, funding_gap=40_000_000, category="restaurant",
                          business_age_months=0, owner_age=30)
     assert "dgsinbo-1" not in [p["product_id"] for p in out]   # 한도 3천 < 부족 4천
+
+
+def test_unknown_owner_age_does_not_exclude_age_limited_product():
+    """연령 미수집(owner_age=None)은 '자격 없음'이 아니다 — 연령 상한 상품도 남긴다."""
+    out = match_products(PRODUCTS, funding_gap=10_000_000, category="restaurant",
+                         business_age_months=0, owner_age=None)
+    assert "youth-1" in [p["product_id"] for p in out]
+
+
+def test_known_owner_age_over_limit_still_excludes():
+    out = match_products(PRODUCTS, funding_gap=10_000_000, category="restaurant",
+                         business_age_months=0, owner_age=40)
+    assert "youth-1" not in [p["product_id"] for p in out]
+
+
+# 프론트 업종 id(frontend/src/shared/industries.ts) = 마스터 시드 industry_id(seed_master._INDUSTRIES)
+_INDUSTRY_IDS = {
+    "cafe", "restaurant", "convenience_store", "hair_salon", "karaoke", "pc_bang",
+    "gym", "billiard", "real_estate", "academy", "childcare",
+}
+
+
+def test_operational_manual_json_uses_frontend_industry_ids():
+    """운영 data/manual/*.json 의 category 값은 /matching?category= 로 들어오는 업종 id 여야 매칭된다."""
+    load_all_products.cache_clear()
+    products = load_all_products()
+    load_all_products.cache_clear()
+
+    assert products, "data/manual 상품이 비어 있음"
+    used = {c for p in products for c in (p["category"] or [])}
+    assert used <= _INDUSTRY_IDS, f"업종 id가 아닌 category 코드: {used - _INDUSTRY_IDS}"
 
 
 def test_gateway_loads_products_from_json_files(tmp_path):
@@ -46,7 +77,7 @@ def test_gateway_loads_products_from_json_files(tmp_path):
     imbank_product = {
         "product_id": "imbank-test", "provider": "test-bank", "provider_type": "bank",
         "product_name": "테스트 은행상품", "target": "소상공인", "region": "대구",
-        "business_age_min": 0, "business_age_max": None, "category": ["general_restaurants"],
+        "business_age_min": 0, "business_age_max": None, "category": ["restaurant"],
         "owner_age_max": None, "loan_limit": 50000000, "interest_rate": 5.5,
         "guarantee_fee": 0.8, "url": "http://test.com", "source_url": "http://test.com"
     }

@@ -18,6 +18,16 @@ const PROVIDER_STYLE: Record<ProviderType, string> = {
   policy: "border border-[var(--violet)] text-[var(--violet)]",
 };
 
+/** 수기 상품 JSON은 공시 수치가 없으면 null — 임의 수치를 만들지 않고 문구로 대신한다. */
+function formatLimit(won: number | null): string {
+  return won === null ? "미정" : formatKrw(won);
+}
+
+/** 보증상품·변동금리는 취급은행이 금리를 정하므로 null. */
+function formatRate(rate: number | null): string {
+  return rate === null ? "은행별 상이" : `${rate}%`;
+}
+
 interface MatchingCardsProps {
   fundingGap: number;
   category?: string;
@@ -64,7 +74,7 @@ export function MatchingCards({ fundingGap, category }: MatchingCardsProps) {
           <span className="text-sm font-semibold text-[var(--text-primary)]">{product.product_name}</span>
           <span className="text-xs text-[var(--text-secondary)]">{product.provider}</span>
           <span className="text-xs text-[var(--text-secondary)]">
-            한도 {formatKrw(product.loan_limit)} · 금리 {product.interest_rate}%
+            한도 {formatLimit(product.loan_limit)} · 금리 {formatRate(product.interest_rate)}
           </span>
           <a
             href={product.url}
