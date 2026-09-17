@@ -4,6 +4,20 @@
 
 ---
 
+## 2026-09-18
+
+### 백엔드 — whole-branch 최종 리뷰(d62089e..7d4d264)와 수정 반영
+
+- **리뷰 방식**: 백엔드 460파일·약 13,600줄이라 3영역으로 나눠 병렬 리뷰(opus, 읽기 전용) — A 핵심·지표·재무(master·metric·finance·matching·intent·core·migrations) / B 수집기·크론(store·rent·convenience·tobacco·news·funding·scripts) / C 충격·RAG. `analysis`는 9/17 별도 리뷰 완료라 제외. 3영역 모두 "수정 후 머지", Critical 0.
+- **사용자 결정**: 기본 연도 = 마지막 완결 연도(2025) / 충격 시드를 대구 타임라인으로 교체 / ECOS 최신 금리 API 추가·시뮬레이터 연결 / 타 도시 뉴스 삭제.
+- **수정 그룹 A**(재리뷰 통과, 병합 `e4935a6`): intent 파서가 부분 문자열을 DB 순서로 비교해 "달서구에서 카페" → 서구(27170)로 인식되던 결함 → 긴 지명 우선(구·동·랜드마크). 예산이 첫 숫자만 읽혀 "2층 카페 5천만원" → None, "1억 5천만원" → 1억이던 결함 → 단위 있는 첫 매치 + 연속 단위 합산. 랜드마크 15곳 중 7곳이 없는 동(대명동·산격동 등 번호 없는 이름) → 실제 행정동으로 교정 + 시드 정합성 테스트(동대구역은 좌표·지번 기준 신암4동). 재무 입력 검증(원가율+수수료율 ≥ 1이면 500·음수 BEP → 422). 요약 카드·위험도 기본 연도를 데이터에서 산출(최신 점포 기록 2026-09-14 → 2025, 명시 `year`는 그대로). 마이그레이션 downgrade 제약 이름 명시, 앱 타이틀·서울 잔재 docstring 정리, 알 수 없는 provider_type 상품은 로더에서 경고 후 제외.
+- **수정 그룹 B**(병합 `f0ad36b` → 사후 재리뷰 통과): 구·군 뉴스 키워드 "중구 상권" 등 5개가 광주·울산·대전 기사를 수집(587건 중 대구 언급 68건) → `"{REGION_NAME} {구} 상권"`. 개발 DB 정리: 대상(모호 키워드 5개 ∧ 제목·요약에 '대구' 없음) 1차 news 519·rag 504 삭제, 00:10 크론이 옛 코드로 432건 재적재 → 2차 432 삭제, 백업 2개(`.superpowers/sdd/2026-09-15-daegu-backend-port/news-cleanup-backup*.sql`, 복원 검증). 매시 크론 재오염 때문에 재리뷰 전에 병합, 병합 후 잔여 0(news 1,446·rag 3,056). funding 수집기 소스별 격리 + 만료 갱신 항상 실행 + 실패 시 exit 1. **API 키 로그 노출**: httpx 예외 메시지에 요청 URL 전체가 담겨 9/17 온통청년 키가 `logs/funding-collector.log`에 기록 → 값 `***` 치환, `core/matrix/grid_http_error_translator.py`로 youthcenter·인허가·기업마당·R-ONE 예외에서 쿼리 제거(재발급 권장은 handoff §0-1). 크론 `{ … } || {…}` 블록은 `set -e`가 꺼져 마지막 단계 실패만 잡던 결함 → `scripts/_lib.sh` `step`(최악 종료코드)·`flock -n` 중복 실행 방지, rag-indexer는 미분류 실패 시 로그 꼬리 출력. 키워드별 오류 격리·pubDate 없는 항목 건너뜀, 서울 학원 수집기 실행 가드.
+- **수정 그룹 C**(재리뷰 통과, 병합 `600e8a4`): `apps/rag`·`apps/shock`이 서울 원본과 바이트 동일이었음. RAG 검색에 `embedded_by == 임베더 model_name` 필터, 기본값 전부 gemini(DB `embedded_by`는 `gemini-embedding-001` 단일 — analysis 경로 검색 0건 위험 없음 확인), `existing_ids` NULL 임베딩 제외·`zip(strict=True)`, HNSW 인덱스 ORM 선언(autogenerate 인덱스 드롭 제안 1→0), Gemini 5xx 재시도. 충격 시드: 수도권 거리두기 5건 제거, 대구 타임라인(2/18 첫 확진·신천지 확산, 3/15 특별재난지역, 3/22~12/7 대구 적용 거리두기 단계) — 행마다 정부 브리핑·주요 언론 출처, 재리뷰에서 3건 원문 대조 일치. 게이트웨이 `dagLvl` 파라미터화, impacts에 `restaurant`. `GET /shocks/rates/latest?rate_type=` 추가(실측 `loan_sme` 202607 4.22% → ratio 0.0422) → 시뮬레이터 대출금리 기본값 프리필(로딩·오류 시 0.045, 사용자 입력은 덮어쓰지 않음). ECOS 키(URL 경로) 예외 메시지 마스킹.
+- **지도 기본 연도**(`fddd748`): 프론트 `map-state.ts`가 2026 고정이라 백엔드 기본(2025)과 어긋남 → 기본 2025, 2026 옵션은 "(집계 중)" 표시.
+- **거리두기 공공데이터 로더 실행**: `load_distancing`(data.go.kr 15098772) 1회 호출 — 일별 328행 → 대구 `dagLvl` 연속 구간 압축 **신규 7건**(2020-12-08 2단계 ~ 2021-07-27 3단계), shock_event 22 → 29. 시드(~2020-12-07)와 구간이 이어짐.
+- **실서버 검증**: 백엔드 재시작(PID 종료 후 재기동) → `/intent` "달서구에서 카페, 예산 1억 5천만원" → 27290·150,000,000 / `/shocks` 22건(대구·전국) / 금리 API 4.22% / 잘못된 재무 입력 422. headless funnel E2E PASS(지도 URL `year=2025`), analysis E2E PASS(13.4초, 제목 5개·참고 자료). pytest **329 passed / 1 skipped**, vitest **96/96**, tsc clean.
+- 미결·이월: covid·vworld·semas·서울 학원·molit 게이트웨이의 URL 키 노출(범위 밖), 뉴스 폴러 전 키워드 실패 시에도 exit 0, AI 분석에 지도 선택 연도 미전달, 테스트가 git 미추적 `data/raw` 필요, `feat/daegu-backend` main 병합은 사용자 보류.
+
 ## 2026-09-17
 
 ### 백엔드·프론트 — AI 리포트 /analysis SSE
