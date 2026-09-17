@@ -12,7 +12,7 @@ class RegionUseCase(ABC):
 
     @abstractmethod
     def geojson(self) -> dict:
-        """서울 행정동 경계 FeatureCollection — properties={region_code, name}."""
+        """대구 행정동 경계 FeatureCollection — properties={region_code, name}."""
 
     @abstractmethod
     def summary(self, region_code: str, industry_id: str) -> RegionSummaryDto:
