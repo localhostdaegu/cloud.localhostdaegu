@@ -16,7 +16,7 @@
 - Neo4j 컨테이너 기동(7476 HTTP 200, cypher-shell 응답). 노드 0 — 백엔드 코드에 Neo4j 사용처 없음.
 - `rag-indexer.sh` crontab 등록 — **매일 05:30**(store 04:20·funding 05:10 직후, 뉴스는 최대 하루 지연 허용). 수동 실행: 신규 4건 처리 → 2회차 0건으로 종료, rag_chunk 3,560.
 - **"신규 만료 22건" 반복 원인**: 수집 코드가 아니라 테스트. `test_funding_expiry.py`가 개발 DB에서 `_TODAY=2026-09-07`로 `refresh_expirations`를 호출 — 복원 UPDATE가 테스트 prefix로 한정되지 않아 마감 9/7~9/16 실데이터 22건을 미만료로 되돌림(pytest 전후 expired 62→40 재현). 수집 직전마다 전체 pytest를 돌려 매번 22건 재만료. 정상 배치로 복구(62건). 리포지토리 쓰기 중 범위 무제한은 이 메서드뿐.
-- 미결: 테스트가 개발 DB(크론 실적재 대상)를 공유하는 구조 — 테스트 DB 분리 여부 결정 필요.
+- **테스트 DB 분리**: `backend/tests/conftest.py` — `DATABASE_URL`의 DB명에 `_test`를 붙여 환경변수로 덮고(설정 lru_cache 초기화), 세션 시작 시 `localhostdaegu_test` 생성(없으면) → alembic head → `seed_all()`(마스터 8구·144동·11업종). DB명이 `_test`로 안 끝나면 중단. 빈 테스트 DB 첫 실행에서 academy·broker·convenience·population 11건이 마스터 부재로 실패(기존엔 앞선 시드 테스트 순서에 기대던 것) → 시드 선행으로 해소. DB 드롭 후 재생성 실행 210 통과, 개발 DB는 pytest 전후 불변(만료 62·funding 1,641·rag 3,560·store 161,115).
 
 ## 2026-09-16
 
