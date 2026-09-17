@@ -18,12 +18,12 @@
 - **LLM 수치 계산 금지**(daegunavi §7): 점수·금액·비율은 코드가 포맷해 리포트에 직접 쓰고, 프롬프트에는 이미 계산된 값만 넣는다.
 - 시스템 프롬프트 지역명은 `core.matrix.grid_region_config.REGION_NAME`("대구")에서 주입 — 서울 문구 금지.
 - **RAG 질의 임베더는 `provider="gemini"` 필수.** `rag_chunk` 3,560건 전부 `embedded_by=gemini-embedding-001`(2026-09-17 실측). `get_rag_search_use_case()` 기본값 `ollama`로 질의하면 벡터 공간이 달라 검색이 무의미해진다.
-- 테스트에서 LLM·RAG·DB는 Fake 포트로 대체. **실 Gemini 생성 호출은 Task 10에서만.**
+- 테스트에서 LLM·RAG·DB는 Fake 포트로 대체. **실 Gemini 생성 호출은 Task 11에서만.**
 - 백엔드 테스트: `cd backend && .venv/bin/python -m pytest ...` (conftest가 `localhostdaegu_test` DB를 자동 준비 — docker db 기동 필요). 기준선 210 passed / 1 skipped.
 - 프론트 테스트: `cd frontend && npx vitest run` (기준선 84 passed), `npx tsc --noEmit`.
-- 실행 중인 서버(백엔드 :8300 uvicorn — `--reload` 아님, 프론트 :3300 next dev)는 Task 10의 **사용자 승인 단계 전까지** 재시작·종료 금지. 브라우저는 headless Playwright만, 시각 브라우저 열기 금지.
+- 실행 중인 서버(백엔드 :8300 uvicorn — `--reload` 아님, 프론트 :3300 next dev)는 Task 11 Step 2 전까지(재시작은 2026-09-17 사용자 사전 승인됨) 재시작·종료 금지. 브라우저는 headless Playwright만, 시각 브라우저 열기 금지.
 - 건드리지 말 것: `data/manual/`, `docs/research/`(다른 에이전트 작업 중), `docs/application_form.md`, `frontend/docs/`(미추적 사용자 파일). `git add`는 태스크에 적힌 파일만 — `git add -A`/`git add .` 금지.
-- 범위 밖(YAGNI): 리포트 해시 앵커링, PDF, 리포트 영속 저장, Redis 저장소, mock fixture 문구 수정, 시뮬레이터 → AI 리포트 CTA.
+- 범위 밖(YAGNI): 리포트 해시 앵커링, PDF, 리포트 영속 저장, Redis 저장소, mock fixture 문구 수정. (시뮬레이터 → AI 리포트 CTA는 2026-09-17 사용자 결정으로 Task 10에 포함)
 
 ## SSE 계약 (프론트 기준 — 변경 금지)
 
@@ -111,7 +111,7 @@ backend/tests/test_settings_env_files.py              # 설정 필드 테스트 
 
 frontend/src/features/agent-report/hooks/use-agent-report.ts       # mock 고정 베이스 제거 → config.apiBase
 frontend/src/features/agent-report/hooks/use-agent-report.test.ts
-frontend/tests/analysis.cjs                                        # headless E2E (Task 10)
+frontend/tests/analysis.cjs                                        # headless E2E (Task 11)
 ```
 
 모든 `__init__.py`는 빈 파일(기존 BC와 동일).
@@ -2502,7 +2502,276 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 10: 실연동 스모크 (실 Gemini 호출은 이 태스크에서만) + headless E2E + 문서
+### Task 10: 시뮬레이터 결론 → AI 리포트 CTA (재무 입력 전달 → `calculator` 섹션)
+
+> 2026-09-17 사용자 결정으로 추가("리포트 계산표는 지금 추가"). 백엔드는 Task 8에서 선택 `finance` 필드를 이미 받는다 — 이 태스크는 프론트만.
+
+**Files:**
+- Create: `frontend/src/shared/finance-param.ts`
+- Test: `frontend/src/shared/finance-param.test.ts`
+- Modify: `frontend/src/features/agent-report/hooks/use-agent-report.ts` (`StartAnalysisParams.finance?`)
+- Modify: `frontend/src/features/agent-report/components/analysis-form.tsx` (`finance` prop → 제출 params에 포함 + 안내 문구)
+- Test: `frontend/src/features/agent-report/components/analysis-form.test.tsx` (신규)
+- Modify: `frontend/src/features/agent-report/components/analysis-page.tsx` (URL `finance` 파싱 → 폼에 전달)
+- Modify: `frontend/src/features/simulator/components/result-view.tsx` (`analysisHref?` prop → CTA 링크)
+- Test: `frontend/src/features/simulator/components/result-view.test.tsx` (테스트 1건 추가)
+- Modify: `frontend/src/features/simulator/components/simulator-page.tsx` (마지막 제출값 `mutation.variables`로 href 생성)
+
+**Interfaces:**
+- Consumes: `FinanceInput`(`frontend/src/shared/api/types.ts`, 백엔드 `SimulateRequest` 13필드와 이름 동일), react-query v5 `useMutation().variables`, Task 8의 POST body 선택 `finance`
+- Produces:
+  - `encodeFinanceParam(input: FinanceInput): string` — 13키만 JSON 직렬화
+  - `parseFinanceParam(raw: string | null): FinanceInput | undefined` — 13키가 모두 유한 number일 때만 반환, 아니면 `undefined`(깨진 URL은 조용히 무시)
+  - `StartAnalysisParams { region; industry; question?; finance?: FinanceInput }`
+  - 시뮬레이터 결론 화면 링크 "AI 리포트로 자세히 보기 →" → `/analysis?region=<region>&industry=<industry>&finance=<JSON>` (URL에 `region`·`industry`가 모두 있을 때만 노출)
+- 기존 교차 feature import가 없으므로 공용 직렬화는 `shared/`에 둔다. mock `/api/mock/analysis`는 body를 읽지 않으므로 수정하지 않는다(범위 밖: mock fixture).
+
+- [ ] **Step 1: 실패 테스트 — 직렬화** — `frontend/src/shared/finance-param.test.ts`
+
+```ts
+import { describe, expect, it } from "vitest";
+import type { FinanceInput } from "@/shared/api/types";
+import { encodeFinanceParam, parseFinanceParam } from "./finance-param";
+
+const INPUT: FinanceInput = {
+  deposit: 20_000_000,
+  key_money: 0,
+  interior_cost: 30_000_000,
+  equipment_cost: 10_000_000,
+  monthly_rent: 1_500_000,
+  monthly_payroll: 3_000_000,
+  monthly_insurance: 300_000,
+  cost_ratio: 0.35,
+  fee_ratio: 0.03,
+  equity: 40_000_000,
+  desired_loan: 20_000_000,
+  loan_rate: 0.05,
+  expected_monthly_revenue: 20_000_000,
+};
+
+describe("finance URL 파라미터", () => {
+  it("URLSearchParams 왕복 후에도 13필드를 그대로 복원한다", () => {
+    const qs = new URLSearchParams({ finance: encodeFinanceParam(INPUT) }).toString();
+    expect(parseFinanceParam(new URLSearchParams(qs).get("finance"))).toEqual(INPUT);
+  });
+
+  it("13필드 밖의 키는 인코딩하지 않는다", () => {
+    const withExtra = { ...INPUT, extra: 1 } as FinanceInput;
+    expect(Object.keys(JSON.parse(encodeFinanceParam(withExtra)))).toHaveLength(13);
+  });
+
+  it("없거나·JSON이 깨졌거나·필드가 빠졌거나·숫자가 아니면 undefined", () => {
+    const partial: Partial<FinanceInput> = { ...INPUT };
+    delete partial.loan_rate;
+    expect(parseFinanceParam(null)).toBeUndefined();
+    expect(parseFinanceParam("{not json")).toBeUndefined();
+    expect(parseFinanceParam("[]")).toBeUndefined();
+    expect(parseFinanceParam(JSON.stringify(partial))).toBeUndefined();
+    expect(parseFinanceParam(JSON.stringify({ ...INPUT, deposit: "20000000" }))).toBeUndefined();
+  });
+});
+```
+
+- [ ] **Step 2: 실패 확인**
+
+Run: `cd frontend && npx vitest run src/shared/finance-param.test.ts`
+Expected: FAIL — `Failed to resolve import "./finance-param"`
+
+- [ ] **Step 3: 구현** — `frontend/src/shared/finance-param.ts`
+
+```ts
+import type { FinanceInput } from "@/shared/api/types";
+
+/** 시뮬레이터 → AI 리포트로 재무 입력(백엔드 SimulateRequest 13필드)을 URL 한 파라미터로 넘긴다. */
+const FINANCE_KEYS = [
+  "deposit",
+  "key_money",
+  "interior_cost",
+  "equipment_cost",
+  "monthly_rent",
+  "monthly_payroll",
+  "monthly_insurance",
+  "cost_ratio",
+  "fee_ratio",
+  "equity",
+  "desired_loan",
+  "loan_rate",
+  "expected_monthly_revenue",
+] as const satisfies readonly (keyof FinanceInput)[];
+
+function pick(source: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(FINANCE_KEYS.map((key) => [key, source[key]]));
+}
+
+export function encodeFinanceParam(input: FinanceInput): string {
+  return JSON.stringify(pick(input as unknown as Record<string, unknown>));
+}
+
+/** 13필드가 모두 유한 number일 때만 반환한다 — 손으로 고친 URL은 조용히 무시(계산표 없이 분석). */
+export function parseFinanceParam(raw: string | null): FinanceInput | undefined {
+  if (!raw) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return undefined;
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return undefined;
+  const record = parsed as Record<string, unknown>;
+  const valid = FINANCE_KEYS.every((key) => typeof record[key] === "number" && Number.isFinite(record[key]));
+  return valid ? (pick(record) as unknown as FinanceInput) : undefined;
+}
+```
+
+Run: `cd frontend && npx vitest run src/shared/finance-param.test.ts`
+Expected: `3 passed`
+
+- [ ] **Step 4: 실패 테스트 — 폼·결론 CTA**
+
+신규 `frontend/src/features/agent-report/components/analysis-form.test.tsx`:
+
+```tsx
+import { expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import type { FinanceInput } from "@/shared/api/types";
+import { AnalysisForm } from "./analysis-form";
+
+const FINANCE = { deposit: 1, equity: 2 } as unknown as FinanceInput;
+
+it("finance가 있으면 안내 문구를 보이고 제출 params에 포함한다", () => {
+  const onSubmit = vi.fn();
+  render(<AnalysisForm initialRegion="2711059500" initialIndustry="cafe" finance={FINANCE} onSubmit={onSubmit} />);
+
+  expect(screen.getByText(/시뮬레이션 입력이 함께 전달돼요/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+  expect(onSubmit).toHaveBeenCalledWith({ region: "2711059500", industry: "cafe", question: undefined, finance: FINANCE });
+});
+
+it("finance가 없으면 안내 문구 없이 기존 params만 제출한다", () => {
+  const onSubmit = vi.fn();
+  render(<AnalysisForm initialRegion="2711059500" initialIndustry="cafe" onSubmit={onSubmit} />);
+
+  expect(screen.queryByText(/시뮬레이션 입력이 함께 전달돼요/)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+  expect(onSubmit).toHaveBeenCalledWith({ region: "2711059500", industry: "cafe", question: undefined });
+});
+```
+
+`frontend/src/features/simulator/components/result-view.test.tsx` 끝에 추가:
+
+```tsx
+test("analysisHref가 있을 때만 AI 리포트 CTA 링크를 렌더한다", () => {
+  const href = "/analysis?region=2711059500&industry=cafe&finance=%7B%7D";
+  const { unmount } = render(<ResultView result={{ ...RESULT, funding_gap: 0 }} analysisHref={href} />);
+  expect(screen.getByRole("link", { name: /AI 리포트로 자세히 보기/ })).toHaveAttribute("href", href);
+  unmount();
+
+  render(<ResultView result={{ ...RESULT, funding_gap: 0 }} />);
+  expect(screen.queryByRole("link", { name: /AI 리포트로 자세히 보기/ })).not.toBeInTheDocument();
+});
+```
+
+Run: `cd frontend && npx vitest run src/features/agent-report/components/analysis-form.test.tsx src/features/simulator/components/result-view.test.tsx`
+Expected: FAIL — 안내 문구·CTA 링크 없음 (첫 테스트의 `onSubmit` 인자에 finance 없음)
+
+- [ ] **Step 5: 구현 — 훅 타입** — `use-agent-report.ts`
+
+`import type { AgentEvent } from "@/shared/api/types";` → `import type { AgentEvent, FinanceInput } from "@/shared/api/types";`
+
+```ts
+export interface StartAnalysisParams {
+  region: string;
+  industry: string;
+  question?: string;
+  /** 시뮬레이터에서 넘어온 재무 입력 — 있으면 백엔드가 재무 시뮬레이션(calculator) 섹션을 추가한다. */
+  finance?: FinanceInput;
+}
+```
+
+- [ ] **Step 6: 구현 — 분석 폼** — `analysis-form.tsx`
+
+- import 추가: `import type { FinanceInput } from "@/shared/api/types";`
+- `AnalysisFormProps`에 `finance?: FinanceInput;` 추가, 컴포넌트 인자에 `finance` 추가
+- `onSubmit` 호출을 `finance`가 있을 때만 키를 넣도록 교체(없을 때 기존 params 모양 유지):
+
+```tsx
+        onSubmit({ region, industry, question: question.trim() || undefined, ...(finance ? { finance } : {}) });
+```
+
+- `추가 질문` `<label>` 바로 위에 추가:
+
+```tsx
+      {finance && (
+        <p className="rounded-md border border-[var(--border)] bg-[var(--bg-raised)] px-3 py-2 text-xs text-[var(--text-secondary)]">
+          시뮬레이션 입력이 함께 전달돼요 — 리포트에 재무 시뮬레이션 계산표가 추가됩니다.
+        </p>
+      )}
+```
+
+- [ ] **Step 7: 구현 — 분석 페이지** — `analysis-page.tsx`
+
+- import 추가: `import { parseFinanceParam } from "@/shared/finance-param";`
+- `const { state, start, loading } = useAgentReport();` 다음 줄: `const finance = parseFinanceParam(searchParams.get("finance"));`
+- `<AnalysisForm ...>`에 `finance={finance}` prop 추가
+
+- [ ] **Step 8: 구현 — 결론 CTA** — `result-view.tsx`
+
+- `ResultViewProps`에 추가:
+```ts
+  /** AI 리포트 CTA — 시뮬레이션 입력을 실어 /analysis로 이동. 없으면 링크를 그리지 않는다. */
+  analysisHref?: string;
+```
+- 컴포넌트 인자에 `analysisHref` 추가
+- 마지막 `조건 바꿔보기` `<a>`를 아래로 교체(기존 링크 속성 유지 + CTA 추가):
+```tsx
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <a href={backHref} className="text-sm text-[var(--accent)] underline underline-offset-4">
+          조건 바꿔보기 →
+        </a>
+        {analysisHref && (
+          <a href={analysisHref} className="text-sm font-semibold text-[var(--accent)] underline underline-offset-4">
+            AI 리포트로 자세히 보기 →
+          </a>
+        )}
+      </div>
+```
+
+- [ ] **Step 9: 구현 — 시뮬레이터 페이지** — `simulator-page.tsx`
+
+- import 추가: `import { encodeFinanceParam } from "@/shared/finance-param";`
+- `const district = searchParams.get("district");` 다음 줄: `const region = searchParams.get("region");`
+- `const mutation = useMutation(...)` 다음에:
+```tsx
+  // 결론을 만든 마지막 제출값(mutation.variables)을 그대로 리포트에 넘긴다 — 폼을 고친 뒤 미제출 값은 싣지 않는다.
+  const analysisHref =
+    mutation.variables && region && industry
+      ? `/analysis?${new URLSearchParams({ region, industry, finance: encodeFinanceParam(mutation.variables) }).toString()}`
+      : undefined;
+```
+- `<ResultView ...>`에 `analysisHref={analysisHref}` prop 추가
+
+- [ ] **Step 10: 통과 확인 + 전체 회귀**
+
+Run: `cd frontend && npx vitest run src/shared/finance-param.test.ts src/features/agent-report src/features/simulator`
+Expected: 전부 PASS
+
+Run: `cd frontend && npx vitest run && npx tsc --noEmit`
+Expected: 90 passed(Task 9 후 84 + finance-param 3 + analysis-form 2 + result-view 1), tsc 출력 없음
+
+- [ ] **Step 11: 커밋**
+
+```bash
+git add frontend/src/shared/finance-param.ts frontend/src/shared/finance-param.test.ts frontend/src/features/agent-report/hooks/use-agent-report.ts frontend/src/features/agent-report/components/analysis-form.tsx frontend/src/features/agent-report/components/analysis-form.test.tsx frontend/src/features/agent-report/components/analysis-page.tsx frontend/src/features/simulator/components/result-view.tsx frontend/src/features/simulator/components/result-view.test.tsx frontend/src/features/simulator/components/simulator-page.tsx
+git commit -m "feat(frontend): 시뮬레이터 결론 → AI 리포트 CTA — 재무 입력 전달로 계산표 섹션
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
+```
+
+---
+
+### Task 11: 실연동 스모크 (실 Gemini 호출은 이 태스크에서만) + headless E2E + 문서
 
 **Files:**
 - Create: `frontend/tests/analysis.cjs`
@@ -2510,17 +2779,20 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 - Modify: `docs/handoff.md` (§0 표의 `AI 리포트 SSE /analysis` 행 상태, §0-1 1번 항목)
 
 **Interfaces:**
-- Consumes: Task 8 엔드포인트, Task 9 프론트 전환, 실행 중인 :3300 dev 서버(`frontend/.env.local`의 `NEXT_PUBLIC_API_BASE=http://localhost:8300`)
+- Consumes: Task 8 엔드포인트, Task 9 프론트 전환, Task 10 CTA(`finance` URL 파라미터), 실행 중인 :3300 dev 서버(`frontend/.env.local`의 `NEXT_PUBLIC_API_BASE=http://localhost:8300`)
 - Produces: 실측 결과(이벤트 수·소요 시간·섹션·인용 수)를 devlog에 기록
 
 - [ ] **Step 1: 사전 점검 (생성 호출 없음)**
 
 Run: `cd backend && .venv/bin/python -c "from google import genai; from core.matrix.grid_keymaker_secret_manager import get_settings as g; s=g(); print(genai.Client(api_key=s.gemini_api_key).models.get(model=s.gemini_report_model).name)"`
-Expected: `models/gemini-2.5-flash` 출력. 404/권한 오류면 **중단하고 사용자에게 모델명 결정 요청** (`backend/.env`에 `GEMINI_REPORT_MODEL=...`).
+Expected: `models/gemini-2.5-flash` 출력.
+
+이어서 모델 목록 조회(생성 호출 없음): `cd backend && .venv/bin/python -c "from google import genai; from core.matrix.grid_keymaker_secret_manager import get_settings as g; [print(m.name) for m in genai.Client(api_key=g().gemini_api_key).models.list() if 'flash' in m.name]"`
+**사용자 결정(2026-09-17): 가장 최신 GA Flash 모델을 쓴다.** `gemini-2.5-flash`보다 새 GA Flash(`-preview`·`-exp`·`-lite`·`-image`·`-tts`·`-live` 제외)가 있으면 `backend/.env`에 `GEMINI_REPORT_MODEL=<그 모델>`을 넣고(커밋 대상 아님), 그 모델에서 `GeminiReportWriter`의 thinking 설정이 거부되지 않는지는 Step 3 스모크로 확인한다(거부되면 `gemini-2.5-flash`로 되돌리고 devlog에 기록). 없으면 기본값 유지.
 
 - [ ] **Step 2: 백엔드 재시작 — 사용자 승인 필수**
 
-:8300 uvicorn은 `--reload`가 아니라 새 라우트를 반영하려면 재시작해야 한다. **사용자에게 재시작 승인을 받은 뒤에만** 실행:
+:8300 uvicorn은 `--reload`가 아니라 새 라우트를 반영하려면 재시작해야 한다. **2026-09-17 사용자 사전 승인됨** — 그대로 실행:
 ```bash
 pkill -f "uvicorn main:app --host 0.0.0.0 --port 8300"
 cd /home/kimchungsik/projects/cloud.localhostdaegu/backend && nohup .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8300 > ../logs/uvicorn.log 2>&1 &
@@ -2550,9 +2822,9 @@ grep -c '^event: ' /tmp/analysis-smoke.txt; grep '^event: ' /tmp/analysis-smoke.
 /**
  * AI 분석 E2E 스모크 (headless). 실행 중인 :3300 dev 서버를 재사용한다(E2E_REUSE_SERVER=1 전용 — 서버를 띄우거나 끄지 않는다).
  *
- * 여정: /analysis?region=2711059500&industry=cafe → [분석 시작]
+ * 여정: /analysis?region=2711059500&industry=cafe&finance=<13필드 JSON> (Task 10 CTA와 같은 URL) → [분석 시작]
  *      → POST {API_BASE}/analysis 가 기대 베이스로 나감 → 오케스트레이터 "완료"
- *      → 리포트 제목 4개(종합 진단·상권 진단·충격 분석·정책자금) + 에러 alert 없음.
+ *      → 리포트 제목 5개(종합 진단·상권 진단·충격 분석·정책자금·재무 시뮬레이션) + 에러 alert 없음.
  *
  * 실백엔드: E2E_REUSE_SERVER=1 E2E_API_BASE=http://localhost:8300 node tests/analysis.cjs
  * 루트 CLAUDE.md 브라우저 규약: headless: true, 서버 준비 확인은 HTTP, try/finally 로 브라우저 정리, /analysis 재로드 금지.
@@ -2564,7 +2836,14 @@ const BASE_URL = "http://localhost:3300";
 const API_BASE = process.env.E2E_API_BASE || "/api/mock";
 const EXPECTED_POST_URL = API_BASE.startsWith("http") ? `${API_BASE}/analysis` : `${BASE_URL}${API_BASE}/analysis`;
 const REPORT_TIMEOUT_MS = 180_000; // 실 Gemini 4섹션 순차 스트림
-const HEADINGS = ["종합 진단", "상권 진단", "충격 분석", "정책자금"];
+const HEADINGS = ["종합 진단", "상권 진단", "충격 분석", "정책자금", "재무 시뮬레이션"];
+// 시뮬레이터 결론 CTA가 싣는 재무 입력(원 단위) — 백엔드 SimulateRequest 13필드.
+const FINANCE = {
+  deposit: 20_000_000, key_money: 0, interior_cost: 30_000_000, equipment_cost: 10_000_000,
+  monthly_rent: 1_500_000, monthly_payroll: 3_000_000, monthly_insurance: 300_000,
+  cost_ratio: 0.35, fee_ratio: 0.03, equity: 40_000_000, desired_loan: 20_000_000,
+  loan_rate: 0.05, expected_monthly_revenue: 20_000_000,
+};
 
 let failed = false;
 
@@ -2602,7 +2881,8 @@ async function main() {
       if (req.method() === "POST" && req.url().endsWith("/analysis")) postUrls.push(req.url());
     });
 
-    await page.goto(`${BASE_URL}/analysis?region=2711059500&industry=cafe`, { waitUntil: "networkidle" });
+    const query = new URLSearchParams({ region: "2711059500", industry: "cafe", finance: JSON.stringify(FINANCE) });
+    await page.goto(`${BASE_URL}/analysis?${query.toString()}`, { waitUntil: "networkidle" });
     const started = Date.now();
     await page.getByRole("button", { name: "분석 시작" }).click();
 
@@ -2660,9 +2940,9 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ## 미결 사항 (실행 전 사용자 확인 권장)
 
-1. **리포트 생성 모델** — 기본 `gemini-2.5-flash`(thinking_budget=0). 계정에서 더 최신 Flash 모델을 쓸 수 있으면 `GEMINI_REPORT_MODEL`로 교체. 교체 시 thinking 설정 호환 확인 (Task 10 Step 1에서 존재 여부만 검증).
-2. **finance 선택 필드** — 프론트 분석 폼은 region·industry·question만 보내므로 현재 화면에서는 `calculator` 섹션이 나오지 않고 매칭은 funding_gap=0 기준. 시뮬레이터 결론 → AI 리포트 CTA(재무 입력 전달)는 이 계획 범위 밖.
-3. **백엔드 재시작 승인** — :8300은 `--reload`가 아니라 Task 10 Step 2에서 재시작이 필요하다.
+1. **리포트 생성 모델** — 2026-09-17 사용자 결정: Task 11 Step 1에서 사용 가능한 모델을 조회해 가장 최신 GA Flash를 쓴다. 기본 `gemini-2.5-flash`(thinking_budget=0). 계정에서 더 최신 Flash 모델을 쓸 수 있으면 `GEMINI_REPORT_MODEL`로 교체. 교체 시 thinking 설정 호환 확인 (Task 11 Step 1에서 목록 조회 후 결정).
+2. **finance 선택 필드** — ~~범위 밖~~ → 2026-09-17 사용자 결정: 시뮬레이터 결론 → AI 리포트 CTA로 재무 입력을 전달한다(Task 10).
+3. **백엔드 재시작 승인** — :8300은 `--reload`가 아니라 Task 11 Step 2에서 재시작이 필요하다. → **2026-09-17 사용자 사전 승인.**
 
 ## 예상 위험
 
