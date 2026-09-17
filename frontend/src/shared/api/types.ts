@@ -114,9 +114,9 @@ export interface MatchingProduct {
   business_age_max: number | null;
   category: string[] | null;
   owner_age_max: number | null;
-  loan_limit: number;
-  interest_rate: number;
-  guarantee_fee: number;
+  loan_limit: number | null;
+  interest_rate: number | null;
+  guarantee_fee: number | null;
   url: string;
   source_url: string;
 }
