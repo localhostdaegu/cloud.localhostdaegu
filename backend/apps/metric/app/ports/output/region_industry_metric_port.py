@@ -1,6 +1,7 @@
 """Driven Ports — metric이 바깥 세계에 요구하는 계약 (ISP: 역할별 분리)."""
 
 from abc import ABC, abstractmethod
+from datetime import date
 
 from apps.metric.app.dtos.region_industry_metric_dto import YearlyStoreStat
 from apps.metric.domain.entities.region_industry_metric_entity import (
@@ -26,8 +27,10 @@ class RegionIndustryMetricRepositoryPort(ABC):
         """복합키 단건 조회 — 없으면 None."""
 
     @abstractmethod
-    def latest_year(self, industry_id: str | None = None) -> int | None:
-        """해당 industry(미지정 시 전체)의 최신(최대) year. 데이터 없으면 None (risk API용)."""
+    def latest_year(
+        self, industry_id: str | None = None, until_year: int | None = None
+    ) -> int | None:
+        """해당 industry(미지정 시 전체)의 최신(최대) year — until_year 지정 시 그 이하에서. 없으면 None."""
 
     @abstractmethod
     def list_by_region_year(
@@ -36,8 +39,10 @@ class RegionIndustryMetricRepositoryPort(ABC):
         """해당 region의 해당 연도 전 업종 지표를 industry_id 순으로 반환한다 (risk API용)."""
 
     @abstractmethod
-    def list_latest_by_region(self, region_code: str) -> list[RegionIndustryMetric]:
-        """해당 region의 업종별 최신(최대) year 행을 1개씩 반환한다.
+    def list_latest_by_region(
+        self, region_code: str, until_year: int | None = None
+    ) -> list[RegionIndustryMetric]:
+        """해당 region의 업종별 최신(최대) year 행을 1개씩 반환한다 (until_year 지정 시 그 이하에서).
 
         업종마다 최신 연도가 다를 수 있으므로(예: A업종 2025, B업종 2023) 단일
         year로 필터링하지 않는다 — region 전체 업종 랭킹(risk API)에서 다른
@@ -49,6 +54,10 @@ class StoreStatsPort(ABC):
     @abstractmethod
     def yearly_stats(self, years: list[int]) -> list[YearlyStoreStat]:
         """연도별 행정동×업종 store 원천 카운트 (region_code 보유 점포만)."""
+
+    @abstractmethod
+    def latest_record_date(self) -> date | None:
+        """store 원천(region_code 보유분)의 최신 개업·폐업일. 원천이 비어 있으면 None."""
 
 
 class IndustryCatalogPort(ABC):

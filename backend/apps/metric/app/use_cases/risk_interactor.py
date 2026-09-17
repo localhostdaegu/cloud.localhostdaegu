@@ -2,7 +2,9 @@ from apps.metric.app.dtos.region_industry_metric_dto import RiskScoreDto
 from apps.metric.app.ports.input.risk_use_case import RiskUseCase
 from apps.metric.app.ports.output.region_industry_metric_port import (
     RegionIndustryMetricRepositoryPort,
+    StoreStatsPort,
 )
+from apps.metric.app.use_cases.complete_year import complete_year_cap, resolve_year
 from apps.metric.domain.entities.region_industry_metric_entity import (
     RegionIndustryMetric,
 )
@@ -29,11 +31,14 @@ def _to_dto(row: RegionIndustryMetric, pool: list[RegionIndustryMetric]) -> Risk
 
 
 class RiskInteractor(RiskUseCase):
-    def __init__(self, repository: RegionIndustryMetricRepositoryPort) -> None:
+    def __init__(
+        self, repository: RegionIndustryMetricRepositoryPort, store_stats: StoreStatsPort
+    ) -> None:
         self._repository = repository
+        self._store_stats = store_stats
 
     def rank_by_region(self, industry_id: str, year: int | None) -> list[RiskScoreDto]:
-        target_year = year if year is not None else self._repository.latest_year(industry_id)
+        target_year = resolve_year(year, industry_id, self._repository, self._store_stats)
         if target_year is None:
             return []
         pool = _rankable(self._repository.list_by_industry_year(industry_id, target_year))
@@ -43,7 +48,7 @@ class RiskInteractor(RiskUseCase):
     def score_for(
         self, region_code: str, industry_id: str, year: int | None
     ) -> RiskScoreDto | None:
-        target_year = year if year is not None else self._repository.latest_year(industry_id)
+        target_year = resolve_year(year, industry_id, self._repository, self._store_stats)
         if target_year is None:
             return None
         pool = _rankable(self._repository.list_by_industry_year(industry_id, target_year))
@@ -54,11 +59,15 @@ class RiskInteractor(RiskUseCase):
         # year 미지정 시 업종마다 최신 연도가 다를 수 있어(예: A업종 2025, B업종 2023)
         # 전역 latest_year() 하나로 필터링하면 다른 연도의 업종 행이 조용히 누락된다.
         # 각 행 자신의 year(list_latest_by_region가 업종별로 고른 최신 연도)를 그대로
-        # 풀 조회에 사용해 업종별 연도 불일치를 허용한다.
+        # 풀 조회에 사용해 업종별 연도 불일치를 허용한다. 단, 부분 연도는 마지막 완결 연도 상한으로 제외.
         if year is not None:
             region_rows = _rankable(self._repository.list_by_region_year(region_code, year))
         else:
-            region_rows = _rankable(self._repository.list_latest_by_region(region_code))
+            region_rows = _rankable(
+                self._repository.list_latest_by_region(
+                    region_code, until_year=complete_year_cap(self._store_stats)
+                )
+            )
         scored = [
             _to_dto(
                 row,

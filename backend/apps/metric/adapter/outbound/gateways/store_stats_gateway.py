@@ -50,3 +50,12 @@ class StoreStatsGateway(StoreStatsPort):
                     for region_code, industry_id, store_count, open_count, close_count in rows
                 )
         return stats
+
+    def latest_record_date(self) -> date | None:
+        with session_scope() as session:
+            # greatest()는 NULL 인자를 무시 — 폐업 이력이 없어도 최신 개업일을 돌려준다
+            return session.execute(
+                select(
+                    func.greatest(func.max(StoreOrm.open_date), func.max(StoreOrm.close_date))
+                ).where(StoreOrm.region_code.is_not(None))
+            ).scalar_one_or_none()

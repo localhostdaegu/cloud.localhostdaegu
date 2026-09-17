@@ -132,6 +132,38 @@ def test_gateway_loads_products_from_json_files(tmp_path):
         assert "youth-test" in product_ids
 
 
+def test_gateway_skips_unknown_provider_type_with_warning(tmp_path):
+    """matcher 우선순위 표에 없는 provider_type 은 정렬 시 KeyError(500) — 로더에서 건너뛰고 로그."""
+    manual_dir = tmp_path / "data" / "manual"
+    manual_dir.mkdir(parents=True)
+    base = {
+        "provider": "p", "product_name": "n", "target": "t", "region": "대구",
+        "business_age_min": 0, "business_age_max": None, "category": None,
+        "owner_age_max": None, "loan_limit": None, "interest_rate": 0.0,
+        "guarantee_fee": 0.0, "url": "http://test.com", "source_url": "http://test.com",
+    }
+    (manual_dir / "imbank_products.json").write_text(json.dumps([
+        {**base, "product_id": "ok-1", "provider_type": "bank"},
+        {**base, "product_id": "odd-1", "provider_type": "fintech"},
+    ]))
+
+    with mock.patch('apps.matching.adapter.outbound.gateways.manual_product_gateway.Path') as mock_path_class:
+        mock_instance = mock.MagicMock()
+        mock_instance.resolve.return_value.parents.__getitem__.return_value = tmp_path
+        mock_path_class.return_value = mock_instance
+
+        load_all_products.cache_clear()
+        # caplog 대신 로거 패치 — conftest 의 alembic fileConfig 가 기존 로거를 disable 한다
+        with mock.patch('apps.matching.adapter.outbound.gateways.manual_product_gateway._logger') as logger:
+            products = load_all_products()
+        load_all_products.cache_clear()
+
+    assert [p["product_id"] for p in products] == ["ok-1"]
+    assert logger.warning.call_count == 1
+    assert {"odd-1", "fintech"} <= set(logger.warning.call_args.args)
+    match_products(products, funding_gap=0, category="cafe", business_age_months=0, owner_age=None)
+
+
 def test_gateway_raises_on_missing_required_field(tmp_path):
     """게이트웨이: 필수 필드 누락 시 ValueError 발생."""
     manual_dir = tmp_path / "data" / "manual"

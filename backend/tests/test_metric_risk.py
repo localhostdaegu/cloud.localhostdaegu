@@ -1,11 +1,16 @@
 """위험도 스코어 검증 — 도메인 함수·백분위·인터랙터 3형태·GET /metrics/risk (프론트엔드 계약)."""
 
+from datetime import date
+
 import pytest
 from fastapi.testclient import TestClient
+
+from apps.metric.app.dtos.region_industry_metric_dto import YearlyStoreStat
 
 from apps.metric.app.dtos.region_industry_metric_dto import RiskScoreDto
 from apps.metric.app.ports.output.region_industry_metric_port import (
     RegionIndustryMetricRepositoryPort,
+    StoreStatsPort,
 )
 from apps.metric.app.use_cases.risk_interactor import RiskInteractor
 from apps.metric.dependencies.region_industry_metric_dependencies import get_risk_use_case
@@ -72,11 +77,14 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
     ) -> RegionIndustryMetric | None:
         raise NotImplementedError
 
-    def latest_year(self, industry_id: str | None = None) -> int | None:
+    def latest_year(
+        self, industry_id: str | None = None, until_year: int | None = None
+    ) -> int | None:
         years = [
             m.year
             for m in self._metrics
-            if industry_id is None or m.industry_id == industry_id
+            if (industry_id is None or m.industry_id == industry_id)
+            and (until_year is None or m.year <= until_year)
         ]
         return max(years) if years else None
 
@@ -87,8 +95,14 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
             m for m in self._metrics if m.region_code == region_code and m.year == year
         ]
 
-    def list_latest_by_region(self, region_code: str) -> list[RegionIndustryMetric]:
-        region_rows = [m for m in self._metrics if m.region_code == region_code]
+    def list_latest_by_region(
+        self, region_code: str, until_year: int | None = None
+    ) -> list[RegionIndustryMetric]:
+        region_rows = [
+            m
+            for m in self._metrics
+            if m.region_code == region_code and (until_year is None or m.year <= until_year)
+        ]
         latest_year_by_industry: dict[str, int] = {}
         for m in region_rows:
             latest_year_by_industry[m.industry_id] = max(
@@ -99,6 +113,19 @@ class FakeRepository(RegionIndustryMetricRepositoryPort):
             for m in region_rows
             if m.year == latest_year_by_industry[m.industry_id]
         ]
+
+
+class FakeStoreStats(StoreStatsPort):
+    """store 원천 최신 기록일만 흉내 — None이면 데이터 없음(완결 연도 상한 없음)."""
+
+    def __init__(self, latest: date | None = None) -> None:
+        self._latest = latest
+
+    def yearly_stats(self, years: list[int]) -> list[YearlyStoreStat]:
+        raise NotImplementedError
+
+    def latest_record_date(self) -> date | None:
+        return self._latest
 
 
 def _m(
@@ -135,7 +162,7 @@ _BAKERY_POOL = [
 
 
 def test_rank_by_region_returns_desc_sorted_scores():
-    interactor = RiskInteractor(repository=FakeRepository(_CAFE_POOL))
+    interactor = RiskInteractor(repository=FakeRepository(_CAFE_POOL), store_stats=FakeStoreStats())
     ranking = interactor.rank_by_region("cafe", year=None)
     assert [d.region_code for d in ranking] == ["R3", "R2", "R1"]
     assert ranking[0].score == 83.3
@@ -149,19 +176,19 @@ def test_rank_by_region_returns_desc_sorted_scores():
 def test_rank_by_region_uses_latest_year_when_not_given():
     old = _m("R1", "cafe", 0.0, 1, 0.0, year=2020)
     new = _m("R1", "cafe", 1.0, 1, 1.0, year=2025)
-    interactor = RiskInteractor(repository=FakeRepository([old, new]))
+    interactor = RiskInteractor(repository=FakeRepository([old, new]), store_stats=FakeStoreStats())
     ranking = interactor.rank_by_region("cafe", year=None)
     assert len(ranking) == 1
     assert ranking[0].score == risk_score(0.5, 0.5, 0.5).score  # N=1 -> percentile 0.5
 
 
 def test_rank_by_region_empty_when_no_data():
-    interactor = RiskInteractor(repository=FakeRepository([]))
+    interactor = RiskInteractor(repository=FakeRepository([]), store_stats=FakeStoreStats())
     assert interactor.rank_by_region("general_restaurants", year=None) == []
 
 
 def test_score_for_returns_single_region_result():
-    interactor = RiskInteractor(repository=FakeRepository(_CAFE_POOL))
+    interactor = RiskInteractor(repository=FakeRepository(_CAFE_POOL), store_stats=FakeStoreStats())
     dto = interactor.score_for("R2", "cafe", year=None)
     assert isinstance(dto, RiskScoreDto)
     assert dto.region_code == "R2"
@@ -170,17 +197,17 @@ def test_score_for_returns_single_region_result():
 
 
 def test_score_for_none_when_region_missing():
-    interactor = RiskInteractor(repository=FakeRepository(_CAFE_POOL))
+    interactor = RiskInteractor(repository=FakeRepository(_CAFE_POOL), store_stats=FakeStoreStats())
     assert interactor.score_for("R9", "cafe", year=None) is None
 
 
 def test_score_for_none_when_no_data():
-    interactor = RiskInteractor(repository=FakeRepository([]))
+    interactor = RiskInteractor(repository=FakeRepository([]), store_stats=FakeStoreStats())
     assert interactor.score_for("R1", "cafe", year=None) is None
 
 
 def test_rank_by_industry_returns_desc_sorted_scores_across_industries():
-    interactor = RiskInteractor(repository=FakeRepository(_CAFE_POOL + _BAKERY_POOL))
+    interactor = RiskInteractor(repository=FakeRepository(_CAFE_POOL + _BAKERY_POOL), store_stats=FakeStoreStats())
     ranking = interactor.rank_by_industry("R1", year=None)
     assert [d.industry_id for d in ranking] == ["bakery", "cafe"]
     assert ranking[0].score == 75.0
@@ -190,7 +217,7 @@ def test_rank_by_industry_returns_desc_sorted_scores_across_industries():
 
 
 def test_rank_by_industry_empty_when_no_data():
-    interactor = RiskInteractor(repository=FakeRepository([]))
+    interactor = RiskInteractor(repository=FakeRepository([]), store_stats=FakeStoreStats())
     assert interactor.rank_by_industry("R1", year=None) == []
 
 
@@ -199,7 +226,7 @@ def test_rankable_excludes_rows_with_none_rates():
         _m("R1", "cafe", 0.5, 10, 0.5),
         _m("R2", "cafe", None, 20, None),  # 전년 표본 부재 -> 랭킹 제외
     ]
-    interactor = RiskInteractor(repository=FakeRepository(metrics))
+    interactor = RiskInteractor(repository=FakeRepository(metrics), store_stats=FakeStoreStats())
     ranking = interactor.rank_by_region("cafe", year=None)
     assert [d.region_code for d in ranking] == ["R1"]
 
@@ -210,7 +237,7 @@ def test_rankable_excludes_rows_with_none_rates():
 
 
 def _client(metrics: list[RegionIndustryMetric]) -> TestClient:
-    fake = RiskInteractor(repository=FakeRepository(metrics))
+    fake = RiskInteractor(repository=FakeRepository(metrics), store_stats=FakeStoreStats())
     app.dependency_overrides[get_risk_use_case] = lambda: fake
     return TestClient(app)
 
@@ -294,7 +321,8 @@ def test_rank_by_industry_keeps_industries_with_different_latest_years():
     # cafe는 2025년까지 데이터가 있고, bakery는 2023년에만 데이터가 있다(2024·2025 없음).
     # 전역 latest_year()(=2025) 하나로 region_code 행을 필터링하면 bakery 행이 사라진다.
     interactor = RiskInteractor(
-        repository=FakeRepository(_CAFE_POOL + _BAKERY_POOL_2023_ONLY)
+        repository=FakeRepository(_CAFE_POOL + _BAKERY_POOL_2023_ONLY),
+        store_stats=FakeStoreStats(),
     )
     ranking = interactor.rank_by_industry("R1", year=None)
 
@@ -313,3 +341,36 @@ def test_risk_endpoint_region_only_keeps_industries_with_different_latest_years(
     assert [row["industry_id"] for row in body] == ["bakery", "cafe"]
     assert body[0]["score"] == 75.0
     assert body[1]["score"] == 16.7
+
+
+# ---------------------------------------------------------------------------
+# 기본 연도 = 마지막 완결 연도 — store 원천 최신 기록일(2026-09-14)의 연도는 부분 연도라 제외
+# ---------------------------------------------------------------------------
+
+_PARTIAL_2026 = [
+    _m("R1", "cafe", 1.0, 99, 1.0, year=2026),  # 부분 연도 — 단독 풀이면 0.5 백분위
+    _m("R2", "bakery", 1.0, 99, 1.0, year=2026),
+]
+
+
+def _with_partial_year() -> RiskInteractor:
+    return RiskInteractor(
+        repository=FakeRepository(_CAFE_POOL + _BAKERY_POOL + _PARTIAL_2026),
+        store_stats=FakeStoreStats(latest=date(2026, 9, 14)),
+    )
+
+
+def test_default_year_skips_partial_current_year():
+    interactor = _with_partial_year()
+    assert [d.region_code for d in interactor.rank_by_region("cafe", year=None)] == ["R3", "R2", "R1"]
+    assert interactor.score_for("R2", "cafe", year=None).score == 50.0  # 2025 풀 기준
+
+
+def test_explicit_year_still_returns_partial_year():
+    ranking = _with_partial_year().rank_by_region("cafe", year=2026)
+    assert [d.region_code for d in ranking] == ["R1"]
+
+
+def test_rank_by_industry_default_skips_partial_current_year():
+    ranking = _with_partial_year().rank_by_industry("R2", year=None)
+    assert [(d.industry_id, d.score) for d in ranking] == [("cafe", 50.0), ("bakery", 25.0)]

@@ -26,4 +26,6 @@ def get_region_industry_metric_use_case() -> RegionIndustryMetricUseCase:
 
 
 def get_risk_use_case() -> RiskUseCase:
-    return RiskInteractor(repository=SqlAlchemyRegionIndustryMetricRepository())
+    return RiskInteractor(
+        repository=SqlAlchemyRegionIndustryMetricRepository(), store_stats=StoreStatsGateway()
+    )

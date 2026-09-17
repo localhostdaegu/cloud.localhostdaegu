@@ -17,7 +17,7 @@ from apps.news.adapter.inbound.api.v1.news_article_router import router as news_
 from apps.shock.adapter.inbound.api.v1.shock_event_router import router as shock_router
 from apps.store.adapter.inbound.api.v1.store_router import router as store_router
 
-app = FastAPI(title="beyondfacade backend")
+app = FastAPI(title="대구 창업 금융 네비게이터 backend")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3300", "http://127.0.0.1:3300"],

@@ -13,6 +13,7 @@ from apps.metric.app.ports.output.region_industry_metric_port import (
     RegionIndustryMetricRepositoryPort,
     StoreStatsPort,
 )
+from apps.metric.app.use_cases.complete_year import resolve_year
 from apps.metric.domain.entities.region_industry_metric_entity import (
     RegionIndustryMetric,
 )
@@ -83,6 +84,10 @@ class RegionIndustryMetricInteractor(RegionIndustryMetricUseCase):
             )
         return self._repository.upsert(metrics)
 
+    def data_years(self, first_year: int) -> list[int]:
+        latest = self._store_stats.latest_record_date()
+        return [] if latest is None else list(range(first_year, latest.year + 1))
+
     def list_metric_values(
         self, industry_id: str, metric: str, year: int
     ) -> list[MetricValueDto]:
@@ -98,9 +103,12 @@ class RegionIndustryMetricInteractor(RegionIndustryMetricUseCase):
         ]
 
     def find(
-        self, region_code: str, industry_id: str, year: int
+        self, region_code: str, industry_id: str, year: int | None
     ) -> RegionIndustryMetricDto | None:
-        entity = self._repository.find(region_code, industry_id, year)
+        target_year = resolve_year(year, industry_id, self._repository, self._store_stats)
+        if target_year is None:
+            return None
+        entity = self._repository.find(region_code, industry_id, target_year)
         if entity is None:
             return None
         return RegionIndustryMetricDto(**asdict(entity))

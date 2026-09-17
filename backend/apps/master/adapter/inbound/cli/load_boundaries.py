@@ -1,10 +1,11 @@
 """행정동 경계 적재 러너 (Driving Adapter, CLI).
 
-- 원천: 브이월드 WFS lt_c_cademd (행정동, 기준일 2024-06-30, 통계청 adm_cd 8자리)
+- 원천: 브이월드 WFS lt_c_cademd (행정동, 기준일 2024-06-30, 통계청 adm_cd 8자리 — 대구 시도 22 필터)
+- 대상: 대구 8개 구·군, region 144행(읍·면·출장소 포함)
 - 매칭: adm_cd↔region_code(행안부 10자리)는 코드 체계가 달라 직접 조인 불가
   → (구, 정규화 동명)으로 매칭. 구는 유일 동명에서 학습한 adm_cd 앞 5자리로 해소
-- 보충: 경계 기준일 이후 분동된 용두동·신설동(행정동 용신동의 후신)은
-  법정동 경계(LT_C_ADEMD_INFO)로 1:1 대체 — 분동 후 행정동 경계 = 법정동 경계
+- 보충: 경계 기준일 이후 분동된 행정동은 법정동 경계(LT_C_ADEMD_INFO)로 1:1 대체하는 경로 —
+  대구는 해당 없음(_LEGAL_DONG_SUPPLEMENTS 비어 있음)
 - 산출: data/geojson/regions/{region_code}.json 저장 후 region.geometry_ref 갱신 (멱등)
 
 실행: python -m apps.master.adapter.inbound.cli.load_boundaries
@@ -28,8 +29,7 @@ from core.matrix.grid_oracle_database_manager import session_scope
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 _GEOJSON_DIR = _REPO_ROOT / "data" / "geojson" / "regions"
 
-# 분동(2024-07 이후)으로 행정동 WFS에 경계가 없는 region — 법정동 경계로 보충
-# (2026-08-26 실호출: 동대문구 법정동 신설동=11230101, 용두동=11230102)
+# 분동(2024-07 이후)으로 행정동 WFS에 경계가 없는 region — 법정동 경계로 보충 ({region_code: 법정동 코드})
 _LEGAL_DONG_SUPPLEMENTS: dict[str, str] = {}  # 대구: 2024-06-30 이후 분동 없음 (서울 신설동·용두동 항목 제거)
 
 

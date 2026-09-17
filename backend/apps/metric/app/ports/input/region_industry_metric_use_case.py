@@ -18,6 +18,10 @@ class RegionIndustryMetricUseCase(ABC):
         """연도 범위의 지표를 store 원천 집계로 재계산·업서트하고 처리 건수를 반환한다 (멱등)."""
 
     @abstractmethod
+    def data_years(self, first_year: int) -> list[int]:
+        """first_year부터 store 원천 최신 기록일의 연도(부분 연도 포함)까지. 원천이 비면 빈 목록."""
+
+    @abstractmethod
     def list_metric_values(
         self, industry_id: str, metric: str, year: int
     ) -> list[MetricValueDto]:
@@ -28,6 +32,6 @@ class RegionIndustryMetricUseCase(ABC):
 
     @abstractmethod
     def find(
-        self, region_code: str, industry_id: str, year: int
+        self, region_code: str, industry_id: str, year: int | None
     ) -> RegionIndustryMetricDto | None:
-        """단건 조회 — 없으면 None (region summary 카드용)."""
+        """단건 조회 — 없으면 None (region summary 카드용). year 미지정 시 마지막 완결 연도 기준."""

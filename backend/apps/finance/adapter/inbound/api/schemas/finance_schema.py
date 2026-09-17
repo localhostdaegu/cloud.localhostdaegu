@@ -1,7 +1,12 @@
 from dataclasses import asdict
-from pydantic import BaseModel
+from typing import Annotated, Self
 
-from apps.finance.domain.engine import FinanceInput, FinanceResult, SimulationScenario, StressResult
+from pydantic import BaseModel, Field, model_validator
+
+from apps.finance.domain.engine import FinanceResult
+
+_Won = Annotated[int, Field(ge=0)]  # 금액(원) — 음수 불가
+_Ratio = Annotated[float, Field(ge=0, lt=1)]  # 비율 0 이상 1 미만
 
 
 class SimulationScenarioResponse(BaseModel):
@@ -44,16 +49,23 @@ class SimulateResponse(BaseModel):
 
 
 class SimulateRequest(BaseModel):
-    deposit: int
-    key_money: int
-    interior_cost: int
-    equipment_cost: int
-    monthly_rent: int
-    monthly_payroll: int
-    monthly_insurance: int
-    cost_ratio: float
-    fee_ratio: float
-    equity: int
-    desired_loan: int
-    loan_rate: float
-    expected_monthly_revenue: int
+    deposit: _Won
+    key_money: _Won
+    interior_cost: _Won
+    equipment_cost: _Won
+    monthly_rent: _Won
+    monthly_payroll: _Won
+    monthly_insurance: _Won
+    cost_ratio: _Ratio
+    fee_ratio: _Ratio
+    equity: _Won
+    desired_loan: _Won
+    loan_rate: _Ratio
+    expected_monthly_revenue: _Won
+
+    @model_validator(mode="after")
+    def _variable_ratio_below_one(self) -> Self:
+        """BEP 매출 = 고정비/(1-변동비율) — 변동비율 ≥ 1 이면 0 나눗셈·음수 BEP (422)."""
+        if self.cost_ratio + self.fee_ratio >= 1:
+            raise ValueError("cost_ratio + fee_ratio 는 1 미만이어야 합니다")
+        return self
