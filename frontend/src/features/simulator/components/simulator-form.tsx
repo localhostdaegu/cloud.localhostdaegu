@@ -70,6 +70,12 @@ function RatioField({
 /** 프리필 확인 섹션("확인해주세요") + 상세 입력 섹션("입력해주세요") 두 개로 구성된 재무 시뮬레이션 폼. */
 export function SimulatorForm({ defaults, onSubmit, submitting }: SimulatorFormProps) {
   const [values, setValues] = useState<FinanceInput>(defaults);
+  // 대출금리 기본값은 최신 금리 조회 후 늦게 바뀐다 — 사용자가 아직 손대지 않았을 때만 따라간다.
+  const [baseLoanRate, setBaseLoanRate] = useState(defaults.loan_rate);
+  if (defaults.loan_rate !== baseLoanRate) {
+    setBaseLoanRate(defaults.loan_rate);
+    if (values.loan_rate === baseLoanRate) setValues((prev) => ({ ...prev, loan_rate: defaults.loan_rate }));
+  }
 
   const set =
     <K extends keyof FinanceInput>(key: K) =>

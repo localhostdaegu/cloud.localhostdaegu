@@ -16,3 +16,8 @@ class InterestRate:
     unit: str  # "연%"
     stat_code: str  # ECOS 통계코드 (722Y001)
     item_code: str  # ECOS 항목코드 (0101000)
+
+    @property
+    def ratio(self) -> float:
+        """연% → 비율(계산기 loan_rate 단위). 4.22 → 0.0422 — 부동소수 꼬리는 6자리에서 정리."""
+        return round(self.rate / 100, 6)

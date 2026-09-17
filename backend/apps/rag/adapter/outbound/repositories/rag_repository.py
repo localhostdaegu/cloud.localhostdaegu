@@ -27,20 +27,27 @@ class SqlAlchemyRagRepository(RagRepositoryPort):
     def existing_ids(self, source_type: str) -> set[str]:
         with session_scope() as session:
             rows = session.execute(
-                select(RagChunkOrm.chunk_id).where(RagChunkOrm.source_type == source_type)
+                select(RagChunkOrm.chunk_id).where(
+                    RagChunkOrm.source_type == source_type,
+                    RagChunkOrm.embedding.is_not(None),  # 미임베딩 행은 증분 색인 대상으로 남긴다
+                )
             ).scalars()
             return set(rows)
 
     def search(
         self,
         embedding: list[float],
+        embedded_by: str,
         top_k: int,
         source_type: str | None = None,
         exclude_expired_funding: bool = True,
     ) -> list[RagHit]:
         distance = RagChunkOrm.embedding.cosine_distance(embedding)
         score = (1 - distance).label("score")
-        stmt = select(RagChunkOrm, score).where(RagChunkOrm.embedding.is_not(None))
+        stmt = select(RagChunkOrm, score).where(
+            RagChunkOrm.embedding.is_not(None),
+            RagChunkOrm.embedded_by == embedded_by,  # 임베더 혼용 차단 — 같은 모델 벡터끼리만 비교
+        )
 
         if exclude_expired_funding:
             # outerjoin은 funding 청크에만 매칭되도록 조인 조건에 source_type을 넣는다.

@@ -1,5 +1,7 @@
 """RagIndexInteractor·RagSearchInteractor — Fake 포트 단위 테스트 (DB·네트워크·GPU 없음)."""
 
+import pytest
+
 from apps.rag.app.ports.output.rag_port import EmbeddingPort, RagRepositoryPort, RagSourcePort
 from apps.rag.app.use_cases.rag_interactor import RagIndexInteractor, RagSearchInteractor
 from apps.rag.domain.entities.rag_chunk_entity import RagChunk, RagHit
@@ -47,11 +49,12 @@ class FakeRagRepository(RagRepositoryPort):
     def search(
         self,
         embedding: list[float],
+        embedded_by: str,
         top_k: int,
         source_type: str | None = None,
         exclude_expired_funding: bool = True,
     ) -> list[RagHit]:
-        self.search_calls.append((embedding, top_k, source_type))
+        self.search_calls.append((embedding, embedded_by, top_k, source_type))
         return [
             RagHit(
                 chunk_id="hit1",
@@ -115,13 +118,14 @@ def test_full_reindex_processes_all_chunks_including_existing():
 
 def test_search_embeds_query_once_and_delegates_to_repository_search():
     repository = FakeRagRepository()
-    embedder = FakeEmbeddingPort()
+    embedder = FakeEmbeddingPort(name="query-model")
     interactor = RagSearchInteractor(embedder=embedder, repository=repository)
 
     hits = interactor.search("정책자금", top_k=3, source_type="funding")
 
     assert embedder.embed_query_calls == ["정책자금"]
-    assert repository.search_calls == [([1.0, 0.0], 3, "funding")]
+    # 검색 임베더의 모델명으로 필터 — 다른 모델이 색인한 벡터와 섞지 않는다
+    assert repository.search_calls == [([1.0, 0.0], "query-model", 3, "funding")]
     assert hits[0].chunk_id == "hit1"
 
 
@@ -137,3 +141,22 @@ def test_index_records_embedded_by_as_adapter_model_name():
     interactor.index(full=False)
 
     assert repository.stored["funding:1"].embedded_by == "test-model-x"
+
+
+class ShortEmbeddingPort(FakeEmbeddingPort):
+    """입력보다 적은 벡터를 돌려주는 고장 난 임베더 — zip이 조용히 잘라먹으면 안 된다."""
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [[1.0, 0.0]] * (len(texts) - 1)
+
+
+def test_index_fails_loudly_when_embedder_returns_fewer_vectors():
+    source = FakeRagSource([_chunk("funding:1"), _chunk("funding:2")])
+    repository = FakeRagRepository()
+    interactor = RagIndexInteractor(
+        embedder=ShortEmbeddingPort(), repository=repository, sources=[source]
+    )
+
+    with pytest.raises(ValueError):
+        interactor.index(full=True)
+    assert repository.stored == {}

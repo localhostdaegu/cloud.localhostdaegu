@@ -1,7 +1,8 @@
 """Composition Root (DIP) — RAG 색인·검색 UseCase 배선.
 
-혼용 구도(§0 설계): 검색 임베더는 항상 Ollama Q4(저지연·상시 가용) 고정. 색인 임베더는
-provider로 선택 — Factory Method 레지스트리(CLAUDE.md §5)로 if/elif 분기를 피한다.
+운영 코퍼스는 gemini-embedding-001로 색인돼 있어 색인·검색 기본 provider 모두 gemini다.
+검색은 쿼리 임베더와 같은 모델이 색인한 청크만 비교한다(embedded_by 필터) — provider는
+Factory Method 레지스트리(CLAUDE.md §5)로 if/elif 분기 없이 고른다.
 """
 
 from apps.rag.adapter.outbound.embeddings.fp16_qwen3_adapter import Fp16Qwen3EmbeddingAdapter
@@ -27,12 +28,8 @@ _INDEX_EMBEDDER_REGISTRY = {
 }
 
 
-def get_rag_search_use_case(provider: str = "ollama") -> RagSearchUseCase:
-    """검색 UseCase. 운영 기본값은 항상 ollama(§0 혼용 구도) — provider는 평가 하네스가
-
-    query 임베더를 fp16/gemini로 스왑해 비교 평가할 때만 넘긴다(레지스트리 재사용, 어댑터
-    구성 중복 금지).
-    """
+def get_rag_search_use_case(provider: str = "gemini") -> RagSearchUseCase:
+    """검색 UseCase. provider의 임베더가 색인한 청크만 검색된다(embedded_by 필터)."""
     embedder_cls = _INDEX_EMBEDDER_REGISTRY[provider]
     return RagSearchInteractor(
         embedder=embedder_cls(),
@@ -40,7 +37,7 @@ def get_rag_search_use_case(provider: str = "ollama") -> RagSearchUseCase:
     )
 
 
-def get_rag_index_use_case(provider: str = "fp16") -> RagIndexUseCase:
+def get_rag_index_use_case(provider: str = "gemini") -> RagIndexUseCase:
     embedder_cls = _INDEX_EMBEDDER_REGISTRY[provider]
     return RagIndexInteractor(
         embedder=embedder_cls(),

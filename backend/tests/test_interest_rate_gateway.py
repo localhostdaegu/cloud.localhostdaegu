@@ -63,3 +63,26 @@ def test_parse_rates_skips_non_numeric_values():
         }
     }
     assert parse_rates(broken) == []
+
+
+def test_http_error_does_not_leak_api_key_from_url_path(monkeypatch):
+    """ECOS 키는 URL 경로에 들어간다 — HTTPStatusError 메시지·체인이 키를 로그로 흘리면 안 된다."""
+    import traceback
+    from types import SimpleNamespace
+
+    import httpx
+
+    from apps.shock.adapter.outbound.gateways import ecos_gateway
+
+    secret = "SECRET-ECOS-KEY-123"
+    monkeypatch.setattr(ecos_gateway, "get_settings", lambda: SimpleNamespace(ecos_api_key=secret))
+    transport = httpx.MockTransport(lambda request: httpx.Response(500, text="server error"))
+
+    with httpx.Client(transport=transport) as client:
+        with pytest.raises(RuntimeError) as caught:
+            ecos_gateway._fetch_series(client, ecos_gateway.BASE_SERIES)
+
+    rendered = "".join(traceback.format_exception(caught.value))
+    assert "500" in str(caught.value)
+    assert "722Y001" in str(caught.value)  # 어떤 통계표 호출이 실패했는지는 남긴다
+    assert secret not in rendered

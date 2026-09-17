@@ -28,7 +28,7 @@ class ShockEvent:
     layer: str  # ShockLayer 값
     name: str
     start_date: date
-    scope: str  # 전국 / 서울 / 수도권 등
+    scope: str  # 전국 / 대구 등
     source: str  # 근거 출처 (기관·고시·API명) — 필수
     end_date: date | None = None  # 진행 중·상시 효과는 None
     source_url: str | None = None

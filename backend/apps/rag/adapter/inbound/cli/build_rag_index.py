@@ -2,7 +2,7 @@
 
 - 증분(기본): source_type별 existing_ids에 없는 신규 청크만 재임베딩
 - --full: 전량 재색인 (임베딩 모델 교체 등으로 재계산이 필요할 때 사용)
-- --provider {fp16|ollama|gemini}: 색인 임베더 선택 (기본 fp16 — 로컬 GPU, 새벽 배치)
+- --provider {fp16|ollama|gemini}: 색인 임베더 선택 (기본 gemini — 운영 코퍼스 모델)
 
 실행: python -m apps.rag.adapter.inbound.cli.build_rag_index [--full] [--provider fp16|ollama|gemini]
 """
@@ -18,9 +18,9 @@ def main() -> None:
     parser.add_argument("--full", action="store_true", help="전량 재색인 (기본: 증분)")
     parser.add_argument(
         "--provider",
-        default="fp16",
+        default="gemini",
         choices=["fp16", "ollama", "gemini"],
-        help="색인 임베더 (기본: fp16)",
+        help="색인 임베더 (기본: gemini)",
     )
     args = parser.parse_args()
 

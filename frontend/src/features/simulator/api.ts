@@ -1,8 +1,13 @@
 import { apiGet, apiPost } from "@/shared/api/client";
-import type { FinanceInput, FinanceOutput, MatchingProduct } from "@/shared/api/types";
+import type { FinanceInput, FinanceOutput, LatestRate, MatchingProduct } from "@/shared/api/types";
 
 export function simulateFinance(payload: FinanceInput): Promise<FinanceOutput> {
   return apiPost<FinanceOutput>("/finance/simulate", payload);
+}
+
+/** ECOS 적재 금리 중 rate_type의 최신 월 값 (GET /shocks/rates/latest). */
+export function fetchLatestRate(rateType: string): Promise<LatestRate> {
+  return apiGet<LatestRate>(`/shocks/rates/latest?${new URLSearchParams({ rate_type: rateType }).toString()}`);
 }
 
 /** 예비창업 전제(business_age_months=0)로 고정, owner_age는 미수집이라 전달하지 않는다.

@@ -120,3 +120,11 @@ export interface MatchingProduct {
   url: string;
   source_url: string;
 }
+
+/** GET /shocks/rates/latest 응답 — ECOS 월별 금리의 최신 1점. */
+export interface LatestRate {
+  rate_type: string;
+  period: string; // YYYYMM
+  value_percent: number; // 연%
+  value_ratio: number; // 비율 — FinanceInput.loan_rate 단위
+}
