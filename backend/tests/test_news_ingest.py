@@ -64,6 +64,29 @@ def test_ingest_dedups_within_batch_and_across_runs():
     _cleanup()
 
 
+class PartlyFailingGateway(NewsSearchGatewayPort):
+    def search(self, keyword: str) -> list[NewsArticle]:
+        if keyword == "실패키워드":
+            raise RuntimeError("RSS 503")
+        return [_article(4, keyword)]
+
+
+def test_ingest_continues_after_one_keyword_fails(caplog, monkeypatch):
+    from apps.news.app.use_cases import news_article_interactor
+
+    # conftest 의 alembic upgrade(migrations/env.py fileConfig)가 기존 로거를 비활성화 — 캡처를 위해 되살림
+    monkeypatch.setattr(news_article_interactor.LOGGER, "disabled", False)
+    _cleanup()
+    interactor = NewsArticleInteractor(
+        repository=SqlAlchemyNewsArticleRepository(), gateway=PartlyFailingGateway()
+    )
+
+    assert interactor.ingest(["실패키워드", "키워드C"]) == 1  # 앞 키워드 실패해도 뒤 키워드 적재
+
+    assert "실패키워드" in caplog.text  # 실패 키워드는 로그로 남긴다
+    _cleanup()
+
+
 def test_default_keywords_are_prefixed_with_region_name():
     # "북구 상권"만으로는 타 도시(광주 북구 등) 기사가 섞임 — 지역명을 앞에 붙여 대구로 한정
     from apps.news.adapter.inbound.cli.news_poller import _default_keywords

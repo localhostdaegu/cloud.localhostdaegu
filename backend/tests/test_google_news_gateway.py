@@ -52,5 +52,28 @@ def test_parse_feed_strips_only_trailing_press_suffix():
     assert second.press == "대구일보"
 
 
+_FEED_MISSING_PUBDATE = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>"동성로 상권" - Google 뉴스</title>
+<item>
+<title>발행일 없는 기사 - 어느신문</title>
+<link>https://news.google.com/rss/articles/NOPUBDATE?oc=5</link>
+<description>발행일 없는 기사</description>
+<source url="https://example.com">어느신문</source>
+</item>
+<item>
+<title>동성로 상권 회복 - 대구일보</title>
+<link>https://news.google.com/rss/articles/WITHPUBDATE?oc=5</link>
+<pubDate>Tue, 15 Sep 2026 01:00:00 GMT</pubDate>
+<description>동성로 상권 회복</description>
+<source url="https://www.idaegu.com">대구일보</source>
+</item>
+</channel></rss>"""
+
+
+def test_parse_feed_skips_item_without_pubdate():
+    articles = parse_feed(_FEED_MISSING_PUBDATE, keyword="동성로 상권")
+    assert [a.title for a in articles] == ["동성로 상권 회복"]  # 발행일 없는 항목만 건너뛰고 나머지는 유지
+
+
 def test_parse_feed_returns_empty_when_no_items():
     assert parse_feed(_EMPTY_FEED, keyword="없는키워드") == []

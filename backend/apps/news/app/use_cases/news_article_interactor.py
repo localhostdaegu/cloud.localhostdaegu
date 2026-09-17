@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 
 from apps.news.app.dtos.news_article_dto import NewsArticleDto
@@ -6,6 +7,8 @@ from apps.news.app.ports.output.news_article_port import (
     NewsArticleRepositoryPort,
     NewsSearchGatewayPort,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 class NewsArticleInteractor(NewsArticleUseCase):
@@ -30,5 +33,11 @@ class NewsArticleInteractor(NewsArticleUseCase):
     def ingest(self, keywords: list[str]) -> int:
         inserted = 0
         for keyword in keywords:
-            inserted += self._repository.save_new(self._gateway.search(keyword))
+            try:
+                articles = self._gateway.search(keyword)
+            except Exception:
+                # 한 키워드의 원천 오류(HTTP 등)가 남은 키워드 수집을 막지 않도록 기록 후 계속
+                LOGGER.warning("news ingest: 키워드 '%s' 수집 실패 — 다음 키워드 계속", keyword, exc_info=True)
+                continue
+            inserted += self._repository.save_new(articles)
         return inserted

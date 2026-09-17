@@ -4,7 +4,7 @@
 - title 은 "제목 - 언론사" 형식 → 언론사 접미 제거, press 는 <source> 요소에서
 - link 는 구글 리다이렉트 주소(원문 복원 안 함 — 방식이 자주 바뀜). 중복 제거는 이 주소 해시 기준
 - description 은 관련 기사 앵커 HTML → 태그 제거 텍스트만 보존 (본문 저장 금지)
-- pubDate 는 GMT → 네이버 어댑터와 같은 KST naive 로 통일
+- pubDate 는 GMT → 네이버 어댑터와 같은 KST naive 로 통일. pubDate 없는 항목은 건너뜀(발행일 필수)
 """
 
 import hashlib
@@ -47,6 +47,9 @@ def parse_feed(xml_text: str, keyword: str) -> list[NewsArticle]:
     root = ET.fromstring(xml_text)
     articles = []
     for item in root.iterfind("./channel/item"):
+        published = item.findtext("pubDate", "").strip()
+        if not published:
+            continue
         url = item.findtext("link", "").strip()
         press = (item.findtext("source") or "").strip() or None
         articles.append(
@@ -54,7 +57,7 @@ def parse_feed(xml_text: str, keyword: str) -> list[NewsArticle]:
                 article_id=_article_id(url),
                 title=_strip_press_suffix(_clean(item.findtext("title", "")), press),
                 description=_clean(item.findtext("description", "")),
-                published_at=_to_kst_naive(item.findtext("pubDate", "")),
+                published_at=_to_kst_naive(published),
                 url=url,
                 matched_keyword=keyword,
                 press=press,
