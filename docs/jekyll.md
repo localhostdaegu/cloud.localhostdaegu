@@ -17,7 +17,8 @@
 - **거리두기 공공데이터 로더 실행**: `load_distancing`(data.go.kr 15098772) 1회 호출 — 일별 328행 → 대구 `dagLvl` 연속 구간 압축 **신규 7건**(2020-12-08 2단계 ~ 2021-07-27 3단계), shock_event 22 → 29. 시드(~2020-12-07)와 구간이 이어짐.
 - **실서버 검증**: 백엔드 재시작(PID 종료 후 재기동) → `/intent` "달서구에서 카페, 예산 1억 5천만원" → 27290·150,000,000 / `/shocks` 22건(대구·전국) / 금리 API 4.22% / 잘못된 재무 입력 422. headless funnel E2E PASS(지도 URL `year=2025`), analysis E2E PASS(13.4초, 제목 5개·참고 자료). pytest **329 passed / 1 skipped**, vitest **96/96**, tsc clean.
 - **남은 게이트웨이 키 마스킹**(`8a4c806`): 거리두기·브이월드 경계·semas 편의점·molit 중개업소는 `translate_http_errors()` 적용, 서울 학원은 키가 URL 경로에 있어 변환기에 `secrets` 인자를 추가해 `***` 치환. 가짜 키로 500·ConnectError를 흉내 내 메시지·traceback에 키가 없음을 검증(+5 테스트). URL에 키를 넣는 게이트웨이는 모두 적용(네이버 뉴스는 헤더 인증·미사용, ECOS는 자체 마스킹). 현재 `logs/*.log`에 키 흔적 없음 확인. pytest **334 passed / 1 skipped**.
-- 미결·이월: 뉴스 폴러 전 키워드 실패 시에도 exit 0, AI 분석에 지도 선택 연도 미전달, 테스트가 git 미추적 `data/raw` 필요, `feat/daegu-backend` main 병합은 사용자 보류.
+- 미결·이월: 뉴스 폴러 전 키워드 실패 시에도 exit 0, AI 분석에 지도 선택 연도 미전달, 테스트가 git 미추적 `data/raw` 필요.
+- **main 병합·팀 분담**: `feat/daegu-backend` → `main` fast-forward 병합 후 origin 푸시(팀원은 main에서 기능 브랜치). 팀 분담 확정안(장민석 PM·아키텍트 / 김충식·류준 기능 단위 풀스택)과 공공데이터 5종 조사(전통시장 API·나들가게 파일 즉시 가능, 나머지 3종 마감 후)를 handoff §0-6·§4-2에 기록. 지킬 허브(053.localhostdaegu.cloud)에 9/16~9/18 일지·팀·작업·결정 반영(수동 운영).
 
 ## 2026-09-17
 
