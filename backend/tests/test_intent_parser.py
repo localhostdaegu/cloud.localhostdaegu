@@ -26,3 +26,25 @@ def test_type_c_budget_only():
 def test_budget_variants():
     assert parse_intent("3억으로", DONGS, GUS).budget_krw == 300_000_000
     assert parse_intent("7000만원 있어", DONGS, GUS).budget_krw == 70_000_000
+
+
+def test_longest_district_name_wins_over_substring():
+    """'달서구'는 '서구'를 포함한다 — 사전 순서(서구 27170 먼저)와 무관하게 긴 이름이 이긴다."""
+    gus = {"서구": "27170", "달서구": "27290"}
+    assert parse_intent("달서구에서 카페", {}, gus).district_code == "27290"
+    assert parse_intent("서구에서 카페", {}, gus).district_code == "27170"
+
+
+def test_longest_dong_name_wins_over_substring():
+    dongs = {"당동": "99999", "신당동": "27290"}           # 가상 '당동'이 사전 앞순서
+    assert parse_intent("신당동 카페", dongs, {}).region_name == "신당동"
+
+
+def test_budget_skips_unitless_number_before_amount():
+    """'2층' 같은 단위 없는 숫자가 먼저 나와도 단위 붙은 첫 금액을 읽는다."""
+    assert parse_intent("동성로 2층 카페 5천만원", DONGS, GUS).budget_krw == 50_000_000
+
+
+def test_budget_sums_consecutive_units():
+    assert parse_intent("1억 5천만원", DONGS, GUS).budget_krw == 150_000_000
+    assert parse_intent("예산 2억5천", DONGS, GUS).budget_krw == 250_000_000
