@@ -32,7 +32,7 @@
 2. ~~**수기 금융상품 JSON 실값**~~ — ✅ 9/17 완료(실상품 12건, 9/18 달성군 한정 dgsinbo-5 매칭 제외)
 3. **배포(localhostdaegu.cloud) + 시연 영상** (9/19) — 둘 다 미착수
    - 배포 메모(`/analysis`): 백엔드 환경변수 `GEMINI_API_KEY`·`GEMINI_REPORT_MODEL`(=gemini-3.8-flash) 필수 — 키가 없으면 `POST /analysis`가 500 · CORS `allow_origins`에 운영 오리진(https://localhostdaegu.cloud) 추가 · uvicorn **단일 워커**(분석 요청 저장소가 인메모리) · 리버스 프록시 뒤에서 SSE 버퍼링 끄기 확인(예: nginx `proxy_buffering off`)
-4. ~~**백엔드 whole-branch 최종 리뷰**~~ — ✅ 9/18 완료. **브랜치 정리/main 병합**만 남음(사용자 결정)
+4. ~~**백엔드 whole-branch 최종 리뷰**~~ — ✅ 9/18 완료, `main` fast-forward 병합·푸시 완료
 5. **제출 서류·접수** (9/20) — 참가신청서(초안 있음)·서약서·개인정보 동의서·제안요약서 → im-challenge.com (§6)
 6. **(사람 작업) 온통청년 API 키 재발급 권장** — 9/17 05:10 funding 수집 실패 때 httpx 예외 메시지(요청 URL 전체)에 `apiKeyNm` 값이 담겨 `logs/funding-collector.log`에 기록됨(9/18 백엔드 최종 리뷰에서 발견). `logs/`는 git 미추적이라 커밋되지 않았고 로그의 해당 값은 `***`로 치환, 게이트웨이 예외 메시지에서 키 제거 수정 완료(9/18, youthcenter·인허가·기업마당·R-ONE·ECOS, 9/18 추가로 거리두기·브이월드·semas·molit·서울 학원(경로 키 `***`) — URL에 키를 넣는 게이트웨이 전부). 재발급 후 `YOUTHCENTER_API_KEY`(루트 `.env` 또는 `backend/.env`) 교체 → 다음 05:10 크론 또는 수동 수집으로 확인
 7. 여력 시: 활용신청 5종 적재 · 빈 테이블(`shock_event_region` 충격↔지역 연결, `tobacco_retailer` 수동 파일, `academy_course`·`convenience_store`는 서울 원본 잔재로 대구 수집기 없음) · Neo4j 사용처 결정(컨테이너 기동 중, 노드 0, 코드 사용처 없음 → 쓰거나 compose 에서 제외)
