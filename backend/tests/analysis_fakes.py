@@ -5,6 +5,9 @@ SIMULATION 수치는 FINANCE 입력을 apps.finance.domain.engine.simulate로 �
 
 from collections.abc import Iterator
 
+from apps.analysis.adapter.outbound.stores.in_memory_analysis_request_store import (
+    InMemoryAnalysisRequestStore,
+)
 from apps.analysis.app.ports.output.analysis_port import (
     EvidenceSearchPort,
     MarketDataPort,
@@ -12,6 +15,9 @@ from apps.analysis.app.ports.output.analysis_port import (
     ReportWriterPort,
     SimulationPort,
 )
+from apps.analysis.app.use_cases.analysis_agents import FundingAgent, MarketAgent, ShockAgent
+from apps.analysis.app.use_cases.analysis_interactor import AnalysisInteractor
+from apps.analysis.app.use_cases.report_sections import default_sections
 from apps.analysis.domain.analysis_context import (
     AnalysisContext,
     AnalysisRequest,
@@ -151,3 +157,20 @@ class FailingWriter(ReportWriterPort):
     def stream(self, system: str, prompt: str) -> Iterator[str]:
         yield "부분"
         raise RuntimeError("LLM 장애")
+
+
+def build_interactor(
+    market: MarketDataPort | None = None, writer: ReportWriterPort | None = None
+) -> AnalysisInteractor:
+    """실제 에이전트·섹션 + Fake 포트로 조립한 인터랙터 (Composition Root 의 테스트판)."""
+    search = FakeEvidenceSearch()
+    return AnalysisInteractor(
+        store=InMemoryAnalysisRequestStore(),
+        agents=[
+            MarketAgent(market or FakeMarketData()),
+            ShockAgent(search, "대구"),
+            FundingAgent(search, FakeSimulation(), FakeMatching(), "대구"),
+        ],
+        sections=default_sections("대구"),
+        writer=writer or FakeWriter(),
+    )
