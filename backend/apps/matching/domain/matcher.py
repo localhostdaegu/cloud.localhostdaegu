@@ -1,6 +1,7 @@
 """금융상품 매칭 도메인 함수 — 우선순위 정렬 + 필터링."""
 
 _PRIORITY = {"guarantee": 0, "bank": 1, "policy": 2}   # 보증 연계 → 은행 → 정책자금
+PROVIDER_TYPES = frozenset(_PRIORITY)                   # 정렬 가능한 provider_type — 로더 검증용
 
 def match_products(products: list[dict], funding_gap: int, category: str,
                    business_age_months: int, owner_age: int | None) -> list[dict]:
