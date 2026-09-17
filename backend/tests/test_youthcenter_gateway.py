@@ -2,8 +2,10 @@
 
 from datetime import date, datetime
 
+import httpx
+
 from apps.funding.adapter.outbound.gateways.youthcenter_gateway import (
-    dedup_by_program_id,
+    is_daegu_policy,
     is_startup_policy,
     to_entity,
 )
@@ -71,10 +73,46 @@ def test_is_startup_policy_filters_on_mid_category():
     assert is_startup_policy({**_ITEM, "mclsfNm": "취업"}) is False
 
 
-def test_dedup_by_program_id_keeps_first_across_district_pages():
-    a = to_entity(_ITEM)
-    b = to_entity({**_ITEM, "sprvsnInstCdNm": "중복"})  # 다른 구 조회에서 같은 정책이 다시 옴
-    c = to_entity({**_ITEM, "plcyNo": "20260101000000000001"})
-    merged = dedup_by_program_id([a, b, c])
-    assert [e.program_id for e in merged] == ["20260810005400113328", "20260101000000000001"]
-    assert merged[0].org == "산림청"
+def test_is_daegu_policy_matches_any_daegu_zip_including_gunwi():
+    assert is_daegu_policy(_ITEM) is True  # 전국 정책 (zipCd 에 대구 구·군 포함)
+    assert is_daegu_policy({**_ITEM, "zipCd": "27260"}) is True  # 수성구 전용
+    assert is_daegu_policy({**_ITEM, "zipCd": "27720"}) is True  # 군위군 전용 (2023 대구 편입)
+    assert is_daegu_policy({**_ITEM, "zipCd": "11110,11140"}) is False  # 타 지역 전용
+    assert is_daegu_policy({**_ITEM, "zipCd": ""}) is False
+
+
+def test_fetch_all_single_nationwide_call_filters_daegu(monkeypatch):
+    """zipCd 없이 전국 1회 조회(pageSize 500) → 대구 구·군 코드 포함 항목만. 2026-09-17 실측: 전국 340 → 대구 63(서버 필터와 일치)."""
+    from apps.funding.adapter.outbound.gateways import youthcenter_gateway as module
+
+    daegu_only = {**_ITEM, "plcyNo": "20260101000000000001", "zipCd": "27290"}
+    seoul_only = {**_ITEM, "plcyNo": "20260101000000000002", "zipCd": "11110"}
+    calls = []
+
+    def fake_get(params):
+        calls.append(params)
+        return httpx.Response(200, json={"result": {"youthPolicyList": [_ITEM, daegu_only, seoul_only]}})
+
+    monkeypatch.setattr(module.YouthcenterGateway, "_get_with_retry", staticmethod(fake_get))
+    monkeypatch.setattr(module, "get_settings", lambda: type("S", (), {"youthcenter_api_key": "k"})())
+
+    programs = module.YouthcenterGateway().fetch_all()
+
+    assert [p.program_id for p in programs] == ["20260810005400113328", "20260101000000000001"]
+    assert len(calls) == 1
+    assert "zipCd" not in calls[0] and calls[0]["pageSize"] == 500 and calls[0]["mclsfNm"] == "창업"
+
+
+def test_fetch_retries_transient_http_errors(monkeypatch):
+    """실운영 2026-09-17: 유효 키인데도 400(27140)·500(27230)·403(버스트)이 간헐 반환, 재호출 시 200 → 4xx 포함 재시도."""
+    from apps.funding.adapter.outbound.gateways import youthcenter_gateway as module
+
+    request = httpx.Request("GET", module._ENDPOINT)
+    ok = httpx.Response(200, json={"result": {"youthPolicyList": [_ITEM]}}, request=request)
+    responses = [httpx.Response(400, request=request), httpx.Response(500, request=request), ok]
+    monkeypatch.setattr(module.httpx, "get", lambda *args, **kwargs: responses.pop(0))
+    monkeypatch.setattr(module.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(module, "get_settings", lambda: type("S", (), {"youthcenter_api_key": "k"})())
+
+    assert [p.program_id for p in module.YouthcenterGateway().fetch_all()] == ["20260810005400113328"]
+    assert responses == []

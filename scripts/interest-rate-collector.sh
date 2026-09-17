@@ -19,6 +19,6 @@ cd "${BACKEND_DIR}"
   .venv/bin/python -m apps.shock.adapter.inbound.cli.load_loan_rate
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] rent price collector 시작"
   .venv/bin/python -m apps.rent.adapter.inbound.cli.load_rent_price
-} >> "${LOG_FILE}" 2>&1 || echo "[$(date '+%Y-%m-%d %H:%M:%S')] interest/rent collector 실패 (exit $?)" >> "${LOG_FILE}"
+} >> "${LOG_FILE}" 2>&1 || { rc=$?; echo "[$(date '+%Y-%m-%d %H:%M:%S')] interest/rent collector 실패 (exit ${rc})" >> "${LOG_FILE}"; }
 
 tail -n 2000 "${LOG_FILE}" > "${LOG_FILE}.tmp" && mv "${LOG_FILE}.tmp" "${LOG_FILE}"

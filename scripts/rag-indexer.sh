@@ -35,6 +35,6 @@ with session_scope() as s: print(s.execute(text('select count(*) from rag_chunk'
     prev=$cnt
     sleep 60
   done
-} >> "${LOG_FILE}" 2>&1 || echo "[$(date '+%Y-%m-%d %H:%M:%S')] rag indexer 실패 (exit $?)" >> "${LOG_FILE}"
+} >> "${LOG_FILE}" 2>&1 || { rc=$?; echo "[$(date '+%Y-%m-%d %H:%M:%S')] rag indexer 실패 (exit ${rc})" >> "${LOG_FILE}"; }
 
 tail -n 2000 "${LOG_FILE}" > "${LOG_FILE}.tmp" && mv "${LOG_FILE}.tmp" "${LOG_FILE}"

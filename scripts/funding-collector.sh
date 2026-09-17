@@ -13,6 +13,6 @@ cd "${BACKEND_DIR}"
 {
   echo "[$(date '+%Y-%m-%d %H:%M:%S')] funding collector 시작"
   .venv/bin/python -m apps.funding.adapter.inbound.cli.funding_collector
-} >> "${LOG_FILE}" 2>&1 || echo "[$(date '+%Y-%m-%d %H:%M:%S')] funding collector 실패 (exit $?)" >> "${LOG_FILE}"
+} >> "${LOG_FILE}" 2>&1 || { rc=$?; echo "[$(date '+%Y-%m-%d %H:%M:%S')] funding collector 실패 (exit ${rc})" >> "${LOG_FILE}"; }
 
 tail -n 2000 "${LOG_FILE}" > "${LOG_FILE}.tmp" && mv "${LOG_FILE}.tmp" "${LOG_FILE}"

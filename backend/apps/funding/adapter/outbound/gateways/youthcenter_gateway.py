@@ -1,11 +1,12 @@
 """온통청년(youthcenter.go.kr) 청년정책 Open API Driven Adapter — 대구 청년 창업 정책.
 
-docs/apilist.md §5 (2026-09-16 실호출 확정):
-- 엔드포인트 youthcenter.go.kr/go/ythip/getPlcy, 키 apiKeyNm, rtnType=json, 페이징 pageNum/pageSize(100)
-- 지역 필터 zipCd = 행안부 시군구 5자리 **단일값** (콤마 다중 미지원) → 대구 8구·군을 순회하고 plcyNo 로 중복 제거
-- 전국 정책도 zipCd 에 대구 구·군이 들어 있어 함께 수신됨 (대구 창업자에게 적용 가능하므로 유지)
-- 중분류(mclsfNm) "창업" 만 취함 — 기획서 §5.3 "청년(예비·초기창업)" 조건. 서버측 mclsfNm 필터가 동작해(63건)
-  구·군당 1페이지로 끝남 — 짧은 시간에 수십 회 호출하면 403(버스트 제한) 이 나므로 구·군 사이에 잠깐 쉰다
+docs/apilist.md §5 (2026-09-16 실호출 확정, 2026-09-17 조회 방식 변경):
+- 엔드포인트 youthcenter.go.kr/go/ythip/getPlcy, 키 apiKeyNm, rtnType=json, 페이징 pageNum/pageSize
+- 중분류(mclsfNm) "창업" 만 취함 — 기획서 §5.3 "청년(예비·초기창업)" 조건. 서버측 필터 동작
+- zipCd 없이 전국 1회 조회(pageSize 500 허용, 전국 창업 340건) 후 항목 zipCd 에 대구 구·군 코드가 있으면 취한다.
+  구·군별 8회 조회는 결과가 전부 같은 63건이었고(현재 대구 구 전용 정책 없음), 호출마다 400·403·500 간헐 오류를 만난다.
+  전국에는 단일 구·군 전용 정책이 105건 있어 대표 구 1회 조회는 누락 위험 → 클라이언트 필터가 서버 필터와 63건 일치(실측)
+- 군위군(27720, 2023 대구 편입)은 전역 DISTRICTS 에서 제외돼 있으나 정책 대상 지역으로는 포함
 """
 
 import time
@@ -22,14 +23,20 @@ from core.matrix.grid_region_config import DISTRICTS
 _ENDPOINT = "https://www.youthcenter.go.kr/go/ythip/getPlcy"
 # 정책별 고유 상세 페이지 (2026-09-16 확인, 200). 신청 URL(aplyUrlAddr)은 여러 정책이 공유해 url 유니크 제약과 충돌하므로 쓰지 않는다
 _DETAIL_URL = "https://www.youthcenter.go.kr/youthPolicy/ythPlcyTotalSearch/ythPlcyDetail/"
-_PAGE_SIZE = 100
+_PAGE_SIZE = 500
 _STARTUP_MID_CATEGORY = "창업"
-_PAUSE_BETWEEN_DISTRICTS_SECONDS = 1.0
+_ATTEMPTS = 4
 _ALWAYS_OPEN = "상시"
+_GUNWI_ZIP_CODE = "27720"
+_DAEGU_ZIP_CODES = frozenset(DISTRICTS) | {_GUNWI_ZIP_CODE}
 
 
 def is_startup_policy(item: dict) -> bool:
     return (item.get("mclsfNm") or "").strip() == _STARTUP_MID_CATEGORY
+
+
+def is_daegu_policy(item: dict) -> bool:
+    return not _DAEGU_ZIP_CODES.isdisjoint((item.get("zipCd") or "").split(","))
 
 
 def _iso_period(raw: str | None) -> str:
@@ -92,37 +99,35 @@ def to_entity(item: dict) -> FundingProgram | None:
     )
 
 
-def dedup_by_program_id(programs: list[FundingProgram]) -> list[FundingProgram]:
-    seen: set[str] = set()
-    unique = []
-    for program in programs:
-        if program.program_id not in seen:
-            seen.add(program.program_id)
-            unique.append(program)
-    return unique
-
-
 class YouthcenterGateway(FundingSearchGatewayPort):
-    def __init__(self, district_codes: tuple[str, ...] = tuple(DISTRICTS)) -> None:
-        self._district_codes = district_codes
+    @staticmethod
+    def _get_with_retry(params: dict) -> httpx.Response:
+        """타임아웃·HTTP 오류는 지수 백오프 재시도. MOIS·MOLIT 전례와 달리 4xx 도 재시도 —
+        유효 키로도 400·403·500 이 간헐 반환되고 재호출하면 200 (2026-09-17 실측)."""
+        for attempt in range(_ATTEMPTS):
+            try:
+                response = httpx.get(_ENDPOINT, params=params, timeout=60)
+                response.raise_for_status()
+                return response
+            except (httpx.HTTPStatusError, httpx.TimeoutException):
+                if attempt == _ATTEMPTS - 1:
+                    raise
+            time.sleep(2**attempt)
+        raise RuntimeError("unreachable")
 
-    def _fetch_district(self, zip_code: str) -> list[dict]:
+    def _fetch_nationwide(self) -> list[dict]:
         items: list[dict] = []
         page = 1
         while True:
-            response = httpx.get(
-                _ENDPOINT,
-                params={
+            response = self._get_with_retry(
+                {
                     "apiKeyNm": get_settings().youthcenter_api_key,
                     "rtnType": "json",
                     "pageNum": page,
                     "pageSize": _PAGE_SIZE,
-                    "zipCd": zip_code,
                     "mclsfNm": _STARTUP_MID_CATEGORY,
-                },
-                timeout=60,
+                }
             )
-            response.raise_for_status()
             batch = response.json()["result"].get("youthPolicyList") or []
             items.extend(batch)
             if len(batch) < _PAGE_SIZE:
@@ -131,13 +136,10 @@ class YouthcenterGateway(FundingSearchGatewayPort):
 
     def fetch_all(self) -> list[FundingProgram]:
         programs = []
-        for index, zip_code in enumerate(self._district_codes):
-            if index:
-                time.sleep(_PAUSE_BETWEEN_DISTRICTS_SECONDS)
-            for item in self._fetch_district(zip_code):
-                if not is_startup_policy(item):
-                    continue
-                entity = to_entity(item)
-                if entity is not None:
-                    programs.append(entity)
-        return dedup_by_program_id(programs)
+        for item in self._fetch_nationwide():
+            if not (is_startup_policy(item) and is_daegu_policy(item)):
+                continue
+            entity = to_entity(item)
+            if entity is not None:
+                programs.append(entity)
+        return programs

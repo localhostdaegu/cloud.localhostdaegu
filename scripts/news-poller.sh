@@ -17,6 +17,6 @@ cd "${BACKEND_DIR}"
   .venv/bin/python -m apps.news.adapter.inbound.cli.news_poller \
     "동성로 상권" "서문시장" "칠성시장" "대구 자영업" "대구 소상공인" "대구로 배달앱" \
     "iM뱅크 소상공인" "들안길 먹거리" "안지랑 곱창골목" "수성못 상권"
-} >> "${LOG_FILE}" 2>&1 || echo "[$(date '+%Y-%m-%d %H:%M:%S')] news poller 실패 (exit $?)" >> "${LOG_FILE}"
+} >> "${LOG_FILE}" 2>&1 || { rc=$?; echo "[$(date '+%Y-%m-%d %H:%M:%S')] news poller 실패 (exit ${rc})" >> "${LOG_FILE}"; }
 
 tail -n 2000 "${LOG_FILE}" > "${LOG_FILE}.tmp" && mv "${LOG_FILE}.tmp" "${LOG_FILE}"

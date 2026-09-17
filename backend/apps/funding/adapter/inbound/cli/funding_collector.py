@@ -1,7 +1,7 @@
 """정책자금 공고 수집기 (Driving Adapter, CLI — 일 1회 크론 실행 대상).
 
 기업마당 API 1회 호출로 전량(~1,500건) 수신 → program_id 업서트(멱등)
-온통청년 API 대구 8구·군 순회(중분류 '창업', ~60건) → 업서트(멱등) → 만료 갱신.
+온통청년 API 전국 1회 조회 → 대구 구·군(군위 포함) 필터(중분류 '창업', ~60건) → 업서트(멱등) → 만료 갱신.
 
 실행: python -m apps.funding.adapter.inbound.cli.funding_collector
 """
