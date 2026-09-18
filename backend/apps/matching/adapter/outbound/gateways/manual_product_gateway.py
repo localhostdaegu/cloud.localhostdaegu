@@ -1,4 +1,8 @@
-"""수기 JSON 상품 파일 로더 — data/manual/*.json 합치기 + 스키마 검증."""
+"""상품 로더 — DB(정본) 우선, 실패·0건이면 수기 JSON(data/manual/*.json) 폴백.
+
+반환 dict 15필드는 GET /matching 응답 형태 그대로다(스펙 §2-5). category 는
+None(업종 무관) / [](해당 업종 없음) / [...] 3상태로 복원되며 match_products 는 수정하지 않는다.
+"""
 
 import json
 import logging
@@ -6,6 +10,11 @@ from functools import lru_cache
 from pathlib import Path
 
 from apps.matching.domain.matcher import PROVIDER_TYPES
+from apps.product.adapter.outbound.repositories.finance_product_repository import (
+    SqlAlchemyFinanceProductRepository,
+)
+from apps.product.app.ports.output.finance_product_port import FinanceProductRepositoryPort
+from apps.product.domain.entities.finance_product_entity import FinanceProduct
 
 _logger = logging.getLogger(__name__)
 
@@ -17,6 +26,53 @@ _REQUIRED_FIELDS = {
 
 @lru_cache(maxsize=1)
 def load_all_products() -> list[dict]:
+    """DB 정본에서 상품을 읽고, 비어 있거나 실패하면 수기 JSON 으로 폴백한다."""
+    return load_all_products_from(SqlAlchemyFinanceProductRepository())
+
+
+def load_all_products_from(repository: FinanceProductRepositoryPort) -> list[dict]:
+    """주입된 리포지토리로 상품을 읽는다 — 테스트가 DB 없이 두 경로를 모두 검증할 수 있게 분리."""
+    try:
+        products = repository.list_all()
+    except Exception:  # DB 미구성·연결 실패 — 데모가 멈추지 않게 JSON 으로 계속한다
+        _logger.warning("finance_product 조회 실패 — data/manual JSON 폴백", exc_info=True)
+        return _load_from_json()
+    if not products:
+        _logger.warning("finance_product 행 0건 — data/manual JSON 폴백 (시드 CLI 미실행)")
+        return _load_from_json()
+    return [_to_dict(p) for p in products if _is_matchable(p.product_id, p.provider_type)]
+
+
+def _to_dict(product: FinanceProduct) -> dict:
+    """엔티티 → 기존 15필드 dict. source_file 등 시드 추적 필드는 응답에 넣지 않는다."""
+    return {
+        "product_id": product.product_id,
+        "provider": product.provider,
+        "provider_type": product.provider_type,
+        "product_name": product.product_name,
+        "target": product.target,
+        "region": product.region,
+        "business_age_min": product.business_age_min,
+        "business_age_max": product.business_age_max,
+        "category": product.category,
+        "owner_age_max": product.owner_age_max,
+        "loan_limit": product.loan_limit,
+        "interest_rate": product.interest_rate,
+        "guarantee_fee": product.guarantee_fee,
+        "url": product.url,
+        "source_url": product.source_url,
+    }
+
+
+def _is_matchable(product_id: str, provider_type: str) -> bool:
+    """매칭 정렬 KeyError(500) 방지 — JSON·DB 두 경로에 같은 가드를 둔다."""
+    if provider_type in PROVIDER_TYPES:
+        return True
+    _logger.warning("상품 %s 건너뜀 — 알 수 없는 provider_type: %s", product_id, provider_type)
+    return False
+
+
+def _load_from_json() -> list[dict]:
     """data/manual/*.json의 3파일을 읽어 합침. 스키마 검증 후 반환."""
     data_dir = Path(__file__).resolve().parents[6] / "data" / "manual"
 
@@ -34,8 +90,7 @@ def load_all_products() -> list[dict]:
             missing = _REQUIRED_FIELDS - set(p.keys())
             if missing:
                 raise ValueError(f"Product {p.get('product_id', '?')} 누락 필드: {missing}")
-            if p["provider_type"] not in PROVIDER_TYPES:  # 매칭 정렬 KeyError(500) 방지
-                _logger.warning("상품 %s 건너뜀 — 알 수 없는 provider_type: %s", p["product_id"], p["provider_type"])
+            if not _is_matchable(p["product_id"], p["provider_type"]):
                 continue
             all_products.append(p)
 

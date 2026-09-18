@@ -8,7 +8,17 @@ from unittest import mock
 import pytest
 
 from apps.matching.domain.matcher import match_products
-from apps.matching.adapter.outbound.gateways.manual_product_gateway import load_all_products
+from apps.matching.adapter.outbound.gateways.manual_product_gateway import (
+    load_all_products,
+    load_all_products_from,
+)
+
+
+class _EmptyProductRepository:
+    """finance_product 0건을 고정한다 — JSON 폴백 경로 테스트가 DB 적재 상태에 좌우되지 않게."""
+
+    def list_all(self) -> list:
+        return []
 
 PRODUCTS = [
     {"product_id": "dgsinbo-1", "provider_type": "guarantee", "loan_limit": 30_000_000,
@@ -120,9 +130,7 @@ def test_gateway_loads_products_from_json_files(tmp_path):
         mock_instance.resolve.return_value.parents.__getitem__.return_value = tmp_path
         mock_path_class.return_value = mock_instance
 
-        # 캐시 클리어하고 로드
-        load_all_products.cache_clear()
-        products = load_all_products()
+        products = load_all_products_from(_EmptyProductRepository())
 
         # 검증: 3개 파일이 모두 로드되었는지 확인
         assert len(products) == 3, f"Expected 3 products, got {len(products)}"
@@ -152,14 +160,12 @@ def test_gateway_skips_unknown_provider_type_with_warning(tmp_path):
         mock_instance.resolve.return_value.parents.__getitem__.return_value = tmp_path
         mock_path_class.return_value = mock_instance
 
-        load_all_products.cache_clear()
         # caplog 대신 로거 패치 — conftest 의 alembic fileConfig 가 기존 로거를 disable 한다
         with mock.patch('apps.matching.adapter.outbound.gateways.manual_product_gateway._logger') as logger:
-            products = load_all_products()
-        load_all_products.cache_clear()
+            products = load_all_products_from(_EmptyProductRepository())
 
     assert [p["product_id"] for p in products] == ["ok-1"]
-    assert logger.warning.call_count == 1
+    assert logger.warning.call_count == 2  # DB 폴백 경고 1 + provider_type 경고 1 (스펙 §2-5)
     assert {"odd-1", "fintech"} <= set(logger.warning.call_args.args)
     match_products(products, funding_gap=0, category="cafe", business_age_months=0, owner_age=None)
 
@@ -189,8 +195,6 @@ def test_gateway_raises_on_missing_required_field(tmp_path):
         mock_instance.resolve.return_value.parents.__getitem__.return_value = tmp_path
         mock_path_class.return_value = mock_instance
 
-        load_all_products.cache_clear()
-
         # ValueError 발생 확인, 에러 메시지에 누락 필드명 포함 확인
         with pytest.raises(ValueError, match="provider"):
-            load_all_products()
+            load_all_products_from(_EmptyProductRepository())
