@@ -125,6 +125,18 @@
     "interest_rate": null,
     "guarantee_fee": 0.8,
     "url": "https://www.dgsinbo.or.kr/main.tc",
-    "source_url": "https://www.newspim.com/news/view/20260116000791"
+    "source_url": "https://www.newspim.com/news/view/20260116000791",
+    "consultation_metadata": {
+      "bank_connection": "linked",
+      "bank_connection_source_url": "https://www.newspim.com/news/view/20260116000791",
+      "business_registration_required": null,
+      "prerequisites": [],
+      "application_steps": [
+        "보증드림 앱으로 보증 신청·서류 접수",
+        "취급 금융기관 방문 (아이엠뱅크 화원지점·농협은행 달성군지부·달성군 소재 새마을금고·지역 농축협)"
+      ],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   }
 ]

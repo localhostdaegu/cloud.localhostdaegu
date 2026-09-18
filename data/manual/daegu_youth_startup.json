@@ -14,7 +14,19 @@
     "interest_rate": null,
     "guarantee_fee": null,
     "url": "https://www.bizinfo.go.kr/web/lay1/bbs/S1T122C128/AS/74/view.do?pblancId=PBLN_000000000105652",
-    "source_url": "https://www.bizinfo.go.kr/web/lay1/bbs/S1T122C128/AS/74/view.do?pblancId=PBLN_000000000105652"
+    "source_url": "https://www.bizinfo.go.kr/web/lay1/bbs/S1T122C128/AS/74/view.do?pblancId=PBLN_000000000105652",
+    "consultation_metadata": {
+      "bank_connection": "linked",
+      "bank_connection_source_url": "https://www.bizinfo.go.kr/web/lay1/bbs/S1T122C128/AS/74/view.do?pblancId=PBLN_000000000105652",
+      "business_registration_required": true,
+      "prerequisites": [],
+      "application_steps": [
+        "대구신용보증재단 홈페이지에서 사전 예약",
+        "신청기관(아이엠뱅크 북구청지점) 방문 접수"
+      ],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "youth-2",
@@ -31,7 +43,25 @@
     "interest_rate": 2.5,
     "guarantee_fee": null,
     "url": "https://www.gov.kr/portal/service/serviceInfo/142000000099",
-    "source_url": "https://www.gov.kr/portal/service/serviceInfo/142000000099"
+    "source_url": "https://www.gov.kr/portal/service/serviceInfo/142000000099",
+    "consultation_metadata": {
+      "bank_connection": "unverified",
+      "bank_connection_source_url": "https://www.gov.kr/portal/service/serviceInfo/142000000099",
+      "business_registration_required": false,
+      "prerequisites": [
+        "최종 융자 시점에는 사업자등록 필요"
+      ],
+      "application_steps": [
+        "온라인 상담예약",
+        "사전상담",
+        "정책우선도평가",
+        "온라인융자신청"
+      ],
+      "documents": [
+        "중소기업 기업진단 및 정책자금 융자신청서 등 (공고에 상세 목록 없음)"
+      ],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "youth-3",
@@ -48,7 +78,28 @@
     "interest_rate": null,
     "guarantee_fee": null,
     "url": "https://www.dgsinbo.or.kr/page/10065/10006.tc?pageDtlOrdrNo=1&&boardNo=84527&boardMngNo=2&importUrl=%2Fboard%2Fview.tc",
-    "source_url": "https://www.dgsinbo.or.kr/page/10065/10006.tc?pageDtlOrdrNo=1&&boardNo=84527&boardMngNo=2&importUrl=%2Fboard%2Fview.tc"
+    "source_url": "https://www.dgsinbo.or.kr/page/10065/10006.tc?pageDtlOrdrNo=1&&boardNo=84527&boardMngNo=2&importUrl=%2Fboard%2Fview.tc",
+    "consultation_metadata": {
+      "bank_connection": "unverified",
+      "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10065/10006.tc?pageDtlOrdrNo=1&&boardNo=84527&boardMngNo=2&importUrl=%2Fboard%2Fview.tc",
+      "business_registration_required": true,
+      "prerequisites": [
+        "보증드림(untact.koreg.or.kr) 사전 예약 필수 — 예약 없이 방문 접수 불가"
+      ],
+      "application_steps": [
+        "보증드림 앱·웹 접속 후 경영안정자금(이자지원) 신청",
+        "본인인증(간편인증·휴대폰인증)",
+        "예약자 정보 입력(성명·핸드폰·생년월일·담보구분)",
+        "예약일자·시간 선택",
+        "예약 시간에 맞춰 접수처 방문 제출 (재단 보증서는 관할 영업점, 그 외 담보는 기업성장지원센터)"
+      ],
+      "documents": [
+        "융자추천신청서 및 정보활용을 위한 동의서 1부",
+        "사업자등록증·대표자신분증 사본 각 1부",
+        "최근 신고분 포함한 1년분 과세표준증명원 또는 수입금액증명원 1부"
+      ],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "youth-4",
@@ -65,6 +116,27 @@
     "interest_rate": null,
     "guarantee_fee": null,
     "url": "https://www.dgsinbo.or.kr/page/10065/10006.tc?pageDtlOrdrNo=1&&boardNo=84527&boardMngNo=2&importUrl=%2Fboard%2Fview.tc",
-    "source_url": "https://www.dgsinbo.or.kr/page/10065/10006.tc?pageDtlOrdrNo=1&&boardNo=84527&boardMngNo=2&importUrl=%2Fboard%2Fview.tc"
+    "source_url": "https://www.dgsinbo.or.kr/page/10065/10006.tc?pageDtlOrdrNo=1&&boardNo=84527&boardMngNo=2&importUrl=%2Fboard%2Fview.tc",
+    "consultation_metadata": {
+      "bank_connection": "unverified",
+      "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10065/10006.tc?pageDtlOrdrNo=1&&boardNo=84527&boardMngNo=2&importUrl=%2Fboard%2Fview.tc",
+      "business_registration_required": true,
+      "prerequisites": [
+        "보증드림(untact.koreg.or.kr) 사전 예약 필수 — 예약 없이 방문 접수 불가"
+      ],
+      "application_steps": [
+        "보증드림 앱·웹 접속 후 경영안정자금(이자지원) 신청",
+        "본인인증(간편인증·휴대폰인증)",
+        "예약자 정보 입력(성명·핸드폰·생년월일·담보구분)",
+        "예약일자·시간 선택",
+        "예약 시간에 맞춰 접수처 방문 제출 (재단 보증서는 관할 영업점, 그 외 담보는 기업성장지원센터)"
+      ],
+      "documents": [
+        "융자추천신청서 및 정보활용을 위한 동의서 1부",
+        "사업자등록증·대표자신분증 사본 각 1부",
+        "최근 신고분 포함한 1년분 과세표준증명원 또는 수입금액증명원 1부"
+      ],
+      "verified_at": "2026-09-18"
+    }
   }
 ]
