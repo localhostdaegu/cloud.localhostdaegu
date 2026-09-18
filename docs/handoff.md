@@ -88,7 +88,7 @@ node frontend/tests/funnel.cjs               # E2E (mock 기준) PASS 기대
 2. ~~**`consultation_*` 4테이블 미연결(T7 미실행)**~~ → **2026-09-18 배선 완료.** (노트 쓰기 경로도 추가 — 아래 갱신) 상담자료를 만들 때(`/analysis` 제출) 세션과 두 계획안을 서버에 기록한다. **화면 상태의 정본은 여전히 `sessionStorage`이고**(§5-3 유지) 서버 기록은 감사·재현용 스냅샷이다 — 리포트는 이 값을 읽지 않고 13필드로 다시 계산한다. 저장 실패는 삼켜서 상담자료 생성을 막지 않는다. 남은 것: 세션의 `selected_plan_kind`·`change_reason`을 나중에 고치려면 세션 갱신 엔드포인트가 필요하다(현재는 생성 시점 값으로 고정). ~~`consultation_note`~~ → **쓰기 경로 추가 완료** — 세션 생성 시 가정·미확인 항목이 노트로 저장된다(이전에는 `list_notes` 읽기만 있어 영원히 빈 테이블이었다). `consultation_document`는 여전히 미사용.
 3. **블록체인 앵커링** — 사용자 결정으로 이번 범위에서 제외했다. `consultation_document.content_hash`는 여전히 미사용.
 4. **'유효한 0원'과 '미입력' 구분** — 폼에서 미구현이라 `open_questions`에 '미입력' 항목을 만들지 않았다. 없는 근거를 만들지 않기 위한 선택이며, 구분을 구현하면 확인 목록이 더 정확해진다.
-5. ~~**mock SSE는 여전히 review 섹션**~~ → **2026-09-18 해소.** mock 도 `purpose=handoff` 면 상담자료 6섹션을 낸다(수치는 재무 엔진 검산값). 다만 **review 경로의 mock 본문은 서울/강남구 잔재 그대로**다 — 시연 동선이 handoff 라 손대지 않았다.
+5. ~~**mock SSE는 여전히 review 섹션**~~ → **2026-09-18 해소.** mock 도 `purpose=handoff` 면 상담자료 6섹션을 낸다(수치는 재무 엔진 검산값). review 경로의 서울/강남구 잔재도 2026-09-18 제거했다(대구 대신동 실측값으로 교체).
 6. **지도 선택 연도의 리포트 미전달** — 기존 이월 사항 그대로.
 
 ### 0-2-2. 9/18 스키마 확장에서 남긴 후속 과제 (ERD 문서 작성 중 실측)
@@ -97,9 +97,9 @@ node frontend/tests/funnel.cjs               # E2E (mock 기준) PASS 기대
 
 1. **고립 테이블 2건** — SQLAlchemy 메타데이터 덤프 결과 FK가 들어오는 것도 나가는 것도 없는 테이블: `interest_rate`·`funding_program`. `backend/CLAUDE.md` §13 "고립 테이블 금지" 위반 상태다. `interest_rate`는 ORM docstring이 *"region/industry와 직접 엣지 없이 계산기 유스케이스에서 rent_price와 애플리케이션 조인한다"*로 의도된 미연결을 밝히고 있고(전국 시계열이라 허브 키에 함수 종속되지 않음), `funding_program`은 *"업종 M:N(funding_program_industry)은 LLM 구조화 추출 후속 작업에서 추가"*가 아직 안 된 미완 설계다(`rag_chunk.source_type/source_id`는 다형 참조라 FK가 아님). **둘 다 기존 19테이블**이며 이번 additive 마이그레이션이 만든 것이 아니다.
 2. **교차 BC 엣지 1건** — `apps/matching/adapter/outbound/gateways/manual_product_gateway.py`가 `apps/product`의 `SqlAlchemyFinanceProductRepository`(Adapter)와 `FinanceProduct`(Entity)를 직접 import한다. §11 BC 완전 분리·§7 *"Business logic imports Ports, never Adapters"* 기준으로 약한 지점. 완화 요인: `_to_dict()`가 ACL 역할을 해 matching 도메인은 기존 15필드 dict만 보고, `load_all_products_from(port)` seam으로 Port 주입이 가능하다. 정식 해소는 matching BC가 자기 Port를 정의하고 조립 루트에서 주입하는 형태 — **코드 프리즈 전 `GET /matching` 응답을 흔들지 않으려고 이번엔 손대지 않았다.**
-3. **상담 BC 프론트 전환** — 백엔드 `POST /consultation` → `PUT .../plans/{kind}` → `GET /consultation/{id}` 왕복은 DB에 대해 동작하지만, 프론트엔드는 여전히 `sessionStorage`다(전환계획 §5-3 유지). 서버 저장 경로가 준비된 상태로만 남겨 뒀다.
-4. **재무 엔진 미수정** — `consultation_plan.reserve_months`·`operating_reserve`·`total_required_funds`·`external_funding_need`는 전환계획 T1이 엔진에 값을 추가하기 전까지 **0**이다. 계산 결과로 읽으면 안 된다는 제약이 `consultation_repository.py`·`consultation_port.py`·`consultation_entity.py` docstring에 명시돼 있다.
-5. **개발 DB 미적용** — 마이그레이션은 테스트 DB(`localhostdaegu_test`)에서만 검증했다. 개발 DB(5437 `localhostdaegu`)에 적용하려면 `alembic upgrade head`를 따로 실행해야 한다.
+3. ~~**상담 BC 프론트 전환**~~ → **2026-09-18 완료(T7).** 상담자료 생성 시점에 세션·계획안·노트를 서버에 기록한다. 화면 상태의 정본은 §5-3대로 `sessionStorage`이며 서버 기록은 감사·재현용이다.
+4. ~~**재무 엔진 미수정**~~ → **2026-09-18 완료(T1).** 엔진이 네 수치를 계산하고 API·분석 요약까지 전달한다. 다만 `consultation_plan`의 결과 8필드는 여전히 **감사·재현용 스냅샷**이며 리포트가 읽지 않는다는 제약은 그대로다(docstring 유지).
+5. ~~**개발 DB 미적용**~~ → **적용 완료.** 개발 DB(5437)는 현재 `079cb96619ca`(30테이블 + `finance_product.district_code`)이며 상품 12건·상담 메타데이터 12건이 시드돼 있다.
 
 ### 0-3. 센터 데이터 — 미확보 상태와 반출 조건
 
