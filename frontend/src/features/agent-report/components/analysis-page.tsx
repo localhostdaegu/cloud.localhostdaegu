@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { parseFinanceParam } from "@/shared/finance-param";
+import { industryLabel } from "@/shared/industries";
 import {
   loadDraft,
   selectedPlan,
@@ -9,6 +10,8 @@ import {
 } from "@/features/simulator/lib/consultation-draft";
 import type { StartAnalysisParams } from "../hooks/use-agent-report";
 import { AnalysisForm } from "./analysis-form";
+import { BankHandoff } from "./bank-handoff";
+import "./report-print.css";
 import { ProgressPanel } from "./progress-panel";
 import { ReportView } from "./report-view";
 import { useAgentReport } from "../hooks/use-agent-report";
@@ -32,7 +35,7 @@ export function AnalysisPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8">
-      <div className="max-w-xl">
+      <div className="max-w-xl print-hide">
         <AnalysisForm
           initialRegion={searchParams.get("region") ?? ""}
           initialIndustry={searchParams.get("industry") ?? ""}
@@ -47,11 +50,19 @@ export function AnalysisPage() {
         )}
       </div>
       <div className="flex flex-1 flex-col gap-8 lg:flex-row lg:gap-10">
-        <div className="w-full shrink-0 lg:w-72">
+        <div className="w-full shrink-0 lg:w-72 print-hide">
           <ProgressPanel state={state} />
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="report-print-area flex min-w-0 flex-1 flex-col gap-6">
           <ReportView state={state} />
+          <BankHandoff
+            state={state}
+            meta={{
+              regionLabel: searchParams.get("region") ?? "",
+              industryLabel: industryLabel(searchParams.get("industry") ?? ""),
+              generatedAt: new Date().toISOString().slice(0, 10),
+            }}
+          />
         </div>
       </div>
     </div>

@@ -1,0 +1,31 @@
+/* 인쇄·PDF 저장용 — 요약이 앞, 상세 근거가 뒤(§6 T5).
+   PDF 전용 라이브러리를 추가하지 않고 브라우저 인쇄의 PDF 저장을 쓴다. */
+@media print {
+  /* 입력폼·진행패널·버튼은 자료가 아니다 */
+  .print-hide {
+    display: none !important;
+  }
+
+  .report-print-area {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* 링크 주소를 종이에 남긴다 — 화면에서만 클릭되는 근거는 상담에서 못 쓴다 */
+  .report-markdown a::after {
+    content: " (" attr(href) ")";
+    font-size: 0.75em;
+    word-break: break-all;
+  }
+
+  .report-markdown h2,
+  .report-markdown h3 {
+    break-after: avoid;
+  }
+
+  .report-markdown table,
+  .report-markdown ul,
+  .report-markdown ol {
+    break-inside: avoid;
+  }
+}
