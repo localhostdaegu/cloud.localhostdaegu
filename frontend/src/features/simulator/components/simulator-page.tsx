@@ -34,6 +34,9 @@ export function SimulatorPage() {
   const loanRate = useLatestLoanRate();
   const defaults = buildDefaults({ budget: searchParams.get("budget"), industry, loanRate });
 
+  // 행정동 10자리의 앞 5자리가 자치구 코드다 (2711059500 → 27110 중구).
+  const districtCode = region ? region.slice(0, 5) : null;
+
   const [draft, setDraft] = useState<ConsultationDraft>(() => emptyDraft({ region, industry }));
 
   // 저장값 복원은 마운트 후에 한다 — 서버 렌더에는 sessionStorage 가 없다.
@@ -119,6 +122,7 @@ export function SimulatorPage() {
             input={plan.input}
             category={industry ?? undefined}
             profile={draft.profile}
+            districtCode={districtCode}
             backHref={`/simulate?${searchParams.toString()}`}
             analysisHref={analysisHref}
           />

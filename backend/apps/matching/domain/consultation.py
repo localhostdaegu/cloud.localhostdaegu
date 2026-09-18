@@ -47,16 +47,17 @@ def build_consultation_candidates(
     business_registered: bool | None,
     business_age_months: int | None,
     owner_age: int | None,
+    district_code: str | None = None,
     include_unverified: bool = False,
 ) -> list[ConsultationCandidate]:
     """include_unverified=True 면 취급 근거가 확인되지 않은 상품도 참고자료로 함께 준다.
     자격 조건은 똑같이 적용한다 — 참고자료라고 느슨하게 보지 않는다."""
     allowed = _REFERENCE_CONNECTIONS if include_unverified else _BANK_CANDIDATE_CONNECTIONS
     candidates = [
-        _to_candidate(product, external_funding_need, business_registered, owner_age)
+        _to_candidate(product, external_funding_need, business_registered, owner_age, district_code)
         for product in products
         if _metadata_of(product)["bank_connection"] in allowed
-        and _passes_conditions(product, category, business_age_months, owner_age)
+        and _passes_conditions(product, category, business_age_months, owner_age, district_code)
     ]
     return sorted(
         candidates,
@@ -73,9 +74,18 @@ def _metadata_of(product: dict) -> dict:
 
 
 def _passes_conditions(
-    product: dict, category: str, business_age_months: int | None, owner_age: int | None
+    product: dict,
+    category: str,
+    business_age_months: int | None,
+    owner_age: int | None,
+    district_code: str | None,
 ) -> bool:
     """기존 업종·업력·연령 조건을 그대로 쓴다. 한도는 거르지 않고 설명에 반영한다."""
+    # 지역 한정 상품은 다른 자치구에서 제외한다. 사용자 지역이 미상이면 거르지 않고
+    # 확인 사항으로 남긴다 — 연령 미입력 처리와 같은 원칙(§4-2).
+    limited_to = product.get("district_code")
+    if limited_to is not None and district_code is not None and limited_to != district_code:
+        return False
     if product["category"] is not None and category not in product["category"]:
         return False
     if business_age_months is not None:
@@ -90,10 +100,14 @@ def _passes_conditions(
 
 
 def _to_candidate(
-    product: dict, external_funding_need: int, business_registered: bool | None, owner_age: int | None
+    product: dict,
+    external_funding_need: int,
+    business_registered: bool | None,
+    owner_age: int | None,
+    district_code: str | None,
 ) -> ConsultationCandidate:
     metadata = _metadata_of(product)
-    unresolved = _unresolved(product, metadata, business_registered, owner_age)
+    unresolved = _unresolved(product, metadata, business_registered, owner_age, district_code)
     status = _status(metadata, business_registered, unresolved)
     return ConsultationCandidate(
         product=product,
@@ -105,9 +119,15 @@ def _to_candidate(
 
 
 def _unresolved(
-    product: dict, metadata: dict, business_registered: bool | None, owner_age: int | None
+    product: dict,
+    metadata: dict,
+    business_registered: bool | None,
+    owner_age: int | None,
+    district_code: str | None,
 ) -> list[str]:
     items: list[str] = []
+    if product.get("district_code") is not None and district_code is None:
+        items.append(f"{product['region']} 사업장만 신청 가능 — 지역 조건 확인 필요")
     if metadata["business_registration_required"] is None:
         items.append("사업자등록 필요 여부가 공식 안내에서 확인되지 않음")
     elif metadata["business_registration_required"] and business_registered is None:

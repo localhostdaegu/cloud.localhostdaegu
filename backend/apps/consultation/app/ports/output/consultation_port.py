@@ -33,5 +33,9 @@ class ConsultationRepositoryPort(ABC):
         """세션의 가정·미확인 항목 전부 (note_type, note_order 오름차순)."""
 
     @abstractmethod
+    def replace_notes(self, session_id: str, notes: list[ConsultationNote]) -> None:
+        """세션의 노트를 통째로 교체한다 — 재전송해도 행이 쌓이지 않는다."""
+
+    @abstractmethod
     def upsert_plan(self, plan: ConsultationPlan) -> ConsultationPlan:
         """(session_id, plan_kind) 기준 멱등 upsert — 갱신 시 기존 plan_id를 유지한다."""

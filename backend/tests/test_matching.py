@@ -78,15 +78,23 @@ def test_operational_manual_json_uses_frontend_industry_ids():
 
 
 def test_operational_district_only_products_are_excluded_from_matching():
-    """matcher에 지역 필터가 없으므로 구·군 한정 상품은 category [] 로 매칭에서 뺀다(구·군 특례보증은 범위 밖)."""
+    """GET /matching 은 사용자 지역을 받지 않으므로 자치구 한정 상품을 노출하지 않는다.
+
+    예전에는 category [] 로 뺐지만, 그 인코딩은 '해당 업종 없음'이라는 다른 뜻이라
+    district_code 로 옮겼다. 지역 대조는 상담 후보 경로가 한다.
+    """
     load_all_products.cache_clear()
     products = load_all_products()
     load_all_products.cache_clear()
 
-    district_only = [p for p in products if (p.get("region") or "").startswith("대구광역시 ")]  # 예: "대구광역시 달성군"
-    assert district_only, "구·군 한정 상품 표본이 없음"
-    leaking = [p["product_id"] for p in district_only if p["category"] != []]
-    assert leaking == [], f"구·군 한정인데 매칭에 노출되는 상품: {leaking}"
+    district_only = [p for p in products if p.get("district_code") is not None]
+    assert district_only, "자치구 한정 상품 표본이 없음"
+
+    matched = match_products(
+        products, funding_gap=0, category="cafe", business_age_months=0, owner_age=None
+    )
+    leaking = [p["product_id"] for p in matched if p.get("district_code") is not None]
+    assert leaking == [], f"자치구 한정인데 매칭에 노출되는 상품: {leaking}"
 
 
 def test_gateway_loads_products_from_json_files(tmp_path):

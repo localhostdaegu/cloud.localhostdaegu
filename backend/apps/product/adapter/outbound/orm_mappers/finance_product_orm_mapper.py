@@ -33,6 +33,7 @@ _FIELDS = (
     "url",
     "source_url",
     "source_file",
+    "district_code",
 )
 
 _METADATA_FIELDS = (

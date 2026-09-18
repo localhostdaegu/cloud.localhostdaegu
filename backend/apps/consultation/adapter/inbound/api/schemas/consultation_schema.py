@@ -23,6 +23,8 @@ class ConsultationSessionCreateRequest(BaseModel):
     policy_confirmation_status: str = "unknown"
     selected_plan_kind: str | None = None
     change_reason: str = ""
+    assumptions: list[str] = []
+    open_questions: list[str] = []
 
 
 class ConsultationSessionCreatedResponse(BaseModel):

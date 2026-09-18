@@ -47,6 +47,7 @@ interface MatchingCardsProps {
   businessRegistered?: boolean | null;
   businessAgeMonths?: number | null;
   ownerAge?: number | null;
+  districtCode?: string | null;
 }
 
 function Bullets({ title, items }: { title: string; items: string[] }) {
@@ -71,9 +72,13 @@ export function MatchingCards({
   businessRegistered,
   businessAgeMonths,
   ownerAge,
+  districtCode,
 }: MatchingCardsProps) {
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["consultation", externalFundingNeed, category, businessRegistered, businessAgeMonths, ownerAge],
+    queryKey: [
+      "consultation", externalFundingNeed, category,
+      businessRegistered, businessAgeMonths, ownerAge, districtCode,
+    ],
     queryFn: () =>
       fetchConsultationCandidates({
         externalFundingNeed,
@@ -81,6 +86,7 @@ export function MatchingCards({
         businessRegistered,
         businessAgeMonths,
         ownerAge,
+        districtCode,
       }),
   });
 

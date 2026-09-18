@@ -6,6 +6,9 @@ PROVIDER_TYPES = frozenset(_PRIORITY)                   # 정렬 가능한 provi
 def match_products(products: list[dict], funding_gap: int, category: str,
                    business_age_months: int, owner_age: int | None) -> list[dict]:
     def ok(p: dict) -> bool:
+        # 이 엔드포인트는 사용자 지역을 받지 않는다 — 자치구 한정 상품은 노출하지 않는다.
+        # 지역 대조는 상담 후보 경로(consultation.build_consultation_candidates)가 한다.
+        if p.get("district_code") is not None: return False
         if p["loan_limit"] is not None and p["loan_limit"] < funding_gap: return False
         if p["category"] is not None and category not in p["category"]: return False
         if p["business_age_min"] is not None and business_age_months < p["business_age_min"]: return False

@@ -184,29 +184,29 @@ export function riskRankingByRegion(regionCode: string): IndustryRiskScore[] {
 
 const AGENT_TOOLS: Record<Exclude<AgentName, "orchestrator">, { tool: string; summary: string }[]> = {
   market: [
-    { tool: "closure_rate_lookup", summary: "강남구 카페 폐업률 조회" },
-    { tool: "sales_trend_lookup", summary: "인근 상권 매출 데이터 조회" },
+    { tool: "region_metrics", summary: "대신동 카페 지역 지표 조회" },
+    { tool: "risk_score", summary: "업종 위험도 조회 — 83.1점" },
   ],
-  shock: [
-    { tool: "interest_rate_history", summary: "금리 변동 이력 조회" },
-    { tool: "commodity_index_lookup", summary: "원두 가격 지수 조회" },
-    { tool: "supply_chain_news", summary: "원두 공급망 뉴스 스캔" },
-  ],
+  shock: [{ tool: "news_search", summary: "관련 뉴스 검색 — 3건" }],
   funding: [
-    { tool: "policy_fund_catalog", summary: "소상공인 정책자금 목록 조회" },
-    { tool: "rent_market_lookup", summary: "임대료 시세 데이터 조회" },
+    { tool: "finance_simulate", summary: "재무 시뮬레이션 — 조달 필요 22,600,000원" },
+    { tool: "product_matching", summary: "상담 후보 정리 — 3건" },
+    { tool: "funding_search", summary: "정책자금 공고 검색 — 4건" },
   ],
 };
 
 const CALCULATOR_MARKDOWN = [
-  "### 월세 vs 매입 비교",
+  "### 재무 시뮬레이션",
   "",
-  "| 구분 | 월세 (보증금 5,000만원 + 월 300만원) | 매입 (10억원, 대출 70%) |",
-  "|---|---|---|",
-  "| 초기 투자금 | 5,000만원 | 3억원 |",
-  "| 월 고정비 | 300만원 | 대출이자 약 175만원 (연 3.5%) |",
-  "| 5년 누적 비용 | 1억 8,500만원 | 1억 500만원 + 대출 원금 상환 |",
-  "| 자산 형성 | 없음 | 부동산 자산 10억원 (시세 변동 별도) |",
+  "초기 투자 50,000,000원 · 운영준비금 6개월치 12,600,000원 · 총 준비자금 62,600,000원",
+  "",
+  "월 고정비 2,100,000원 · 손익분기 월매출 5,250,000원 · 자기자본 외 조달 필요 22,600,000원 · 희망대출 반영 후 남는 부족액 0원",
+  "",
+  "| 시나리오 | 월매출 | 영업이익 | 투자 회수 |",
+  "|---|---|---|---|",
+  "| 비관 | 4,800,000원 | -180,000원 | 회수 불가 |",
+  "| 기준 | 8,000,000원 | 1,100,000원 | 45.5개월 |",
+  "| 낙관 | 12,800,000원 | 3,020,000원 | 16.6개월 |",
 ].join("\n");
 
 /** 상담자료(handoff) 시연용 — 대구 대신동 카페, 월세 250만 → 100만.
@@ -343,22 +343,22 @@ export function agentEventScript(purpose: "review" | "handoff" = "review"): Agen
     {
       type: "report_delta",
       section: "verdict",
-      markdown: "### 종합 진단\n\n강남구 카페 상권은 **안정적 성장세**이나 원두 가격 상승발 원가 압박이 존재합니다.",
+      markdown: "### 종합 진단\n\n대구 중구 대신동 카페 상권은 폐업률이 높아 **진입 시 준비자금 여유가 중요**합니다. 아래 수치는 시연용 고정 데이터입니다.",
     },
     {
       type: "report_delta",
       section: "market",
-      markdown: "### 상권 진단\n\n최근 1년 신규 카페 개업이 12% 증가했고, 폐업률은 6.4%로 서울 평균 대비 낮습니다.",
+      markdown: "### 상권 진단\n\n대신동 카페 점포수 66개 · 폐업률 57.4% · 성장률 +8.2% (2025년 집계). 개별 점포의 매출 예측이 아니라 지역 추세입니다.",
     },
     {
       type: "report_delta",
       section: "shock",
-      markdown: "### 충격 분석\n\n기준금리는 동결 기조지만 원두 원가는 전년 대비 8% 상승 — 마진 압박 요인입니다.",
+      markdown: "### 관련 뉴스\n\n지역 상권 관련 보도를 참고 자료로 붙입니다. 계산한 금리 민감도와는 별개입니다.",
     },
     {
       type: "report_delta",
       section: "funding",
-      markdown: "### 정책자금\n\n소상공인 정책자금(최대 7,000만원, 금리 2.5%) 신청 조건을 충족합니다.",
+      markdown: "### 자금 후보\n\n공개 자료에서 iM뱅크 취급·연계 근거를 확인한 상품만 후보로 둡니다. 확인하지 못한 상품은 차선 후보로 따로 표시합니다.",
     },
     { type: "report_delta", section: "calculator", markdown: CALCULATOR_MARKDOWN },
   );
@@ -370,10 +370,9 @@ export function agentEventScript(purpose: "review" | "handoff" = "review"): Agen
       type: "report_done",
       report_id: "mock-report-001",
       citations: [
-        { title: "서울시 상권분석 서비스 — 강남구 폐업률 통계", url: "https://data.seoul.go.kr", grade: "fact" },
-        { title: "소상공인시장진흥공단 정책자금 공고", url: "https://semas.or.kr", grade: "fact" },
-        { title: "국제 원두 선물 가격 동향 리포트", url: "https://example-news.com/coffee-price", grade: "fact" },
-        { title: "강남 카페 상권 SNS 언급량 분석", url: "https://example-news.com/sns-trend", grade: "signal" },
+        { title: "행정안전부 지방행정 인허가 데이터 — 대구 개폐업 이력", url: "https://www.localdata.go.kr", grade: "fact" },
+        { title: "iM뱅크 소상공인시장진흥공단 정책자금 안내", url: "https://www.imbank.co.kr", grade: "fact" },
+        { title: "대구신용보증재단 보증상품 소개", url: "https://www.dgsinbo.or.kr", grade: "fact" },
       ],
     },
   );

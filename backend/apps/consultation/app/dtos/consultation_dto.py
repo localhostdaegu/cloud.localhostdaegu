@@ -20,6 +20,9 @@ class ConsultationSessionDto:
     policy_confirmation_status: str = "unknown"
     selected_plan_kind: str | None = None
     change_reason: str = ""
+    # 가정·미확인 항목 — 노트로 저장된다. 비어 있다는 것을 '확인 완료'로 읽지 않는다(§5-1).
+    assumptions: list[str] = field(default_factory=list)
+    open_questions: list[str] = field(default_factory=list)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

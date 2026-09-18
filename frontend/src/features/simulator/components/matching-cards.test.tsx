@@ -141,3 +141,23 @@ it("참고자료는 상담 후보가 아님을 카드에 밝힌다", async () =>
 
   await waitFor(() => expect(screen.getByText("근거 미확인")).toBeInTheDocument());
 });
+
+it("사용자 자치구를 쿼리에 실어 지역 한정 상품을 거른다", async () => {
+  const fetchMock = vi.fn(async () => new Response("[]", { status: 200 }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  renderWithClient(<MatchingCards externalFundingNeed={2_000_000} category="cafe" districtCode="27110" />);
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+  expect(String(fetchMock.mock.calls[0][0])).toContain("district_code=27110");
+});
+
+it("자치구를 모르면 쿼리에서 생략한다 — 미상을 특정 지역으로 단정하지 않는다", async () => {
+  const fetchMock = vi.fn(async () => new Response("[]", { status: 200 }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  renderWithClient(<MatchingCards externalFundingNeed={2_000_000} category="cafe" />);
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+  expect(String(fetchMock.mock.calls[0][0])).not.toContain("district_code");
+});

@@ -71,3 +71,13 @@ def test_reference_products_are_opt_in(monkeypatch):
     )
     (candidate,) = with_reference.json()
     assert candidate["metadata"]["bank_connection"] == "unverified"
+
+
+def test_district_limited_product_is_filtered_by_user_district(monkeypatch):
+    dalseong = {**_PRODUCT, "district_code": "27710", "region": "대구광역시 달성군"}
+
+    inside = _get(monkeypatch, [dalseong], "external_funding_need=2000000&category=cafe&district_code=27710")
+    assert len(inside.json()) == 1
+
+    outside = _get(monkeypatch, [dalseong], "external_funding_need=2000000&category=cafe&district_code=27110")
+    assert outside.json() == []

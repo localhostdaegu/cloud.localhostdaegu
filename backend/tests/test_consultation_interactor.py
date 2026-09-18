@@ -40,6 +40,9 @@ class FakeConsultationRepository(ConsultationRepositoryPort):
     def list_notes(self, session_id: str) -> list[ConsultationNote]:
         return [n for n in self.notes if n.session_id == session_id]
 
+    def replace_notes(self, session_id: str, notes: list[ConsultationNote]) -> None:
+        self.notes = [n for n in self.notes if n.session_id != session_id] + list(notes)
+
     def upsert_plan(self, plan: ConsultationPlan) -> ConsultationPlan:
         key = (plan.session_id, plan.plan_kind)
         existing = self.plans.get(key)
@@ -161,3 +164,22 @@ def test_interactor_does_not_compute_result_fields(interactor):
     assert saved.operating_reserve == 42
     assert saved.capex == 0  # 미제공 — 엔진에서 채우지 않는다
     assert saved.total_required_funds == 0
+
+
+def test_start_session_records_assumptions_and_open_questions(interactor):
+    """§5-1 — '모름'이 숫자 가정으로 바뀌며 사라지지 않게 노트로 남긴다."""
+    session_id = interactor.start_session(
+        ConsultationSessionDto(
+            session_id="",
+            assumptions=["원가율 57% 가정"],
+            open_questions=["설비 견적 미확정", "보증기관 보증서 진행 상태 미확인"],
+        )
+    )
+
+    notes = interactor.get_session(session_id).notes
+
+    assert [(n.note_type, n.note_order, n.content) for n in notes] == [
+        ("assumption", 1, "원가율 57% 가정"),
+        ("open_question", 1, "설비 견적 미확정"),
+        ("open_question", 2, "보증기관 보증서 진행 상태 미확인"),
+    ]

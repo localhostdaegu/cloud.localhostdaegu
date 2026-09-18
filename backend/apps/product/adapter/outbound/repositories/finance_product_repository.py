@@ -3,6 +3,9 @@ from dataclasses import replace
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
+# 마스터 ORM 2종 — FK 대상 테이블이 같은 metadata 에 있어야 SQLAlchemy 가 FK 를 해석한다.
+# (industry: finance_product_category, district: finance_product.district_code)
+from apps.master.adapter.outbound.orms.district_orm import DistrictOrm  # noqa: F401
 from apps.master.adapter.outbound.orms.industry_orm import IndustryOrm
 from apps.product.adapter.outbound.orm_mappers.finance_product_orm_mapper import (
     apply_to_orm,

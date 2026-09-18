@@ -1,5 +1,5 @@
 import { apiPost, apiPut } from "@/shared/api/client";
-import type { ConsultationDraft, PlanKind, PlanSnapshot } from "./consultation-draft";
+import { toConsultationContext, type ConsultationDraft, type PlanKind, type PlanSnapshot } from "./consultation-draft";
 
 /** 상담 세션 서버 기록 — 화면 상태의 정본은 여전히 sessionStorage 다(§5-3).
  *
@@ -31,6 +31,8 @@ export async function recordConsultationSession(draft: ConsultationDraft): Promi
   if (plans.length === 0) return null;
 
   const profile = draft.profile;
+  // 가정·미확인 항목은 전송 계약과 같은 규칙으로 만든다 — 화면·리포트·세션이 같은 문장을 쓴다.
+  const context = toConsultationContext(draft);
   try {
     const { session_id } = await apiPost<{ session_id: string }>("/consultation", {
       region_code: draft.region,
@@ -45,6 +47,8 @@ export async function recordConsultationSession(draft: ConsultationDraft): Promi
       policy_confirmation_status: profile.policy_confirmation_status,
       selected_plan_kind: draft.selected,
       change_reason: draft.change_reason,
+      assumptions: context.assumptions,
+      open_questions: context.open_questions,
     });
 
     // 순서를 보존한다 — 같은 plan_kind 재전송은 서버가 멱등 upsert 한다.

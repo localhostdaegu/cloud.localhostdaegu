@@ -14,6 +14,8 @@ interface ResultViewProps {
   category?: string;
   /** 창업 단계 — 상담 후보 조회 조건. 미입력은 쿼리에서 생략된다(§5-2). */
   profile?: ConsultationProfile;
+  /** 사용자 자치구 5자리 — 지역 한정 상품 필터. */
+  districtCode?: string | null;
   /** 루프백(⑤) — "조건 바꿔보기" 링크. 시뮬레이터 폼으로 복귀. */
   backHref?: string;
   /** 상담 준비 CTA — 선택안을 실어 /analysis로 이동. 없으면 링크를 그리지 않는다. */
@@ -34,6 +36,7 @@ export function ResultView({
   input,
   category,
   profile,
+  districtCode,
   backHref = "/simulate",
   analysisHref,
 }: ResultViewProps) {
@@ -102,6 +105,7 @@ export function ResultView({
                 businessRegistered={profile?.business_registered === "unknown" ? null : profile?.business_registered}
                 businessAgeMonths={profile?.business_age_months}
                 ownerAge={profile?.owner_age}
+                districtCode={districtCode}
               />
             </QueryClientProvider>
           </>

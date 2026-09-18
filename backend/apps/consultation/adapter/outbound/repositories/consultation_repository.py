@@ -1,8 +1,9 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from apps.consultation.adapter.outbound.orm_mappers.consultation_orm_mapper import (
     apply_plan_to_orm,
     note_to_entity,
+    note_to_orm,
     plan_to_entity,
     plan_to_orm,
     session_to_entity,
@@ -15,6 +16,7 @@ from apps.consultation.adapter.outbound.orms.consultation_session_orm import (
 )
 from apps.consultation.app.ports.output.consultation_port import ConsultationRepositoryPort
 from apps.consultation.domain.entities.consultation_entity import (
+    NOTE_TYPES,
     ConsultationNote,
     ConsultationPlan,
     ConsultationSession,
@@ -60,6 +62,20 @@ class SqlAlchemyConsultationRepository(ConsultationRepositoryPort):
                 .order_by(ConsultationNoteOrm.note_type, ConsultationNoteOrm.note_order)
             ).scalars()
             return [note_to_entity(orm) for orm in orms]
+
+    def replace_notes(self, session_id: str, notes: list[ConsultationNote]) -> None:
+        """통째로 교체 — 같은 세션에 다시 보내도 행이 누적되지 않는다."""
+        for note in notes:
+            if note.note_type not in NOTE_TYPES:
+                raise ValueError(
+                    f"note_type 은 {'/'.join(sorted(NOTE_TYPES))} 중 하나여야 합니다: {note.note_type!r}"
+                )
+        with session_scope() as session:
+            session.execute(
+                delete(ConsultationNoteOrm).where(ConsultationNoteOrm.session_id == session_id)
+            )
+            session.flush()  # 교체 전 삭제 확정
+            session.add_all([note_to_orm(note) for note in notes])
 
     def upsert_plan(self, plan: ConsultationPlan) -> ConsultationPlan:
         with session_scope() as session:

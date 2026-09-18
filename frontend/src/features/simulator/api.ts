@@ -35,6 +35,8 @@ export interface ConsultationQuery {
   businessRegistered?: boolean | null;
   businessAgeMonths?: number | null;
   ownerAge?: number | null;
+  /** 자치구 5자리 — 지역 한정 상품을 해당 지역에서만 보여준다. */
+  districtCode?: string | null;
 }
 
 /** GET /matching/consultation — 미입력 값은 쿼리에서 생략한다.
@@ -47,6 +49,7 @@ export function fetchConsultationCandidates(query: ConsultationQuery): Promise<C
   if (query.businessRegistered != null) params.set("business_registered", String(query.businessRegistered));
   if (query.businessAgeMonths != null) params.set("business_age_months", String(query.businessAgeMonths));
   if (query.ownerAge != null) params.set("owner_age", String(query.ownerAge));
+  if (query.districtCode) params.set("district_code", query.districtCode);
   // 근거 미확인 상품도 '관련 기관 참고자료'로 받아 화면에서 분리해 보여준다(§5-2).
   params.set("include_unverified", "true");
   return apiGet<ConsultationCandidate[]>(`/matching/consultation?${params.toString()}`);

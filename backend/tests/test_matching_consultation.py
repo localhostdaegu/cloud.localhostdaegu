@@ -3,7 +3,7 @@
 from apps.matching.domain.consultation import build_consultation_candidates
 
 _BASE = {
-    "product_id": "test-only", "provider": "테스트 기관", "provider_type": "bank",
+    "product_id": "test-only", "provider": "테스트 기관", "provider_type": "bank", "district_code": None,
     "product_name": "합성 테스트 상품", "target": "테스트", "region": "대구", "category": None,
     "business_age_min": 0, "business_age_max": None, "owner_age_max": None,
     "loan_limit": 10_000_000, "interest_rate": None, "guarantee_fee": None,
@@ -25,6 +25,7 @@ def _build(products, **kwargs):
     defaults = dict(
         external_funding_need=2_000_000, category="cafe",
         business_registered=True, business_age_months=0, owner_age=None,
+        district_code="27110",
     )
     return build_consultation_candidates(products, **{**defaults, **kwargs})
 
@@ -208,3 +209,39 @@ def test_provider_priority_still_orders_within_the_same_bank_grade():
     ])
 
     assert [c.product["product_id"] for c in candidates] == ["guarantee", "bank"]
+
+
+# --- 지역 한정 상품 — 해당 자치구 사용자에게만 -------------------------------
+
+
+def test_product_without_district_limit_passes_everywhere():
+    assert len(_build([_product()], district_code="27110")) == 1
+
+
+def test_district_limited_product_shows_in_that_district():
+    dalseong = _product(district_code="27710", region="대구광역시 달성군")
+
+    assert len(_build([dalseong], district_code="27710")) == 1
+
+
+def test_district_limited_product_is_excluded_elsewhere():
+    dalseong = _product(district_code="27710", region="대구광역시 달성군")
+
+    assert _build([dalseong], district_code="27110") == []
+
+
+def test_unknown_user_district_keeps_the_product_with_a_check_item():
+    """지역 미상을 자격 미달로 단정하지 않는다 — 연령 처리와 같은 원칙(§4-2)."""
+    dalseong = _product(district_code="27710", region="대구광역시 달성군")
+
+    (candidate,) = _build([dalseong], district_code=None)
+
+    assert any("달성군" in c and "지역" in c for c in candidate.unresolved_conditions)
+
+
+def test_matching_district_does_not_add_a_check_item():
+    dalseong = _product(district_code="27710", region="대구광역시 달성군")
+
+    (candidate,) = _build([dalseong], district_code="27710")
+
+    assert not any("지역" in c for c in candidate.unresolved_conditions)

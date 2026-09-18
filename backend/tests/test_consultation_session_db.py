@@ -104,3 +104,34 @@ def test_unknown_session_returns_404():
     put = client.put("/consultation/0123456789abcdef/plans/current", json=_PLAN_INPUT)
     assert put.status_code == 404
     assert put.json()["error"]["code"] == "SESSION_NOT_FOUND"
+
+def test_notes_are_saved_with_the_session():
+    """§5-1 — '모름'을 선택한 사실이 가정으로 바뀌며 사라지지 않게 세션에 남긴다.
+
+    쓰기 경로가 없으면 consultation_note 는 영원히 빈 테이블이다.
+    """
+    client = TestClient(app)
+    session_id = _create_session(
+        client,
+        region_code="2711059500",
+        industry_id="cafe",
+        assumptions=["원가율 57%는 업종 벤치마크 기본값", "대출금리 연 4.8% 가정"],
+        open_questions=["설비 견적 미확정", "보증기관 보증서 진행 상태 미확인"],
+    )
+
+    notes = client.get(f"/consultation/{session_id}").json()["notes"]
+
+    assert [(n["note_type"], n["note_order"], n["content"]) for n in notes] == [
+        ("assumption", 1, "원가율 57%는 업종 벤치마크 기본값"),
+        ("assumption", 2, "대출금리 연 4.8% 가정"),
+        ("open_question", 1, "설비 견적 미확정"),
+        ("open_question", 2, "보증기관 보증서 진행 상태 미확인"),
+    ]
+
+
+def test_session_without_notes_stays_empty():
+    """노트가 비어 있다는 사실을 '확인 완료'로 읽지 않는다 — 안 보낸 것과 없는 것은 같다."""
+    client = TestClient(app)
+    session_id = _create_session(client, region_code="2711059500", industry_id="cafe")
+
+    assert client.get(f"/consultation/{session_id}").json()["notes"] == []

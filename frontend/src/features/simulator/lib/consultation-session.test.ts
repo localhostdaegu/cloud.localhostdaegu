@@ -104,4 +104,14 @@ describe("상담 세션 기록", () => {
 
     await expect(recordConsultationSession(twoPlans())).resolves.toBeNull();
   });
+
+  it("가정과 미확인 항목을 세션에 함께 남긴다 — 노트로 저장된다", async () => {
+    await recordConsultationSession(twoPlans());
+
+    const [, , body] = calls[0];
+    expect(body.assumptions).toEqual(expect.arrayContaining([expect.stringMatching(/원가율/)]));
+    expect(body.open_questions).toEqual(
+      expect.arrayContaining([expect.stringMatching(/보증기관 보증서 진행 상태 미확인/)]),
+    );
+  });
 });

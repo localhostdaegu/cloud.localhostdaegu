@@ -18,6 +18,7 @@ _DICT_FIELDS = [
     "product_id", "provider", "provider_type", "product_name", "target", "region",
     "business_age_min", "business_age_max", "category", "owner_age_max",
     "loan_limit", "interest_rate", "guarantee_fee", "url", "source_url",
+    "district_code",  # 자치구 한정 상품만 값이 있다 — 두 경로가 같은 형태여야 한다
 ]
 
 

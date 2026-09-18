@@ -24,6 +24,9 @@ _REQUIRED_FIELDS = {
     "loan_limit", "interest_rate", "guarantee_fee", "url", "source_url"
 }
 
+# JSON 에 없을 수 있는 선택 필드 — 없으면 None 으로 채운다(지역 제한 없음).
+_OPTIONAL_FIELDS = ("district_code",)
+
 @lru_cache(maxsize=1)
 def load_consultation_products() -> list[dict]:
     """상담 경로용 — 15필드에 consultation_metadata 를 더해 읽는다.
@@ -104,6 +107,7 @@ def _to_dict(product: FinanceProduct) -> dict:
         "guarantee_fee": product.guarantee_fee,
         "url": product.url,
         "source_url": product.source_url,
+        "district_code": product.district_code,
     }
 
 
@@ -137,6 +141,9 @@ def _load_from_json() -> list[dict]:
                 continue
             # 15필드만 남긴다 — consultation_metadata 등 추가 키가 GET /matching 응답에
             # 섞이면 DB 경로와 형태가 달라진다(스펙 §2-5).
-            all_products.append({name: p[name] for name in _REQUIRED_FIELDS})
+            all_products.append(
+                {name: p[name] for name in _REQUIRED_FIELDS}
+                | {name: p.get(name) for name in _OPTIONAL_FIELDS}
+            )
 
     return all_products

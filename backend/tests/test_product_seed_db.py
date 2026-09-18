@@ -79,6 +79,9 @@ def test_seed_fails_on_industry_id_missing_from_master(clean_products):
 def test_seed_writes_category_rows_for_known_industry(clean_products):
     products = read_products()
     products[0].category = ["cafe", "restaurant"]
+    # '해당 업종 없음'([])은 합성 표본으로 검증한다 — 운영 JSON 에 이 상태가 남아 있는지에
+    # 기대면 데이터가 바뀔 때 3상태 보존이 조용히 검증되지 않는다(실제로 그렇게 됐다).
+    products[1].category = []
 
     repository = SqlAlchemyFinanceProductRepository()
     repository.upsert(products)
@@ -86,9 +89,7 @@ def test_seed_writes_category_rows_for_known_industry(clean_products):
     stored = {p.product_id: p for p in repository.list_all()}
     assert stored[products[0].product_id].category == ["cafe", "restaurant"]
     # [] 인 상품은 category 행 0건이지만 '전부 탈락'으로 복원된다
-    empty_ids = [p.product_id for p in products if p.category == []]
-    assert empty_ids, "category [] 표본이 data/manual 에 없음"
-    assert stored[empty_ids[0]].category == []
+    assert stored[products[1].product_id].category == []
 
 
 def test_read_products_records_source_file():

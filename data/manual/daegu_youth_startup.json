@@ -8,7 +8,7 @@
     "region": "대구광역시 북구",
     "business_age_min": 0,
     "business_age_max": 60,
-    "category": [],
+    "category": null,
     "owner_age_max": 39,
     "loan_limit": 50000000,
     "interest_rate": null,
@@ -26,7 +26,8 @@
       ],
       "documents": [],
       "verified_at": "2026-09-18"
-    }
+    },
+    "district_code": "27230"
   },
   {
     "product_id": "youth-2",

@@ -103,6 +103,7 @@ class ConsultationInteractor(ConsultationUseCase):
                 **{name: getattr(draft, name) for name in _SESSION_PROFILE_FIELDS},
             )
         )
+        self._repository.replace_notes(session_id, _to_notes(session_id, draft))
         return session_id
 
     def get_session(self, session_id: str) -> ConsultationDetailDto | None:
@@ -130,3 +131,15 @@ class ConsultationInteractor(ConsultationUseCase):
             )
         )
         return _to_plan_dto(saved)
+
+
+def _to_notes(session_id: str, draft: ConsultationSessionDto) -> list[ConsultationNote]:
+    """가정·미확인 항목을 노트로 옮긴다. 순서는 1부터 종류별로 매긴다."""
+    return [
+        ConsultationNote(session_id, note_type, order, content)
+        for note_type, contents in (
+            ("assumption", draft.assumptions),
+            ("open_question", draft.open_questions),
+        )
+        for order, content in enumerate(contents, start=1)
+    ]

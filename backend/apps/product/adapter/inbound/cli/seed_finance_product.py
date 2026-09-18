@@ -92,6 +92,7 @@ def read_products(data_dir: Path = _MANUAL_DIR) -> list[FinanceProduct]:
                 FinanceProduct(
                     **{name: raw[name] for name in _JSON_FIELDS},
                     source_file=source_file,
+                    district_code=raw.get("district_code"),
                     consultation=_to_consultation(metadata),
                     procedure_steps=_to_procedure_steps(metadata),
                 )

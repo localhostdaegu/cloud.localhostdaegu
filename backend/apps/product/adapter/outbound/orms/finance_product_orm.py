@@ -1,4 +1,4 @@
-from sqlalchemy import Index
+from sqlalchemy import ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.matrix.grid_oracle_database_manager import OrmBase
@@ -32,3 +32,6 @@ class FinanceProductOrm(OrmBase):
     # JSON category 의 None(업종 무관) ↔ [](해당 업종 없음) 구분 보존 — finance_product_rules 참조
     category_restricted: Mapped[bool] = mapped_column(default=False)
     source_file: Mapped[str]  # 시드 출처 파일명 — 재시드·대조 추적
+    # 자치구 한정 상품만 값이 있다(예: 달성군 27710). NULL = 지역 제한 없음.
+    # 상품 하나가 여러 자치구에 걸치는 사례가 아직 없어 단일 값으로 둔다.
+    district_code: Mapped[str | None] = mapped_column(ForeignKey("district.district_code"))

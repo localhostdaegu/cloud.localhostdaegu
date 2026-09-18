@@ -48,5 +48,6 @@ class FinanceProduct:
     source_url: str
     category: list[str] | None  # None=업종 무관 / []=해당 업종 없음 / [...]=해당 업종만
     source_file: str  # 시드 출처 파일명 — 재시드·대조 추적
+    district_code: str | None = None  # 자치구 한정 상품만 (예: 달성군 27710)
     consultation: ConsultationMetadata | None = None  # None = 미확인
     procedure_steps: list[ProcedureStep] = field(default_factory=list)
