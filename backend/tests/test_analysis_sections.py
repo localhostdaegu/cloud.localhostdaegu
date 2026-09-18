@@ -56,3 +56,93 @@ def test_calculator_section_renders_nothing_without_simulation():
     ctx = full_context()
     ctx.simulation = None
     assert list(CalculatorSection().render(ctx, FakeWriter())) == []
+
+
+# --- 전환계획 T4: 상담자료(handoff) 섹션 ------------------------------------
+
+
+def _handoff_context():
+    """선택안·비교 원본·상담 정보가 모두 있는 상담자료 컨텍스트."""
+    from dataclasses import replace
+
+    from apps.analysis.domain.analysis_context import ConsultationContext, ConsultationProfile
+
+    ctx = full_context()
+    ctx.request = replace(
+        ctx.request,
+        purpose="handoff",
+        consultation=ConsultationContext(
+            profile=ConsultationProfile(
+                business_registered=False,
+                planned_opening_date="2026-11-01",
+                funds_needed_by="2026-10-15",
+                policy_confirmation_status="in_progress",
+            ),
+            change_reason="월세가 낮은 자리로 바꿨습니다",
+            assumptions=["원가율 35%는 업종 벤치마크 기본값"],
+            open_questions=["설비 견적 미확정"],
+        ),
+    )
+    ctx.simulation = SIMULATION
+    ctx.baseline_simulation = replace(SIMULATION, external_funding_need=38_849_996, bep_revenue=6_000_000)
+    return ctx
+
+
+def test_handoff_sections_follow_the_consultation_order():
+    from apps.analysis.app.use_cases.report_sections import sections_for
+
+    assert [s.key for s in sections_for("handoff", "대구")] == [
+        "plan", "comparison", "calculator", "funding", "questions", "market",
+    ]
+
+
+def test_review_keeps_the_existing_sections():
+    from apps.analysis.app.use_cases.report_sections import sections_for
+
+    assert [s.key for s in sections_for("review", "대구")] == [s.key for s in default_sections("대구")]
+
+
+def test_plan_lead_states_the_selected_plan_numbers_and_change_reason():
+    from apps.analysis.domain.report_text import plan_lead
+
+    text = plan_lead(_handoff_context())
+
+    assert "28,849,996원" in text  # 자기자본 외 조달 필요
+    assert "월세가 낮은 자리로 바꿨습니다" in text
+
+
+def test_comparison_is_written_by_code_without_the_llm():
+    from apps.analysis.app.use_cases.report_sections import ComparisonSection
+
+    writer = FakeWriter(chunks=("LLM 이 쓰면 안 된다",))
+    chunks = list(ComparisonSection().render(_handoff_context(), writer))
+
+    assert writer.calls == []
+    assert "38,849,996원" in "".join(chunks)  # 최초안
+    assert "28,849,996원" in "".join(chunks)  # 현재안
+
+
+def test_comparison_says_so_when_there_is_nothing_to_compare():
+    from apps.analysis.app.use_cases.report_sections import ComparisonSection
+
+    ctx = _handoff_context()
+    ctx.baseline_simulation = None
+
+    assert "비교할 최초안이 없습니다" in "".join(list(ComparisonSection().render(ctx, FakeWriter())))
+
+
+def test_questions_lead_keeps_unconfirmed_items_visible():
+    """'모름'이 숫자 가정으로 바뀌면서 사라지지 않게 한다(§5-1)."""
+    from apps.analysis.domain.report_text import questions_lead
+
+    text = questions_lead(_handoff_context())
+
+    assert "설비 견적 미확정" in text
+    assert "원가율 35%는 업종 벤치마크 기본값" in text
+    assert "보증" in text  # guarantee_status=unknown → 확인 대상
+
+
+def test_calculator_shows_external_funding_need_not_only_the_gap():
+    text = calculator_markdown(SIMULATION)
+
+    assert "28,849,996원" in text

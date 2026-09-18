@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiPost } from "@/shared/api/client";
 import { config } from "@/shared/config";
-import type { AgentEvent, FinanceInput } from "@/shared/api/types";
+import type { AgentEvent, ConsultationContext, FinanceInput } from "@/shared/api/types";
 import { applyAgentEvent, initialAgentState, type AgentState } from "../lib/agent-events";
 
 export interface StartAnalysisParams {
@@ -12,6 +12,9 @@ export interface StartAnalysisParams {
   question?: string;
   /** 시뮬레이터에서 넘어온 재무 입력 — 있으면 백엔드가 재무 시뮬레이션(calculator) 섹션을 추가한다. */
   finance?: FinanceInput;
+  /** 전환계획 §5-1 — handoff 는 finance 와 consultation 이 함께 있어야 한다. */
+  purpose?: "review" | "handoff";
+  consultation?: ConsultationContext;
 }
 
 const EVENT_TYPES: AgentEvent["type"][] = ["agent_status", "tool_call", "report_delta", "report_done"];

@@ -3,8 +3,6 @@ import remarkGfm from "remark-gfm";
 import { GradeBadge } from "@/shared/ui/grade-badge";
 import type { AgentState } from "../lib/agent-events";
 
-const SECTION_ORDER = ["verdict", "market", "shock", "funding", "calculator"] as const;
-
 interface Citation {
   title: string;
   url: string;
@@ -27,7 +25,9 @@ interface ReportViewProps {
 }
 
 export function ReportView({ state }: ReportViewProps) {
-  const sections = SECTION_ORDER.filter((s) => state.sections[s]);
+  // 섹션 순서는 백엔드가 목적(review·handoff)에 맞게 보내준다 — 도착 순서를 그대로 쓴다.
+  // 고정 목록으로 거르면 새 섹션이 조용히 사라진다.
+  const sections = Object.keys(state.sections).filter((s) => state.sections[s]);
 
   if (sections.length === 0) {
     return (

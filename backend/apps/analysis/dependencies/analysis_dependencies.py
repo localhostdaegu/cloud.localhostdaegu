@@ -20,7 +20,7 @@ from apps.analysis.adapter.outbound.stores.in_memory_analysis_request_store impo
 from apps.analysis.app.ports.input.analysis_use_case import AnalysisUseCase
 from apps.analysis.app.use_cases.analysis_agents import FundingAgent, MarketAgent, ShockAgent
 from apps.analysis.app.use_cases.analysis_interactor import AnalysisInteractor
-from apps.analysis.app.use_cases.report_sections import default_sections
+from apps.analysis.app.use_cases.report_sections import sections_for
 from apps.master.dependencies.region_dependencies import get_region_use_case
 from apps.metric.dependencies.region_industry_metric_dependencies import get_risk_use_case
 from apps.rag.dependencies.rag_dependencies import get_rag_search_use_case
@@ -40,7 +40,7 @@ def get_analysis_use_case() -> AnalysisUseCase:
             ShockAgent(search, REGION_NAME),
             FundingAgent(search, EngineSimulationGateway(), ManualProductMatchingGateway(), REGION_NAME),
         ],
-        sections=default_sections(REGION_NAME),
+        sections=lambda purpose: sections_for(purpose, REGION_NAME),
         writer=GeminiReportWriter(
             client=genai.Client(api_key=settings.gemini_api_key), model=settings.gemini_report_model
         ),

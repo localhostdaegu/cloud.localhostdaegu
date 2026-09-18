@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConsultationProfile, PrerequisiteStatus } from "../lib/consultation-draft";
+import type { ConsultationProfile, PreparationStatus } from "../lib/consultation-draft";
 
 interface ConsultationProfileFormProps {
   value: ConsultationProfile;
@@ -18,11 +18,11 @@ const REGISTERED_CHOICES: { label: string; value: boolean | "unknown" }[] = [
   { label: "모름", value: "unknown" },
 ];
 
-const PREREQUISITE_CHOICES: { label: string; value: PrerequisiteStatus | "" }[] = [
-  { label: "선택 안 함", value: "" },
+const PREPARATION_CHOICES: { label: string; value: PreparationStatus }[] = [
+  { label: "모름", value: "unknown" },
   { label: "아직 시작하지 않음", value: "not_started" },
   { label: "진행 중", value: "in_progress" },
-  { label: "발급 완료", value: "done" },
+  { label: "발급 완료", value: "issued" },
 ];
 
 /** 창업 단계·시점 입력(§3-3). 외부 조회 없이 사용자가 직접 확인해 입력한다.
@@ -70,8 +70,8 @@ export function ConsultationProfileForm({ value, onChange }: ConsultationProfile
             개업 예정일
             <input
               type="date"
-              value={value.opening_date ?? ""}
-              onChange={(e) => set("opening_date", e.target.value || null)}
+              value={value.planned_opening_date ?? ""}
+              onChange={(e) => set("planned_opening_date", e.target.value || null)}
               className={FIELD}
             />
           </label>
@@ -81,8 +81,8 @@ export function ConsultationProfileForm({ value, onChange }: ConsultationProfile
           자금 필요일
           <input
             type="date"
-            value={value.funds_needed_date ?? ""}
-            onChange={(e) => set("funds_needed_date", e.target.value || null)}
+            value={value.funds_needed_by ?? ""}
+            onChange={(e) => set("funds_needed_by", e.target.value || null)}
             className={FIELD}
           />
         </label>
@@ -99,13 +99,28 @@ export function ConsultationProfileForm({ value, onChange }: ConsultationProfile
         </label>
 
         <label className={LABEL}>
-          보증·정책자금 확인서
+          보증기관 보증서
           <select
-            value={value.prerequisite_status ?? ""}
-            onChange={(e) => set("prerequisite_status", (e.target.value || null) as PrerequisiteStatus | null)}
+            value={value.guarantee_status}
+            onChange={(e) => set("guarantee_status", e.target.value as PreparationStatus)}
             className={FIELD}
           >
-            {PREREQUISITE_CHOICES.map(({ label, value: v }) => (
+            {PREPARATION_CHOICES.map(({ label, value: v }) => (
+              <option key={label} value={v}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className={LABEL}>
+          소진공 정책자금 확인서
+          <select
+            value={value.policy_confirmation_status}
+            onChange={(e) => set("policy_confirmation_status", e.target.value as PreparationStatus)}
+            className={FIELD}
+          >
+            {PREPARATION_CHOICES.map(({ label, value: v }) => (
               <option key={label} value={v}>
                 {label}
               </option>

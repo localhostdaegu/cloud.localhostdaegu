@@ -6,7 +6,7 @@
 """
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 from apps.analysis.app.ports.input.analysis_use_case import AnalysisUseCase
 from apps.analysis.app.ports.output.analysis_port import AnalysisRequestStorePort, ReportWriterPort
@@ -27,7 +27,8 @@ class AnalysisInteractor(AnalysisUseCase):
         self,
         store: AnalysisRequestStorePort,
         agents: list[AnalysisAgent],
-        sections: list[ReportSection],
+        # 목적(review·handoff)마다 섹션 구성이 다르다 — 어느 구성을 쓸지는 팩토리가 안다.
+        sections: Callable[[str], list[ReportSection]],
         writer: ReportWriterPort,
     ) -> None:
         self._store = store
@@ -49,7 +50,7 @@ class AnalysisInteractor(AnalysisUseCase):
         yield AgentStatusEvent(agent=ORCHESTRATOR, status="running")
         for agent in self._agents:
             yield from self._collect(agent, ctx)
-        for section in self._sections:
+        for section in self._sections(ctx.request.purpose):
             for markdown in section.render(ctx, self._writer):
                 yield ReportDeltaEvent(section=section.key, markdown=markdown)
         yield AgentStatusEvent(agent=ORCHESTRATOR, status="done")

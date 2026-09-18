@@ -8,6 +8,7 @@ import {
   saveDraft,
   selectPlan,
   selectedPlan,
+  toConsultationContext,
   withScope,
 } from "./consultation-draft";
 import type { ConsultationFinanceOutput, FinanceInput } from "@/shared/api/types";
@@ -148,5 +149,52 @@ describe("지역·업종 변경", () => {
     const draft = { ...emptyDraft(SCOPE), profile: { ...emptyDraft(SCOPE).profile, business_registered: false } };
 
     expect(withScope(draft, { region: "2711054000", industry: "cafe" }).profile.business_registered).toBe(false);
+  });
+});
+
+describe("상담 정보 전송 형태", () => {
+  it("'모름'은 null 로 보내되 확인 목록에 남긴다 — 숫자 가정으로 바뀌며 사라지지 않게", () => {
+    const draft = recordCalculation(
+      { ...emptyDraft(SCOPE), profile: { ...emptyDraft(SCOPE).profile, business_registered: "unknown" } },
+      BASELINE_INPUT,
+      BASELINE_RESULT,
+    );
+
+    const context = toConsultationContext(draft);
+
+    expect(context.profile.business_registered).toBeNull();
+    expect(context.open_questions).toContain("사업자등록 여부 미확인");
+  });
+
+  it("아직 묻지 않은 항목도 확인 목록에 남는다", () => {
+    const context = toConsultationContext(emptyDraft(SCOPE));
+
+    expect(context.open_questions).toContain("보증기관 보증서 진행 상태 미확인");
+    expect(context.open_questions).toContain("소진공 정책자금 확인서 진행 상태 미확인");
+  });
+
+  it("비교 원본으로 최초안의 입력을 보낸다 — 계산 결과는 보내지 않는다", () => {
+    let draft = recordCalculation(emptyDraft(SCOPE), BASELINE_INPUT, BASELINE_RESULT);
+    draft = recordCalculation(draft, REVISED_INPUT, REVISED_RESULT);
+
+    const context = toConsultationContext(draft);
+
+    expect(context.baseline_finance?.monthly_rent).toBe(2_000_000);
+    expect(context.baseline_finance).not.toHaveProperty("bep_revenue");
+  });
+
+  it("선택안의 가정을 사람이 읽는 문장으로 싣는다", () => {
+    const draft = recordCalculation(emptyDraft(SCOPE), BASELINE_INPUT, BASELINE_RESULT);
+
+    const context = toConsultationContext(draft);
+
+    expect(context.assumptions.join(" ")).toMatch(/원가율 57%/);
+    expect(context.assumptions.join(" ")).toMatch(/대출금리 연 4.5%/);
+  });
+
+  it("변경 이유를 그대로 전달한다", () => {
+    const draft = { ...recordCalculation(emptyDraft(SCOPE), BASELINE_INPUT, BASELINE_RESULT), change_reason: "월세가 싼 자리" };
+
+    expect(toConsultationContext(draft).change_reason).toBe("월세가 싼 자리");
   });
 });

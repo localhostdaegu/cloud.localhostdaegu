@@ -17,7 +17,7 @@ from apps.analysis.app.ports.output.analysis_port import (
 )
 from apps.analysis.app.use_cases.analysis_agents import FundingAgent, MarketAgent, ShockAgent
 from apps.analysis.app.use_cases.analysis_interactor import AnalysisInteractor
-from apps.analysis.app.use_cases.report_sections import default_sections
+from apps.analysis.app.use_cases.report_sections import sections_for
 from apps.analysis.domain.analysis_context import (
     AnalysisContext,
     AnalysisRequest,
@@ -175,6 +175,6 @@ def build_interactor(
             ShockAgent(search, "대구"),
             FundingAgent(search, FakeSimulation(), FakeMatching(), "대구"),
         ],
-        sections=default_sections("대구"),
+        sections=lambda purpose: sections_for(purpose, "대구"),
         writer=writer or FakeWriter(),
     )

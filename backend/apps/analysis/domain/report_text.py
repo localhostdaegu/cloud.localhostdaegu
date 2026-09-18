@@ -159,8 +159,12 @@ def calculator_markdown(sim: SimulationSummary) -> str:
             [
                 "### 재무 시뮬레이션",
                 "",
-                f"초기 투자 {sim.capex:,}원 · 월 고정비 {sim.monthly_fixed:,}원 · "
-                f"손익분기 월매출 {sim.bep_revenue:,}원 · 부족 자금 {sim.funding_gap:,}원",
+                f"초기 투자 {sim.capex:,}원 · 운영준비금 {sim.reserve_months}개월치 {sim.operating_reserve:,}원 · "
+                f"총 준비자금 {sim.total_required_funds:,}원",
+                "",
+                f"월 고정비 {sim.monthly_fixed:,}원 · 손익분기 월매출 {sim.bep_revenue:,}원 · "
+                f"자기자본 외 조달 필요 {sim.external_funding_need:,}원 · "
+                f"희망대출 반영 후 남는 부족액 {sim.funding_gap:,}원",
                 "",
                 "| 시나리오 | 월매출 | 영업이익 | 투자 회수 |",
                 "|---|---|---|---|",
@@ -180,3 +184,116 @@ def citations_from(ctx: AnalysisContext) -> list[Citation]:
                 title=doc.title, url=doc.url, grade=_CITATION_GRADE.get(doc.source_type, "signal")
             )
     return list(by_url.values())
+
+
+# --- 전환계획 T4: 상담자료(handoff) 본문 -------------------------------------
+
+_PREPARATION_LABELS = {
+    "not_started": "아직 시작하지 않음",
+    "in_progress": "진행 중",
+    "issued": "발급 완료",
+    "unknown": "미확인",
+}
+
+
+def plan_lead(ctx: AnalysisContext) -> str:
+    """선택안의 자금 수요 — 코드가 계산한 값만 쓴다(§6 T4)."""
+    sim = ctx.simulation
+    if sim is None:
+        return "### 상담할 계획\n\n재무 입력이 없어 계획을 요약하지 못했습니다.\n"
+
+    lines = [
+        "### 상담할 계획",
+        "",
+        f"총 준비자금 {sim.total_required_funds:,}원 "
+        f"(초기 투자 {sim.capex:,}원 + 운영준비금 {sim.reserve_months}개월치 {sim.operating_reserve:,}원)",
+        "",
+        f"자기자본 외 조달 필요 {sim.external_funding_need:,}원 · "
+        f"희망대출 반영 후 남는 부족액 {sim.funding_gap:,}원 · "
+        f"손익분기 월매출 {sim.bep_revenue:,}원",
+    ]
+    consultation = ctx.request.consultation
+    if consultation is not None and consultation.change_reason:
+        lines += ["", f"변경 이유: {consultation.change_reason}"]
+    return "\n".join(lines) + "\n"
+
+
+def plan_prompt(ctx: AnalysisContext) -> str:
+    consultation = ctx.request.consultation
+    reason = consultation.change_reason if consultation else ""
+    return (
+        f"{_subject(ctx)} 창업자금 계획입니다. 위 수치는 이미 표에 있으니 다시 계산하거나 새 숫자를 만들지 마세요.\n"
+        f"사용자가 밝힌 변경 이유: {reason or '없음'}\n"
+        "이 계획이 어떤 상태인지 2~3문장으로 설명하고, 은행 상담에서 먼저 확인할 점 하나를 덧붙이세요.\n"
+        "승인 여부·자격 충족을 단정하지 마세요."
+    )
+
+
+def comparison_markdown(ctx: AnalysisContext) -> str:
+    """최초안과 현재안 — 결정론 계산 결과만 표로 쓴다. LLM 을 거치지 않는다."""
+    baseline, current = ctx.baseline_simulation, ctx.simulation
+    if baseline is None or current is None:
+        return "### 최초안과 현재안\n\n비교할 최초안이 없습니다. 조건을 바꿔 다시 계산하면 비교표가 생깁니다.\n"
+
+    rows = [
+        ("손익분기 월매출", baseline.bep_revenue, current.bep_revenue),
+        ("총 준비자금", baseline.total_required_funds, current.total_required_funds),
+        ("자기자본 외 조달 필요", baseline.external_funding_need, current.external_funding_need),
+        ("희망대출 반영 후 부족액", baseline.funding_gap, current.funding_gap),
+    ]
+    return (
+        "\n".join(
+            [
+                "### 최초안과 현재안",
+                "",
+                "| 항목 | 최초안 | 현재안 |",
+                "|---|---|---|",
+                *[f"| {label} | {before:,}원 | {after:,}원 |" for label, before, after in rows],
+            ]
+        )
+        + "\n"
+    )
+
+
+def questions_lead(ctx: AnalysisContext) -> str:
+    """확인하지 못한 것을 코드가 먼저 나열한다 — '모름'이 가정으로 바뀌며 사라지지 않게 한다(§5-1)."""
+    consultation = ctx.request.consultation
+    lines = ["### 상담에서 확인할 것", ""]
+
+    unresolved: list[str] = []
+    if consultation is not None:
+        unresolved += list(consultation.open_questions)
+        profile = consultation.profile
+        if profile.business_registered is None:
+            unresolved.append("사업자등록 여부 미확인")
+        if profile.guarantee_status == "unknown":
+            unresolved.append("보증기관 보증서 진행 상태 미확인")
+        if profile.policy_confirmation_status == "unknown":
+            unresolved.append("소진공 정책자금 확인서 진행 상태 미확인")
+        if profile.funds_needed_by is None:
+            unresolved.append("자금 필요 시점 미확인")
+
+    lines += ["**아직 확인하지 못한 것**", ""]
+    lines += [f"- {item}" for item in unresolved] if unresolved else ["- 없음"]
+
+    if consultation is not None and consultation.assumptions:
+        lines += ["", "**계산에 사용한 가정**", ""]
+        lines += [f"- {item}" for item in consultation.assumptions]
+
+    if consultation is not None:
+        profile = consultation.profile
+        lines += [
+            "",
+            f"보증기관 보증서: {_PREPARATION_LABELS[profile.guarantee_status]} · "
+            f"소진공 정책자금 확인서: {_PREPARATION_LABELS[profile.policy_confirmation_status]}",
+        ]
+    return "\n".join(lines) + "\n"
+
+
+def questions_prompt(ctx: AnalysisContext) -> str:
+    return (
+        "위 목록은 사용자가 아직 확인하지 못한 항목과 계산에 쓴 가정입니다.\n"
+        "은행 상담에서 물어볼 질문을 5개 이내로 쓰세요. 각 질문은 한 문장입니다.\n"
+        "금리·한도·자격을 단정하지 말고, 확인되지 않은 것은 확인하는 질문으로 만드세요.\n"
+        "새로운 숫자나 서류 이름을 지어내지 마세요."
+    )

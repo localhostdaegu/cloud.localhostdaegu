@@ -82,12 +82,17 @@ class FundingAgent(AnalysisAgent):
         # (전환계획 §3-1, 타입/상태 분기가 아닌 입력 유무 분기).
         if ctx.request.finance is not None:
             ctx.simulation = self._simulation.simulate(ctx.request.finance)
+            # 비교 원본도 서버에서 다시 계산한다 — 클라이언트가 보낸 결과를 기준으로 삼지 않는다(§5-1).
+            # SSE 이벤트 종류는 그대로 둔다.
+            baseline = ctx.request.consultation.baseline_finance if ctx.request.consultation else None
+            if baseline is not None:
+                ctx.baseline_simulation = self._simulation.simulate(baseline)
             yield ToolCallEvent(
                 agent=self.name,
                 tool="finance_simulate",
-                summary=f"재무 시뮬레이션 — 부족 자금 {ctx.funding_gap:,}원",
+                summary=f"재무 시뮬레이션 — 조달 필요 {ctx.external_funding_need:,}원",
             )
-            ctx.products = self._matching.match(ctx.funding_gap, ctx.request.industry)
+            ctx.products = self._matching.match(ctx.external_funding_need, ctx.request.industry)
             yield ToolCallEvent(
                 agent=self.name, tool="product_matching", summary=f"금융상품 매칭 — {len(ctx.products)}건"
             )

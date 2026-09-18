@@ -44,7 +44,7 @@ test("자금 필요일과 연령을 전달한다", () => {
   const onChange = renderForm();
 
   fireEvent.change(screen.getByLabelText(/자금 필요일/), { target: { value: "2026-11-01" } });
-  expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ funds_needed_date: "2026-11-01" }));
+  expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ funds_needed_by: "2026-11-01" }));
 
   fireEvent.change(screen.getByLabelText(/연령/), { target: { value: "34" } });
   expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ owner_age: 34 }));
@@ -58,10 +58,12 @@ test("연령을 비우면 미입력으로 남긴다 — 0살로 만들지 않는
   expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ owner_age: null }));
 });
 
-test("보증·정책자금 확인서 진행 상태를 전달한다", () => {
+test("보증서와 정책자금 확인서 진행 상태를 따로 전달한다 — 별개 절차다", () => {
   const onChange = renderForm();
 
-  fireEvent.change(screen.getByLabelText(/확인서/), { target: { value: "in_progress" } });
+  fireEvent.change(screen.getByLabelText(/보증기관 보증서/), { target: { value: "in_progress" } });
+  expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ guarantee_status: "in_progress" }));
 
-  expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ prerequisite_status: "in_progress" }));
+  fireEvent.change(screen.getByLabelText(/소진공 정책자금 확인서/), { target: { value: "issued" } });
+  expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ policy_confirmation_status: "issued" }));
 });

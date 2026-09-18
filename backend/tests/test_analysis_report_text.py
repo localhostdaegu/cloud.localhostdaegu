@@ -64,7 +64,9 @@ def test_products_text_renders_undetermined_limit_and_rate_as_none():
 def test_calculator_markdown_formats_scenarios_and_unrecoverable_payback():
     text = calculator_markdown(SIMULATION)
     assert text.startswith("### 재무 시뮬레이션\n\n")
-    assert "부족 자금 18,849,996원" in text
+    # §4-1 — funding_gap 의 라벨을 '희망대출 반영 후 남는 부족액'으로 명확히 했다.
+    assert "희망대출 반영 후 남는 부족액 18,849,996원" in text
+    assert "자기자본 외 조달 필요 28,849,996원" in text
     assert "| 비관 | 4,800,000원 | -261,665원 | 회수 불가 |" in text
     assert "| 기준 | 8,000,000원 | 1,658,335원 | 24.1개월 |" in text
 

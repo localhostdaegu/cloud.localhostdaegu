@@ -9,6 +9,8 @@ interface PlanComparisonProps {
   current: PlanSnapshot | null;
   selected: PlanKind | null;
   onSelect: (kind: PlanKind) => void;
+  changeReason: string;
+  onChangeReason: (reason: string) => void;
 }
 
 const MONEY_LABELS: Partial<Record<keyof FinanceInput, string>> = {
@@ -87,7 +89,14 @@ function PlanCard({
 }
 
 /** 최초안·현재안 비교와 선택(§5-3). 현재안이 없으면 비교할 대상이 없으므로 그리지 않는다. */
-export function PlanComparison({ baseline, current, selected, onSelect }: PlanComparisonProps) {
+export function PlanComparison({
+  baseline,
+  current,
+  selected,
+  onSelect,
+  changeReason,
+  onChangeReason,
+}: PlanComparisonProps) {
   if (baseline === null || current === null) return null;
 
   const changes = changedConditions(baseline.input, current.input);
@@ -106,6 +115,17 @@ export function PlanComparison({ baseline, current, selected, onSelect }: PlanCo
           changes.map((line) => <li key={line}>{line}</li>)
         )}
       </ul>
+
+      <label className="flex flex-col gap-1.5 text-xs font-medium tracking-wide text-[var(--text-secondary)]">
+        변경 이유 (상담자료에 그대로 실립니다)
+        <textarea
+          value={changeReason}
+          onChange={(e) => onChangeReason(e.target.value)}
+          rows={2}
+          placeholder="예: 월세가 낮은 자리로 바꿨습니다"
+          className="w-full rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+        />
+      </label>
     </section>
   );
 }

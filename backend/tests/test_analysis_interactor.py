@@ -114,3 +114,26 @@ def test_in_memory_store_issues_hex_id_and_take_removes():
     assert re.fullmatch(r"[0-9a-f]{32}", analysis_id)
     assert store.take(analysis_id) == _REQUEST
     assert store.take(analysis_id) is None
+
+
+def test_handoff_streams_consultation_sections_in_order():
+    """전환계획 T4 — 상담자료는 선택안·비교가 앞에 오고 위험 판정 섹션이 없다."""
+    from apps.analysis.domain.analysis_context import ConsultationContext, ConsultationProfile
+
+    _, events = _run(
+        build_interactor(),
+        AnalysisRequest(
+            region="2711059500",
+            industry="cafe",
+            finance=FINANCE,
+            purpose="handoff",
+            consultation=ConsultationContext(profile=ConsultationProfile()),
+        ),
+    )
+
+    sections = [e.section for e in events if e.TYPE == "report_delta"]
+    assert list(dict.fromkeys(sections)) == [
+        "plan", "comparison", "calculator", "funding", "questions", "market",
+    ]
+    assert "verdict" not in sections
+    assert "shock" not in sections

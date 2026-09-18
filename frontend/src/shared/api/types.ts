@@ -110,6 +110,28 @@ export interface ConsultationFinanceOutput extends FinanceOutput {
   external_funding_need: number;
 }
 
+/** 전환계획 §5-1 — POST /analysis 에 실어 보내는 상담 정보 계약.
+ *  화면 상태(consultation-draft)와 달리 '모름'은 null 로 보내고 확인 목록에 남긴다. */
+export type PreparationStatus = "not_started" | "in_progress" | "issued" | "unknown";
+
+export interface ConsultationProfileWire {
+  business_registered: boolean | null;
+  business_age_months: number | null;
+  planned_opening_date: string | null;
+  funds_needed_by: string | null;
+  owner_age: number | null;
+  guarantee_status: PreparationStatus;
+  policy_confirmation_status: PreparationStatus;
+}
+
+export interface ConsultationContext {
+  profile: ConsultationProfileWire;
+  baseline_finance: FinanceInput | null;
+  change_reason: string;
+  assumptions: string[];
+  open_questions: string[];
+}
+
 export type ProviderType = "guarantee" | "bank" | "policy";
 
 /** GET /matching 응답 각 항목 — 백엔드 필드명 그대로. */

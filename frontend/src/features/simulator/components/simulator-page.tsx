@@ -98,6 +98,8 @@ export function SimulatorPage() {
             current={draft.current}
             selected={draft.selected}
             onSelect={(kind: PlanKind) => update(selectPlan(draft, kind))}
+            changeReason={draft.change_reason}
+            onChangeReason={(change_reason) => update({ ...draft, change_reason })}
           />
           <ResultView
             result={plan.result}

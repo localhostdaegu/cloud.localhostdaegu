@@ -3,11 +3,22 @@ import type { AgentState, AgentStatus } from "../lib/agent-events";
 
 const AGENT_ORDER: AgentName[] = ["orchestrator", "market", "shock", "funding"];
 
+/** 전환계획 §3-1 — 내부 에이전트·도구명이 아니라 사용자가 읽는 단계로 보여준다. */
 const LABEL: Record<AgentName, string> = {
-  orchestrator: "오케스트레이터",
-  market: "상권 진단",
-  shock: "충격 분석",
-  funding: "정책자금",
+  orchestrator: "입력 확인",
+  market: "지역 근거",
+  shock: "관련 뉴스",
+  funding: "자금 계산",
+};
+
+/** 도구 이름도 마찬가지다. 모르는 도구는 그대로 두되 새 이름을 지어내지 않는다. */
+const TOOL_LABEL: Record<string, string> = {
+  region_metrics: "지역 지표 조회",
+  risk_score: "업종 위험도 조회",
+  news_search: "관련 뉴스 검색",
+  finance_simulate: "준비자금 계산",
+  product_matching: "상담 후보 정리",
+  funding_search: "정책자금 공고 검색",
 };
 
 const DOT: Record<AgentStatus, string> = {
@@ -57,7 +68,7 @@ export function ProgressPanel({ state }: ProgressPanelProps) {
                           : "text-xs leading-relaxed text-[var(--text-secondary)]"
                       }
                     >
-                      <span className="font-medium">{t.tool}</span> — {t.summary}
+                      <span className="font-medium">{TOOL_LABEL[t.tool] ?? t.tool}</span> — {t.summary}
                     </li>
                   ))}
                 </ul>

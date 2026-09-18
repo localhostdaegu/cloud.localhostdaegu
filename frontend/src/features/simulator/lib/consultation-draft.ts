@@ -1,4 +1,4 @@
-import type { ConsultationFinanceOutput, FinanceInput } from "@/shared/api/types";
+import type { ConsultationContext, ConsultationFinanceOutput, FinanceInput } from "@/shared/api/types";
 
 /** 전환계획 §5-3 — 한 탭의 한 계획을 보관한다. 장기 저장이 아니다. */
 export const DRAFT_KEY = "localhostdaegu.consultation.v1";
@@ -12,14 +12,15 @@ export interface ConsultationProfile {
    *  전자는 물어봐야 하고 후자는 상담에서 확인할 항목이다(§4-2). */
   business_registered: boolean | "unknown" | null;
   business_age_months: number | null;
-  opening_date: string | null;
-  funds_needed_date: string | null;
+  planned_opening_date: string | null;
+  funds_needed_by: string | null;
   owner_age: number | null;
-  /** 보증·정책자금 확인서 진행 상태 — 선행 절차가 남았는지 상담에서 확인한다(§3-3). */
-  prerequisite_status: PrerequisiteStatus | null;
+  /** 선행 절차 진행 상태 — 보증기관과 소진공 확인서는 별개 절차다(§5-1). */
+  guarantee_status: PreparationStatus;
+  policy_confirmation_status: PreparationStatus;
 }
 
-export type PrerequisiteStatus = "not_started" | "in_progress" | "done";
+export type PreparationStatus = "not_started" | "in_progress" | "issued" | "unknown";
 
 export interface PlanSnapshot {
   input: FinanceInput;
@@ -39,6 +40,8 @@ export interface ConsultationDraft extends ConsultationScope {
   current: PlanSnapshot | null;
   selected: PlanKind | null;
   profile: ConsultationProfile;
+  /** 사용자가 직접 쓴 변경 이유 — 추정하지 않는다(§5-1). */
+  change_reason: string;
 }
 
 const AMOUNT_FIELDS = [
@@ -56,13 +59,15 @@ export function emptyDraft(scope: ConsultationScope): ConsultationDraft {
     baseline: null,
     current: null,
     selected: null,
+    change_reason: "",
     profile: {
       business_registered: null,
       business_age_months: null,
-      opening_date: null,
-      funds_needed_date: null,
+      planned_opening_date: null,
+      funds_needed_by: null,
       owner_age: null,
-      prerequisite_status: null,
+      guarantee_status: "unknown",
+      policy_confirmation_status: "unknown",
     },
   };
 }
@@ -93,7 +98,7 @@ export function selectedPlan(draft: ConsultationDraft): PlanSnapshot | null {
  *  상담 정보는 사람에 대한 정보라 유지한다. */
 export function withScope(draft: ConsultationDraft, scope: ConsultationScope): ConsultationDraft {
   if (draft.region === scope.region && draft.industry === scope.industry) return draft;
-  return { ...emptyDraft(scope), profile: draft.profile };
+  return { ...emptyDraft(scope), profile: draft.profile, change_reason: draft.change_reason };
 }
 
 export function saveDraft(draft: ConsultationDraft): void {
@@ -138,4 +143,49 @@ function isValidPlan(plan: PlanSnapshot | null): boolean {
   // 백엔드 422 와 같은 규칙 — 변동비율 ≥ 1 이면 BEP 가 성립하지 않는다.
   if (input.cost_ratio + input.fee_ratio >= 1) return false;
   return Number.isFinite(result.external_funding_need) && Number.isFinite(result.total_required_funds);
+}
+
+
+const percent = (ratio: number) => `${Math.round(ratio * 1000) / 10}%`;
+
+/** 화면 상태 → 전송 계약. '모름'은 null 로 보내되 확인 목록에 남겨 가정으로 둔갑하지 않게 한다(§5-1). */
+export function toConsultationContext(draft: ConsultationDraft): ConsultationContext {
+  const profile = draft.profile;
+  const openQuestions: string[] = [];
+
+  if (profile.business_registered === "unknown") openQuestions.push("사업자등록 여부 미확인");
+  if (profile.guarantee_status === "unknown") openQuestions.push("보증기관 보증서 진행 상태 미확인");
+  if (profile.policy_confirmation_status === "unknown") {
+    openQuestions.push("소진공 정책자금 확인서 진행 상태 미확인");
+  }
+  if (profile.funds_needed_by === null) openQuestions.push("자금 필요 시점 미확인");
+
+  return {
+    profile: {
+      business_registered: profile.business_registered === "unknown" ? null : profile.business_registered,
+      business_age_months: profile.business_age_months,
+      planned_opening_date: profile.planned_opening_date,
+      funds_needed_by: profile.funds_needed_by,
+      owner_age: profile.owner_age,
+      guarantee_status: profile.guarantee_status,
+      policy_confirmation_status: profile.policy_confirmation_status,
+    },
+    // 비교 원본은 입력만 보낸다 — 계산 결과는 서버가 다시 계산한다(§5-1).
+    baseline_finance: draft.baseline?.input ?? null,
+    change_reason: draft.change_reason,
+    assumptions: assumptionsOf(draft),
+    open_questions: openQuestions,
+  };
+}
+
+/** 선택안이 어떤 가정 위에 있는지 사람이 읽는 문장으로 남긴다. 계산식을 덮어쓰지 않는다. */
+function assumptionsOf(draft: ConsultationDraft): string[] {
+  const plan = selectedPlan(draft);
+  if (plan === null) return [];
+  const { cost_ratio, fee_ratio, loan_rate, expected_monthly_revenue } = plan.input;
+  return [
+    `원가율 ${percent(cost_ratio)} · 수수료율 ${percent(fee_ratio)} 가정`,
+    `대출금리 연 ${percent(loan_rate)} 가정`,
+    `예상 월매출 ${expected_monthly_revenue.toLocaleString("ko-KR")}원 가정`,
+  ];
 }

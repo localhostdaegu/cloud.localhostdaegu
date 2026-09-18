@@ -14,10 +14,15 @@ from apps.analysis.domain.analysis_context import AnalysisContext
 from apps.analysis.domain.report_text import (
     FALLBACK_MARKDOWN,
     calculator_markdown,
+    comparison_markdown,
     funding_lead,
     funding_prompt,
     market_lead,
     market_prompt,
+    plan_lead,
+    plan_prompt,
+    questions_lead,
+    questions_prompt,
     shock_lead,
     shock_prompt,
     system_instruction,
@@ -108,6 +113,39 @@ class CalculatorSection(ReportSection):
             yield calculator_markdown(ctx.simulation)
 
 
+class PlanSection(InterpretedSection):
+    """상담할 계획 — 수치는 코드가 쓰고 LLM 은 상태 설명만 한다(§6 T4)."""
+
+    key = "plan"
+
+    def lead(self, ctx: AnalysisContext) -> str:
+        return plan_lead(ctx)
+
+    def prompt(self, ctx: AnalysisContext) -> str:
+        return plan_prompt(ctx)
+
+
+class ComparisonSection(ReportSection):
+    """최초안·현재안 비교표 — 결정론 계산 결과만 쓴다. LLM 호출 없음."""
+
+    key = "comparison"
+
+    def render(self, ctx: AnalysisContext, writer: ReportWriterPort) -> Iterator[str]:
+        yield comparison_markdown(ctx)
+
+
+class QuestionsSection(InterpretedSection):
+    """확인 사항은 코드가 나열하고, 상담 질문만 LLM 이 쓴다."""
+
+    key = "questions"
+
+    def lead(self, ctx: AnalysisContext) -> str:
+        return questions_lead(ctx)
+
+    def prompt(self, ctx: AnalysisContext) -> str:
+        return questions_prompt(ctx)
+
+
 def default_sections(region_name: str) -> list[ReportSection]:
     system = system_instruction(region_name)
     return [
@@ -117,3 +155,24 @@ def default_sections(region_name: str) -> list[ReportSection]:
         FundingSection(system),
         CalculatorSection(),
     ]
+
+
+def handoff_sections(region_name: str) -> list[ReportSection]:
+    """상담자료 — 선택안·비교·자금이 앞, 위험 판정 헤드라인은 두지 않는다(§3-1)."""
+    system = system_instruction(region_name)
+    return [
+        PlanSection(system),
+        ComparisonSection(),
+        CalculatorSection(),
+        FundingSection(system),
+        QuestionsSection(system),
+        MarketSection(system),
+    ]
+
+
+# 목적 → 섹션 구성 (Factory). 목적이 늘어도 분기문을 고치지 않는다.
+_SECTION_PLANS = {"review": default_sections, "handoff": handoff_sections}
+
+
+def sections_for(purpose: str, region_name: str) -> list[ReportSection]:
+    return _SECTION_PLANS.get(purpose, default_sections)(region_name)

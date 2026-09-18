@@ -73,3 +73,21 @@ test("바뀐 조건이 없으면 같은 조건임을 밝힌다", () => {
 
   expect(screen.getByText(/바뀐 조건 없음/)).toBeInTheDocument();
 });
+
+test("변경 이유를 직접 쓸 수 있고 그대로 전달된다 — 추정하지 않는다", () => {
+  const onChangeReason = vi.fn();
+  render(
+    <PlanComparison
+      baseline={BASELINE}
+      current={CURRENT}
+      selected="current"
+      onSelect={vi.fn()}
+      changeReason=""
+      onChangeReason={onChangeReason}
+    />,
+  );
+
+  fireEvent.change(screen.getByLabelText(/변경 이유/), { target: { value: "월세가 낮은 자리로 바꿨습니다" } });
+
+  expect(onChangeReason).toHaveBeenCalledWith("월세가 낮은 자리로 바꿨습니다");
+});

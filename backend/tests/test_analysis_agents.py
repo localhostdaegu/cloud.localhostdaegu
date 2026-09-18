@@ -1,5 +1,7 @@
 """수집 에이전트 3종 — Fake 포트로 컨텍스트 채움·tool_call 이벤트 검증."""
 
+from dataclasses import replace
+
 from apps.analysis.app.use_cases.analysis_agents import FundingAgent, MarketAgent, ShockAgent
 from apps.analysis.domain.analysis_context import AnalysisContext, AnalysisRequest
 from tests.analysis_fakes import (
@@ -72,6 +74,36 @@ def test_funding_agent_with_finance_simulates_first_and_matches_with_gap():
 
     assert simulation.calls == [FINANCE]
     assert ctx.simulation == SIMULATION
-    assert matching.calls == [(18_849_996, "cafe")]
+    # §4-1 — 상담 주제가 되는 금액은 조달 필요액이다. 희망대출 반영 후 부족액이 아니다.
+    assert matching.calls == [(28_849_996, "cafe")]
     assert [e.tool for e in events] == ["finance_simulate", "product_matching", "funding_search"]
-    assert events[0].summary == "재무 시뮬레이션 — 부족 자금 18,849,996원"
+    assert events[0].summary == "재무 시뮬레이션 — 조달 필요 28,849,996원"
+
+
+def test_funding_agent_recalculates_baseline_plan_on_the_server():
+    """전환계획 §5-1 — 비교 원본도 서버 엔진으로 다시 계산한다.
+    클라이언트가 보낸 계산 결과를 리포트의 기준으로 삼지 않는다."""
+    from apps.analysis.domain.analysis_context import ConsultationContext, ConsultationProfile
+
+    search, simulation, matching = FakeEvidenceSearch(), FakeSimulation(), FakeMatching()
+    baseline = {**FINANCE, "monthly_rent": 2_000_000}
+    ctx = _context(finance=FINANCE)
+    ctx.request = replace(
+        ctx.request,
+        consultation=ConsultationContext(profile=ConsultationProfile(), baseline_finance=baseline),
+    )
+
+    list(FundingAgent(search, simulation, matching, "대구").collect(ctx))
+
+    assert simulation.calls == [FINANCE, baseline]
+    assert ctx.baseline_simulation is not None
+
+
+def test_funding_agent_skips_baseline_when_there_is_nothing_to_compare():
+    search, simulation, matching = FakeEvidenceSearch(), FakeSimulation(), FakeMatching()
+    ctx = _context(finance=FINANCE)
+
+    list(FundingAgent(search, simulation, matching, "대구").collect(ctx))
+
+    assert simulation.calls == [FINANCE]
+    assert ctx.baseline_simulation is None
