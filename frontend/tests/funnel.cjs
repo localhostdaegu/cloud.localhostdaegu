@@ -151,22 +151,51 @@ async function main() {
       step("③ 대신동 region 선택(폴백 내비게이션)", page.url().includes(`region=${TARGET_REGION_CODE}`), page.url());
     }
 
-    // ④ side-panel 시뮬레이션 CTA 클릭 → /simulate 도달
-    const simulateCta = page.getByRole("link", { name: /이 자리에서 시뮬레이션/ });
+    // ④ side-panel 주 CTA 클릭 → /simulate 도달 (전환계획 §3-1: 주 버튼이 사전상담 입력이다)
+    const simulateCta = page.getByRole("link", { name: /창업자금 사전상담/ });
     await simulateCta.waitFor({ state: "visible", timeout: 15_000 });
     await simulateCta.click();
     await page.waitForURL(/\/simulate\?/, { timeout: 15_000 });
     step("④ /simulate로 이동", page.url().includes("/simulate?"), page.url());
 
-    // ⑤ 폼 제출(프리필 그대로) → "부족한" 헤드라인 노출 assert
+    // ⑤ 최초 계산 — 주 지표가 자금 수요 기준인지 확인한다(§3-2)
     const submitButton = page.getByRole("button", { name: "시뮬레이션 실행" });
     await submitButton.waitFor({ state: "visible", timeout: 15_000 });
     await submitButton.click();
-    // 결론 화면 헤드라인은 funding_gap>0 이면 "부족한 …", 0이면 "자기자본으로 충분해요"(result-view.tsx).
-    // mock은 gap 고정(2,000만)이라 전자, 실백엔드는 프리필(CAPEX 0)이라 후자 — 둘 다 결론 도달로 판정한다.
-    const headline = page.getByText(/부족한|자기자본으로 충분해요/);
-    await headline.first().waitFor({ state: "visible", timeout: 15_000 });
-    step("⑤ 폼 제출 → 결론 헤드라인 노출", true, (await headline.first().textContent())?.trim());
+    const needLabel = page.getByText("자기자본 외 조달 필요");
+    await needLabel.first().waitFor({ state: "visible", timeout: 20_000 });
+    const noSelfSufficient = (await page.getByText(/자기자본으로 충분/).count()) === 0;
+    step("⑤ 최초 계산 → 조달 필요 지표 노출", true, "자기자본 외 조달 필요");
+    step("⑤-1 '자기자본으로 충분' 문구 없음(§7-2)", noSelfSufficient);
+
+    // ⑥ 조건 수정 → 재계산 → 최초안·현재안 비교표
+    const rentField = page.getByLabel(/월세/);
+    await rentField.fill("100");
+    const staleNotice = await page.getByText(/이전 입력 기준/).count();
+    step("⑥-1 미제출 수정 중 이전 결과 경고", staleNotice > 0);
+    await submitButton.click();
+    const currentPlan = page.getByRole("radio", { name: /현재안/ });
+    await currentPlan.waitFor({ state: "visible", timeout: 20_000 });
+    step("⑥ 재계산 → 최초안·현재안 비교표 노출", await currentPlan.isChecked());
+
+    // ⑦ 최초안 재선택 → 선택안이 바뀐다
+    const baselinePlan = page.getByRole("radio", { name: /최초안/ });
+    await baselinePlan.click();
+    await page.waitForTimeout(300);
+    step("⑦ 최초안 재선택", await baselinePlan.isChecked());
+
+    // ⑧ 상담 준비 CTA → /analysis
+    const handoffCta = page.getByRole("link", { name: /이 안으로 상담 준비/ });
+    await handoffCta.waitFor({ state: "visible", timeout: 15_000 });
+    await handoffCta.click();
+    await page.waitForURL(/\/analysis\?/, { timeout: 15_000 });
+    step("⑧ /analysis로 이동", page.url().includes("/analysis?"), page.url());
+
+    // ⑨ 공식 상담 경로 — 외부 사이트를 조작하지 않고 링크 주소·문구만 확인한다
+    const officialLink = page.getByRole("link", { name: /iM뱅크 공식 상담 안내/ });
+    await officialLink.first().waitFor({ state: "visible", timeout: 15_000 });
+    const href = await officialLink.first().getAttribute("href");
+    step("⑨ iM뱅크 공식 상담 링크 노출", Boolean(href && href.includes("imbank.co.kr")), href);
   } catch (err) {
     step("예외 발생", false, err && err.stack ? err.stack : String(err));
   } finally {

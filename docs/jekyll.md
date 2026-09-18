@@ -6,6 +6,24 @@
 
 ## 2026-09-18
 
+### 백엔드·프론트 — 창업자금 사전상담 전환 (T1~T6)
+
+`docs/2026-09-18-imbank-consultation-plan.md`의 T1~T5 + 신설 T3-0을 구현했다. 브랜치 `feat/consultation-db-schema`, 커밋 9개. **사용자 결정으로 09-19 18:00 코드 프리즈를 무시하고 진행했고, 블록체인 앵커링은 범위에서 뺐다.**
+
+- **T1 재무 엔진 자금 구성 분리** (`8beffcf`): 엔진이 이미 `need = capex + fixed*6`을 내부 계산하고 있어 **산식 변경이 아니라 노출 작업**이었다. `operating_reserve`·`total_required_funds`·`external_funding_need`를 `FinanceResult`·API 응답·`SimulationSummary`에 추가하고, `funding_gap`의 라벨을 '희망대출 반영 후 남는 부족액'으로 명확히 했다. 계획 §7-1·§7-2 검산값이 첫 실행에 그대로 맞았다. **§7-2 회귀 해소**: 자기자본 4,000만·희망대출 2,500만이면 `funding_gap`은 0이지만 `external_funding_need` 2,260만이 남아 '자기자본으로 충분' 표현의 근거가 사라졌다. 재무 입력이 없으면 시뮬레이션과 상품 매칭을 함께 건너뛴다(누락을 0원으로 간주해 후보를 구하던 분기 제거) — 파급으로 재무 없는 컨텍스트의 SSE에서 `product_matching` 이벤트가 사라져 테스트 2건의 기대값을 교체했다.
+- **T3-0 상품 메타데이터 배선(신설)** (`b80edb4`): ORM·엔티티·자식 2테이블은 이미 있었지만 `read_products()`가 15필드만 읽어 `consultation`은 항상 None이었다. **T3가 JSON에 적어도 두 테이블은 0행으로 남는 구조**였다. `consultation_metadata` 키 파싱을 추가하고, 정렬 기준을 `orm_mapper.to_entity`와 같은 `(step_type, step_order)`로 맞췄다 — 기존 멱등 테스트가 `list_all()`과 `read_products()`를 직접 비교하므로 어긋나면 회귀한다.
+- **T2 계산안 보관·비교·선택** (`a1cc703`, `27114b3`, `f8473cb`): `sessionStorage`의 `localhostdaegu.consultation.v1`에 첫 성공 계산을 최초안으로 고정하고 이후 계산이 현재안을 갱신한다. 없는 안은 선택되지 않으며(최종자료 생성을 막는 근거) 지역·업종이 바뀌면 이전 결과·선택을 무효화한다. 비교표는 **바뀐 입력만** 추려 보여준다. 결과 주 지표를 진단(총 창업비용·월 고정비)에서 상담 준비(손익분기 매출·총 준비자금·조달 필요)로 교체. 지도 주 버튼을 'AI 분석'에서 '이 자리로 창업자금 사전상담'으로 바꾸고 지역 분석은 보조 링크로 강등. 미제출 수정 중에는 이전 결과임을 알리고 선택을 잠근다.
+- **T4 상담자료(handoff)** (`48d6187`): `POST /analysis`에 `purpose`(review|handoff)와 `consultation`을 받는다. handoff는 `finance`·`consultation`이 모두 있어야 하고 없으면 422. 비교 원본도 **서버 엔진으로 다시 계산**한다(클라이언트가 보낸 결과를 기준으로 삼지 않음). 상품 조회 금액을 `funding_gap` → `external_funding_need`로 통일. handoff 섹션은 plan·comparison·calculator·funding·questions·market이며 위험 판정 헤드라인(verdict)과 충격 섹션이 없다. 목적→구성은 `_SECTION_PLANS` 딕셔너리 Factory로 두고 인터랙터는 섹션 리스트 대신 팩토리를 주입받는다. **comparison은 LLM을 호출하지 않는 결정론 표**이고 questions는 확인 못 한 항목을 코드가 나열한 뒤 질문만 LLM이 쓴다.
+- **T3 상담 후보 엔드포인트·원문 대조** (`175d155`, `81154fe`): `build_consultation_candidates` 순수 함수와 `GET /matching/consultation` 신설. `unverified`·`none`과 메타데이터 없는 상품은 iM뱅크 후보에서 제외, 한도가 조달 필요보다 적어도 빼지 않고 설명에 반영, 빈 `documents`는 '공식 안내에서 확인 필요'가 된다. 상담 경로는 `load_consultation_products`로 분리해 `GET /matching`의 15필드 계약을 보존했다.
+- **T5 상담자료 저장·공식 경로** (`0fff3bd`): 완성된 handoff 리포트만 Markdown으로 내보낸다(생성 중이거나 `plan` 섹션이 없는 review 결과는 차단 — 선택안을 바꾼 뒤 옛 자료가 나가지 않게 하는 장치). 브라우저 인쇄의 PDF 저장을 쓰고 PDF 전용 라이브러리를 넣지 않았다. 링크를 눌러도 은행에 자료가 전송되지 않으며 직접 지참해야 함을 화면에 밝힌다.
+
+- **실측 — 원문 대조는 12건 중 2건만 열었다**: iM뱅크 상품 페이지에서 선행 절차(소진공 확인서 발급, 보증서 발급)·신청 경로를 확인해 imbank-1·2를 `direct`로, 매일신문 기사(2025-11-30)를 근거로 imbank-3을 `linked`로 기록했다. **`dgsinbo.or.kr`은 TLS 인증서 체인 검증 실패(`unable to verify the first certificate`)로 접근하지 못해 재단 5건·정책자금 4건 모두 미확인**이다. 이름상 은행 협약이 있어 보이는 dgsinbo-4도 근거를 열지 못해 올리지 않았다. 근거·한계는 `docs/research/finance-products/2026-09-18-consultation-sources.md`.
+- **실측 — 배선 확인**: 개발 DB 재시드 후 `product_consultation_metadata` **3행**, `product_procedure_step` **7행**. 12건 중 9건이 미확인이라 **후보 없음 경로가 실제 기본 동선**이며, 이 경로도 일반 상담 질문과 iM뱅크 공식 안내 링크를 남긴다.
+- **회귀 1건 수정**: JSON 폴백 로더가 원본 dict를 그대로 넘기고 있어 JSON에 `consultation_metadata`를 넣자 DB 경로와 응답 형태가 갈라졌다. 폴백도 15필드로 투영하게 고쳤다.
+- **테스트**: 백엔드 **433 passed / 1 skipped**(착수 전 392), 프론트 **163 passed / 37 files**(착수 전 97), `tsc --noEmit` clean, `npm run build` 성공.
+- **E2E**: `funnel.cjs`를 첫 입력 → 지도 선택 → 사전상담 → 최초 계산 → 조건 수정 → 재계산 → 최초안 재선택 → 상담자료 → 공식 링크까지 확장해 **실백엔드(8300)로 전 구간 PASS**. 미제출 수정 경고와 '자기자본으로 충분' 문구 부재도 단계로 넣었다.
+- **미결·주의**: ① 대구신보 9건 원문 대조 미완 — 인증서 문제를 우회할 접근 경로 필요. ② `external_dataset`·`regional_indicator`는 여전히 0행(센터 D1·D2 미신청). ③ `consultation_*` 4테이블은 아직 프론트가 쓰지 않는다 — 화면 상태는 `sessionStorage`이고 서버 저장 배선(T7)은 하지 않았다. ④ 블록체인 앵커링은 사용자 결정으로 범위에서 제외. ⑤ '유효한 0원과 미입력 구분'은 폼에서 미구현이라 `open_questions`에 '미입력' 항목을 만들지 않았다(없는 근거를 만들지 않기 위해). ⑥ 지도 선택 연도의 리포트 미전달은 그대로 이월.
+
 ### 백엔드 — DB 스키마 19 → 29테이블 (금융상품·외부 데이터셋·지표·상담)
 
 - **범위**: 설계 확정안 `docs/superpowers/specs/2026-09-18-schema-migration-design.md`에 따라 신규 BC 4개(`apps/product` 4테이블 · `apps/dataset` 1 · `apps/indicator` 1 · `apps/consultation` 4)를 추가. 작업 A·B·C 병렬 → D(마이그레이션) → E(문서) 순서. **기존 19테이블 컬럼은 하나도 바꾸지 않았다.**

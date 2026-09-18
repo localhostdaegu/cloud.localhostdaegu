@@ -21,7 +21,8 @@
 | 신규 활용신청 5종 적재 | 📋 미착수 (§4-2) |
 | 백엔드 최종 리뷰·브랜치 정리 | ✅ 9/18 최종 리뷰(d62089e..7d4d264, 영역 A·B·C 분할) → 중요 이슈 수정 3그룹 병합·재리뷰 통과, 실서버 재시작 후 funnel·analysis E2E PASS. `main` fast-forward 병합·푸시 완료(9/18, `84385ee`) — devlog 2026-09-18 |
 | **DB 스키마 19 → 29테이블** | ✅ 9/18 — 금융상품 4·외부 데이터셋/지표 2·상담 4 신규(alembic `b93358fab70e`, additive only). 전체 pytest **392 passed/1 skipped**. ERD 문서 `docs/erd.md` 신규. ⚠️ **테스트 DB에서만 검증** — 개발 DB(5437)는 `66a23fb0c6e9`·20테이블 그대로. `external_dataset`·`regional_indicator`는 빈 테이블(센터 데이터 미확보), 상담 API는 프론트 미연결(`sessionStorage` 유지) |
-| 제출물 (제안요약서·시연 영상·배포·서류) | 📋 미착수 — 참가신청서 초안만 `docs/application_form.md`(미커밋) |
+| **창업자금 사전상담 전환 (T1~T6)** | ✅ 9/18 — 전환계획 T1·T2·T3·T4·T5 + 신설 T3-0 구현. 백엔드 **433 passed/1 skipped**, 프론트 **163 passed/37 files**, tsc clean, `npm run build` 성공. funnel E2E 실백엔드 전 구간 PASS. ⚠️ **상품 12건 중 원문 근거 확인은 3건**(대구신보 사이트 TLS 인증서 오류로 9건 미확인), `consultation_*` 4테이블은 여전히 프론트 미연결 |
+| 제출물 (제안요약서·시연 영상·배포·서류) | 📋 미착수 — 참가신청서 `docs/application_form.md` 9/18 개정(미검증 단정 제거·미구현 명시) |
 
 크론(crontab, 로그 `logs/*.log`): news 매시 10분 · store 04:20 · funding 05:10 · rag-indexer 05:30 · 금리/rent 월요일 05:20
 
@@ -77,6 +78,15 @@ node frontend/tests/funnel.cjs               # E2E (mock 기준) PASS 기대
 1. **지도 연도 선택은 지도 색칠에만 적용된다.** `frontend/src/features/map-explorer/api.ts` — `fetchMetrics`만 `year`를 보내고(`/metrics?...&year=`), `fetchRegionSummary`(`/regions/{code}/summary?industry=`)·`fetchRiskScore`·`fetchIndustryRiskRanking`(`/metrics/risk?region_code=&industry=`)은 `year`를 보내지 않는다. 백엔드는 연도 미지정 시 마지막 완결 연도(현재 2025)를 쓰므로, 2026을 골라도 사이드패널 요약·위험도·AI 리포트는 2025 기준이다 → §0-6 ① 기간 일치 작업의 대상(요약·위험도·`/analysis`까지 같은 연도를 쓰게 할지, 지도만 연도 선택을 허용할지 계약 결정 필요).
 2. **인구·임대료·충격 이벤트는 적재만 되고 소비처가 없다.** `population_stat`은 적재 CLI·ORM에만, `rent_price`는 `apps/rent` 안에만, `shock_event`는 `apps/shock` 안에만 참조된다(리포트의 충격 섹션은 뉴스 RAG 검색을 쓴다). 프론트에서도 호출하지 않는다(9/18 추가한 `/shocks/rates/latest`만 시뮬레이터가 사용). 시연에서 "이 데이터를 쓴다"고 말하지 않도록 주의.
 3. **깔때기 E2E는 자금 부족 경로를 검증하지 않는다.** 실백엔드 프리필이 CAPEX 0이라 결론이 항상 "자기자본으로 충분해요"로 끝나 매칭 카드·부족 자금 화면이 E2E에 포함되지 않는다 → 시연 대본과 ③ 자금 점검 동선에서 부족 자금이 나오는 입력값 시나리오를 정해 두어야 한다.
+
+### 0-2-3. 9/18 사전상담 전환(T1~T6) 이후 남은 것
+
+1. **대구신보 원문 대조 9건** — `dgsinbo.or.kr`이 TLS 인증서 체인 검증 실패(`unable to verify the first certificate`)로 자동 접근이 안 된다. 브라우저 수동 확인 등 다른 경로가 필요하다. 그때까지 재단 5건·정책자금 4건은 미확인이라 iM뱅크 상담 후보에 나오지 않는다. 근거·한계는 `docs/research/finance-products/2026-09-18-consultation-sources.md`.
+2. **`consultation_*` 4테이블 미연결(T7 미실행)** — 화면 상태는 `sessionStorage`이고 서버 저장 배선은 하지 않았다. 스키마·API(POST/PUT)는 있으나 부르는 곳이 없다. 스키마 존재를 "서버 세션 사용"으로 쓰지 않는다.
+3. **블록체인 앵커링** — 사용자 결정으로 이번 범위에서 제외했다. `consultation_document.content_hash`는 여전히 미사용.
+4. **'유효한 0원'과 '미입력' 구분** — 폼에서 미구현이라 `open_questions`에 '미입력' 항목을 만들지 않았다. 없는 근거를 만들지 않기 위한 선택이며, 구분을 구현하면 확인 목록이 더 정확해진다.
+5. **mock SSE는 여전히 review 섹션** — `NEXT_PUBLIC_API_BASE` 미설정으로 프론트만 띄우면 상담자료 섹션이 아니라 기존 리포트가 보인다. `GET /matching/consultation` mock은 추가했다.
+6. **지도 선택 연도의 리포트 미전달** — 기존 이월 사항 그대로.
 
 ### 0-2-2. 9/18 스키마 확장에서 남긴 후속 과제 (ERD 문서 작성 중 실측)
 
