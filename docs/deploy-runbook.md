@@ -2,12 +2,15 @@
 
 한 번도 배포한 적 없는 상태에서 쓰는 문서다. **아직 배포하지 않았고**, 여기 적힌 것은 코드에서 확인한 설정과 알려진 함정이다. 실제 배포에서 새로 드러나는 것은 이 문서에 덧붙인다.
 
-## 0. 먼저 정해야 하는 것 (코드로 못 정함)
+## 0. 호스팅 결정 (2026-09-18 확정)
 
-- [ ] 프론트 호스팅 — Vercel / 이 머신 / 기타
-- [ ] 백엔드 호스팅 — 이 머신 + 리버스 프록시 / 클라우드 VM / 기타
-- [ ] DB — 현재 개발 DB(로컬 Docker `localhostdaegu-db`, 포트 5437)를 그대로 쓸지, 별도 인스턴스를 둘지
-- [ ] 도메인 `localhostdaegu.cloud` DNS를 어디로 향하게 할지
+- 프론트: **Vercel**
+- 백엔드: **이 머신 + Cloudflare Tunnel** (`api.localhostdaegu.cloud`)
+- DB: 현재 개발 DB(로컬 Docker `localhostdaegu-db`, 5437) 그대로
+
+**단계별 실행 절차는 [배포 가이드 — Vercel + Cloudflare Tunnel](deploy-vercel-cloudflare.md)를 따른다.** 이 문서는 환경변수·DB·기동 제약의 **참조표**다.
+
+⚠️ `localhostdaegu.cloud`는 2026-09-18 기준 **아직 가비아 네임서버**다. Cloudflare로 옮겨야 `api.` 하위 도메인을 쓸 수 있고, 전파에 시간이 걸린다. 급하면 임시 주소(`trycloudflare.com`) 경로가 있다 — 가이드 §2 참조.
 
 백엔드는 **인메모리 상태**를 쓰므로(§3) 서버리스에 그대로 올릴 수 없다. 프로세스가 계속 살아 있는 형태여야 한다.
 
@@ -19,7 +22,7 @@
 |---|---|---|
 | `DATABASE_URL` | **필수** | 없으면 기동 실패 |
 | `GEMINI_API_KEY` | **필수** | 없으면 `POST /analysis` 500. 리포트와 RAG 임베딩이 같은 키를 쓴다 |
-| `CORS_ALLOW_ORIGINS` | **필수** | `https://localhostdaegu.cloud` 형태, 쉼표 구분. **없으면 배포한 프론트의 요청을 브라우저가 버린다** |
+| `CORS_ALLOW_ORIGINS` | **필수** | `https://localhostdaegu.cloud,https://<프로젝트>.vercel.app` — 커스텀 도메인과 `.vercel.app` 을 **둘 다** 넣는다. 없으면 배포한 프론트의 요청을 브라우저가 버린다 |
 | `GEMINI_REPORT_MODEL` | 선택 | 기본 `gemini-3.8-flash` |
 | `VWORLD_SERVICE_DOMAIN` | 확인 필요 | **코드 기본값이 `beyondfacade.cloud`(원천 프로젝트 도메인)다.** 브이월드 키 등록 조건과 운영 도메인에 맞게 설정 |
 | `ECOS_API_KEY` · `BIZINFO_API_KEY` · `DATA_GO_KR_API_KEY` · `YOUTHCENTER_API_KEY` | 수집기만 | 런타임 조회는 DB를 읽으므로 웹 서비스에는 없어도 된다. 크론을 함께 돌린다면 필요 |

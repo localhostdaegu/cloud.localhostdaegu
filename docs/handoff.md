@@ -272,7 +272,8 @@ cd frontend && npm run dev &                              # :3300 (브라우저 
 - [x] **시연 대본** — `docs/demo-script.md` (3분, 수치는 엔진 검산값, 하지 말 것·예상 질문 포함)
 - [x] **배포 런북** — `docs/deploy-runbook.md` (환경변수·DB 준비·기동 제약·배포 후 확인)
 - [ ] 참가서약서 · 개인정보 수집·이용 동의서 (주최 양식 필요)
-- [ ] 배포 URL (9/20 예정) · 시연 영상 녹화
+- [ ] 배포 URL (9/20 예정) — 프론트 **Vercel** / 백엔드 **Cloudflare Tunnel** 확정. 절차: [배포 가이드](deploy-vercel-cloudflare.md). ⚠️ 도메인이 아직 가비아 NS라 이전·전파 시간이 필요하다(급하면 `trycloudflare.com` 임시 주소)
+- [ ] 시연 영상 녹화
 - [ ] im-challenge.com 온라인 접수
 
 **배포 전 반드시 설정할 것** — `CORS_ALLOW_ORIGINS`(운영 도메인), `NEXT_PUBLIC_API_BASE`(운영 백엔드). 후자는 미설정 시 조용히 mock 으로 떨어져 고정 데이터가 보인다. 자세한 것은 배포 런북 §1·§4.
