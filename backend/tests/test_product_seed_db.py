@@ -98,3 +98,61 @@ def test_read_products_records_source_file():
     assert by_id["dgsinbo-1"].source_file == "dgsinbo_products.json"
     assert by_id["youth-1"].source_file == "daegu_youth_startup.json"
     assert len(by_id) == 12
+
+
+def test_consultation_metadata_reaches_db_and_comes_back(clean_products, tmp_path):
+    """전환계획 T3 전제 — JSON 의 상담 메타데이터가 자식 2테이블까지 가고 그대로 복원된다.
+    이 경로가 없으면 T3 가 원문을 조사해 JSON 에 적어도 두 테이블은 0행으로 남는다."""
+    import json
+    from datetime import date
+
+    (tmp_path / "imbank_products.json").write_text(
+        json.dumps(
+            [
+                {
+                    "product_id": "test-consult-1",
+                    "provider": "테스트 기관",
+                    "provider_type": "bank",
+                    "product_name": "합성 테스트 상품",
+                    "target": "테스트",
+                    "region": "대구",
+                    "business_age_min": 0,
+                    "business_age_max": None,
+                    "category": None,
+                    "owner_age_max": None,
+                    "loan_limit": 10_000_000,
+                    "interest_rate": None,
+                    "guarantee_fee": None,
+                    "url": "https://example.org",
+                    "source_url": "https://example.org",
+                    "consultation_metadata": {
+                        "bank_connection": "direct",
+                        "bank_connection_source_url": "https://example.org/notice",
+                        "business_registration_required": True,
+                        "verified_at": "2026-09-18",
+                        "prerequisites": ["소진공 확인서 발급"],
+                        "application_steps": ["영업점 방문 상담"],
+                        "documents": ["사업자등록증"],
+                    },
+                }
+            ],
+            ensure_ascii=False,
+        )
+    )
+
+    repository = SqlAlchemyFinanceProductRepository()
+    assert seed_all(repository, tmp_path) == (1, 0)
+
+    (stored,) = repository.list_all()
+    assert stored.consultation.bank_connection == "direct"
+    assert stored.consultation.business_registration_required is True
+    assert stored.consultation.verified_at == date(2026, 9, 18)
+    assert [(s.step_type, s.step_order, s.description) for s in stored.procedure_steps] == [
+        ("application_step", 1, "영업점 방문 상담"),
+        ("document", 1, "사업자등록증"),
+        ("prerequisite", 1, "소진공 확인서 발급"),
+    ]
+
+    with session_scope() as session:
+        assert session.query(ProductConsultationMetadataOrm).count() == 1
+        assert session.query(ProductProcedureStepOrm).count() == 3
