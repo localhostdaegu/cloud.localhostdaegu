@@ -20,6 +20,7 @@
 | 제품 방향·데이터 신뢰성 점검 | ⚠️ 9/17 DB·코드 조회로 문제 확인 — 연도 불일치, 카페 단기 개폐업 혼입 가능성, 지표 명칭·위험도 해석 보완 필요. 센터 데이터는 미확보. 다음 작업은 **§0-2~§0-5 우선 참조** |
 | 신규 활용신청 5종 적재 | 📋 미착수 (§4-2) |
 | 백엔드 최종 리뷰·브랜치 정리 | ✅ 9/18 최종 리뷰(d62089e..7d4d264, 영역 A·B·C 분할) → 중요 이슈 수정 3그룹 병합·재리뷰 통과, 실서버 재시작 후 funnel·analysis E2E PASS. `main` fast-forward 병합·푸시 완료(9/18, `84385ee`) — devlog 2026-09-18 |
+| **DB 스키마 19 → 29테이블** | ✅ 9/18 — 금융상품 4·외부 데이터셋/지표 2·상담 4 신규(alembic `b93358fab70e`, additive only). 전체 pytest **392 passed/1 skipped**. ERD 문서 `docs/erd.md` 신규. ⚠️ **테스트 DB에서만 검증** — 개발 DB(5437)는 `66a23fb0c6e9`·20테이블 그대로. `external_dataset`·`regional_indicator`는 빈 테이블(센터 데이터 미확보), 상담 API는 프론트 미연결(`sessionStorage` 유지) |
 | 제출물 (제안요약서·시연 영상·배포·서류) | 📋 미착수 — 참가신청서 초안만 `docs/application_form.md`(미커밋) |
 
 크론(crontab, 로그 `logs/*.log`): news 매시 10분 · store 04:20 · funding 05:10 · rag-indexer 05:30 · 금리/rent 월요일 05:20
@@ -76,6 +77,16 @@ node frontend/tests/funnel.cjs               # E2E (mock 기준) PASS 기대
 1. **지도 연도 선택은 지도 색칠에만 적용된다.** `frontend/src/features/map-explorer/api.ts` — `fetchMetrics`만 `year`를 보내고(`/metrics?...&year=`), `fetchRegionSummary`(`/regions/{code}/summary?industry=`)·`fetchRiskScore`·`fetchIndustryRiskRanking`(`/metrics/risk?region_code=&industry=`)은 `year`를 보내지 않는다. 백엔드는 연도 미지정 시 마지막 완결 연도(현재 2025)를 쓰므로, 2026을 골라도 사이드패널 요약·위험도·AI 리포트는 2025 기준이다 → §0-6 ① 기간 일치 작업의 대상(요약·위험도·`/analysis`까지 같은 연도를 쓰게 할지, 지도만 연도 선택을 허용할지 계약 결정 필요).
 2. **인구·임대료·충격 이벤트는 적재만 되고 소비처가 없다.** `population_stat`은 적재 CLI·ORM에만, `rent_price`는 `apps/rent` 안에만, `shock_event`는 `apps/shock` 안에만 참조된다(리포트의 충격 섹션은 뉴스 RAG 검색을 쓴다). 프론트에서도 호출하지 않는다(9/18 추가한 `/shocks/rates/latest`만 시뮬레이터가 사용). 시연에서 "이 데이터를 쓴다"고 말하지 않도록 주의.
 3. **깔때기 E2E는 자금 부족 경로를 검증하지 않는다.** 실백엔드 프리필이 CAPEX 0이라 결론이 항상 "자기자본으로 충분해요"로 끝나 매칭 카드·부족 자금 화면이 E2E에 포함되지 않는다 → 시연 대본과 ③ 자금 점검 동선에서 부족 자금이 나오는 입력값 시나리오를 정해 두어야 한다.
+
+### 0-2-2. 9/18 스키마 확장에서 남긴 후속 과제 (ERD 문서 작성 중 실측)
+
+전체 스키마는 [ERD](erd.md), 설계 근거는 [스키마 마이그레이션 설계](superpowers/specs/2026-09-18-schema-migration-design.md). 아래는 **코드를 고치지 않고 기록만 한 항목**이다.
+
+1. **고립 테이블 2건** — SQLAlchemy 메타데이터 덤프 결과 FK가 들어오는 것도 나가는 것도 없는 테이블: `interest_rate`·`funding_program`. `backend/CLAUDE.md` §13 "고립 테이블 금지" 위반 상태다. `interest_rate`는 ORM docstring이 *"region/industry와 직접 엣지 없이 계산기 유스케이스에서 rent_price와 애플리케이션 조인한다"*로 의도된 미연결을 밝히고 있고(전국 시계열이라 허브 키에 함수 종속되지 않음), `funding_program`은 *"업종 M:N(funding_program_industry)은 LLM 구조화 추출 후속 작업에서 추가"*가 아직 안 된 미완 설계다(`rag_chunk.source_type/source_id`는 다형 참조라 FK가 아님). **둘 다 기존 19테이블**이며 이번 additive 마이그레이션이 만든 것이 아니다.
+2. **교차 BC 엣지 1건** — `apps/matching/adapter/outbound/gateways/manual_product_gateway.py`가 `apps/product`의 `SqlAlchemyFinanceProductRepository`(Adapter)와 `FinanceProduct`(Entity)를 직접 import한다. §11 BC 완전 분리·§7 *"Business logic imports Ports, never Adapters"* 기준으로 약한 지점. 완화 요인: `_to_dict()`가 ACL 역할을 해 matching 도메인은 기존 15필드 dict만 보고, `load_all_products_from(port)` seam으로 Port 주입이 가능하다. 정식 해소는 matching BC가 자기 Port를 정의하고 조립 루트에서 주입하는 형태 — **코드 프리즈 전 `GET /matching` 응답을 흔들지 않으려고 이번엔 손대지 않았다.**
+3. **상담 BC 프론트 전환** — 백엔드 `POST /consultation` → `PUT .../plans/{kind}` → `GET /consultation/{id}` 왕복은 DB에 대해 동작하지만, 프론트엔드는 여전히 `sessionStorage`다(전환계획 §5-3 유지). 서버 저장 경로가 준비된 상태로만 남겨 뒀다.
+4. **재무 엔진 미수정** — `consultation_plan.reserve_months`·`operating_reserve`·`total_required_funds`·`external_funding_need`는 전환계획 T1이 엔진에 값을 추가하기 전까지 **0**이다. 계산 결과로 읽으면 안 된다는 제약이 `consultation_repository.py`·`consultation_port.py`·`consultation_entity.py` docstring에 명시돼 있다.
+5. **개발 DB 미적용** — 마이그레이션은 테스트 DB(`localhostdaegu_test`)에서만 검증했다. 개발 DB(5437 `localhostdaegu`)에 적용하려면 `alembic upgrade head`를 따로 실행해야 한다.
 
 ### 0-3. 센터 데이터 — 미확보 상태와 반출 조건
 
@@ -244,6 +255,8 @@ cd frontend && npm run dev &                              # :3300 (브라우저 
 |---|---|
 | 백엔드 SDD 원장(판정 이력 전체) | `.superpowers/sdd/2026-09-15-daegu-backend-port/progress.md` |
 | 백엔드 계획서 | `docs/superpowers/plans/2026-09-15-daegu-backend-port.md` |
+| **ERD (29테이블·엣지·역정규화 근거)** | `docs/erd.md` |
+| 스키마 마이그레이션 설계 확정안 | `docs/superpowers/specs/2026-09-18-schema-migration-design.md` |
 | 프론트 계획서 (실행 완료) | `docs/superpowers/plans/2026-09-15-daegu-frontend.md` |
 | 태스크 브리프·리포트 (백엔드 4·5·10) | `.superpowers/sdd/2026-09-15-daegu-backend-port/task-{4,5}-brief.md` |
 | SDD 스크립트 | `.claude/skills/subagent-driven-development/scripts/{task-brief,review-package,sdd-workspace}` |

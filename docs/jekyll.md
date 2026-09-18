@@ -6,6 +6,19 @@
 
 ## 2026-09-18
 
+### 백엔드 — DB 스키마 19 → 29테이블 (금융상품·외부 데이터셋·지표·상담)
+
+- **범위**: 설계 확정안 `docs/superpowers/specs/2026-09-18-schema-migration-design.md`에 따라 신규 BC 4개(`apps/product` 4테이블 · `apps/dataset` 1 · `apps/indicator` 1 · `apps/consultation` 4)를 추가. 작업 A·B·C 병렬 → D(마이그레이션) → E(문서) 순서. **기존 19테이블 컬럼은 하나도 바꾸지 않았다.**
+- **사용자 결정 정정**: iM뱅크 전환 계획 §0의 "새 DB 테이블…을 추가하지 않는다" 중 **DB 테이블 항목만** 덮음. 로그인·은행 API·채팅 전용 서버는 여전히 추가하지 않음. 해당 줄에 정정 주석을 달았다.
+- **마이그레이션 `b93358fab70e`** (down_revision `66a23fb0c6e9`): 연산이 `create_table` **10** + `create_index` **8**뿐이고 기존 테이블 대상 `alter_column`·`drop_*`은 **0건**. `alembic upgrade head` 후 `alembic check` → `No new upgrade operations detected.` 다운그레이드 왕복 성공(FK 순서 오류 없음). `rag_chunk`의 HNSW 인덱스는 drop되지 않음(ORM 선언 유지 덕분).
+- **`regional_indicator` UNIQUE 실측 DDL**: `CREATE UNIQUE INDEX … USING btree (dataset_id, region_code, industry_id, period, indicator_key, breakdown) NULLS NOT DISTINCT` — 업종 무관(`industry_id` NULL)·슬라이스 없음(`breakdown` NULL) 행의 중복 적재를 PG15+ 기능으로 차단. PG17 컨테이너라 사용 가능.
+- **상품 로더 회귀 확인**: 상품 12건 시드 후 `load_all_products()`가 돌려준 **15필드 dict가 JSON 폴백 경로와 완전히 동일**. `category` 3상태(`None` 업종무관 / `[]` 전부탈락 / `[...]` 해당업종)가 DB 왕복 후에도 구분됨 — 판별자 컬럼 `finance_product.category_restricted`가 담당. `matcher.match_products`는 미수정.
+- **테스트**: 전체 **392 passed / 1 skipped**. 상품 시드가 **있는 상태와 없는 상태 양쪽**에서 확인했다. 순서·상태 의존 결함은 `tests/test_matching.py`를 `load_all_products_from()` seam(Port 주입)으로 고쳐 해소.
+- **ERD 문서 신규 작성** `docs/erd.md`: 29테이블 그룹별 mermaid `erDiagram` 5개 + 엣지 전체 표 + 역정규화 근거 표(전부 ORM docstring 인용) + 신규 테이블 설계 판단(long format·3상태 보존·1:1 분리·NULLS NOT DISTINCT) + 적재/연결/표시 3단계 상태표. 기존 ORM docstring 6곳 이상이 `docs/erd.md`를 참조했지만 실제 파일은 없었다(원천 프로젝트 유산) — 이번에 새로 씀.
+- **고립 테이블 2건 실측**: 메타데이터 덤프 결과 FK가 in·out 모두 0인 테이블은 `interest_rate`(전국 시계열 — docstring이 "region/industry와 직접 엣지 없이 애플리케이션 조인"으로 의도된 미연결 명시)와 `funding_program`(`funding_program_industry` M:N이 LLM 추출 후속으로 미생성, `rag_chunk`는 다형 참조라 FK 아님). **둘 다 기존 19테이블**이며 `backend/CLAUDE.md` §13 연결 원칙 위반 상태를 문서에 그대로 적었다.
+- **교차 BC 엣지 1건 기록**: `apps/matching`의 `manual_product_gateway.py`가 `apps/product`의 `SqlAlchemyFinanceProductRepository`(Adapter)·`FinanceProduct`(Entity)를 직접 import — §11 BC 분리·§7 "Business logic imports Ports, never Adapters" 기준 약한 지점. 완화 요인은 `_to_dict()`가 ACL 역할을 해 matching 도메인이 dict만 보는 것과 `load_all_products_from(port)` seam. 후속 정리 과제로 남기고 **코드는 고치지 않았다**(코드 프리즈 전 `GET /matching` 응답 보존 우선).
+- **미결·주의**: ① 마이그레이션은 **테스트 DB에서만 검증**했다. 개발 DB(5437 `localhostdaegu`)는 `66a23fb0c6e9`·20테이블 그대로다. ② `external_dataset`·`regional_indicator`는 **빈 테이블**이고 센터 D1(삼성카드)·D2(SKT)는 **미신청·미확보** — 스키마 존재를 데이터 확보로 쓰지 않는다. ③ 상담 API는 POST/GET 왕복만 동작하고 **프론트는 여전히 `sessionStorage`**다. ④ `consultation_document.content_hash`는 sha256 변경 확인용이며 **블록체인 앵커링은 미구현**. ⑤ 재무 엔진 미수정 — `reserve_months`·`operating_reserve`·`total_required_funds`·`external_funding_need`는 T1 전까지 0이며 계산 결과로 읽으면 안 된다(제약이 `consultation_repository.py`·`consultation_port.py`·`consultation_entity.py` docstring에 명시). ⑥ `finance_product_category`·`product_consultation_metadata`·`product_procedure_step`은 현재 0행(상품 JSON에 업종·절차 값이 없음).
+
 ### 백엔드 — whole-branch 최종 리뷰(d62089e..7d4d264)와 수정 반영
 
 - **리뷰 방식**: 백엔드 460파일·약 13,600줄이라 3영역으로 나눠 병렬 리뷰(opus, 읽기 전용) — A 핵심·지표·재무(master·metric·finance·matching·intent·core·migrations) / B 수집기·크론(store·rent·convenience·tobacco·news·funding·scripts) / C 충격·RAG. `analysis`는 9/17 별도 리뷰 완료라 제외. 3영역 모두 "수정 후 머지", Critical 0.
