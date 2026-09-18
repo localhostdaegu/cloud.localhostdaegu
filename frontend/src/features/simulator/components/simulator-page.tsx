@@ -19,6 +19,7 @@ import {
 } from "../lib/consultation-draft";
 import { useLatestLoanRate } from "../hooks/use-latest-loan-rate";
 import { simulateFinance } from "../api";
+import { ConsultationProfileForm } from "./consultation-profile-form";
 import { SimulatorForm } from "./simulator-form";
 import { PlanComparison } from "./plan-comparison";
 import { ResultView } from "./result-view";
@@ -72,6 +73,11 @@ export function SimulatorPage() {
           {district ? ` · ${district}` : ""} 기준으로 값을 채웠어요. 필요하면 수정하세요.
         </p>
       </header>
+
+      <ConsultationProfileForm
+        value={draft.profile}
+        onChange={(profile) => update({ ...draft, profile })}
+      />
 
       <SimulatorForm
         defaults={defaults}

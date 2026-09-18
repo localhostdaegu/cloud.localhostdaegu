@@ -74,3 +74,48 @@ it("404(RISK_NOT_FOUND): 에러 배너가 아니라 '이 조합의 진단 데이
   await waitFor(() => expect(screen.getByText("이 조합의 진단 데이터가 아직 없어요")).toBeInTheDocument());
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
+
+it("주 버튼은 창업자금 사전상담 입력으로 가고, 지역 분석은 보조 링크로 남는다", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/regions/") && url.includes("/summary")) {
+        return new Response(
+          JSON.stringify({
+            region_code: REGION,
+            name: "성내1동",
+            industry_id: "cafe",
+            cards: [{ label: "점포수", value: "120개", grade: "yellow" }],
+          }),
+          { status: 200 },
+        );
+      }
+      if (url.includes("/metrics/risk")) {
+        return new Response(
+          JSON.stringify({ score: 45.8, grade: "yellow", components: { closure: 13.1, density: 30.3, growth: 2.4 } }),
+          { status: 200 },
+        );
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }),
+  );
+
+  renderWithClient(
+    <SidePanel
+      regionCode={REGION}
+      industry="cafe"
+      industryParam="cafe"
+      onSelectIndustry={vi.fn()}
+      searchParams="region=2711051000&industry=cafe"
+    />,
+  );
+
+  // 전환계획 §3-1 — 재무 입력 없이 AI 분석으로 바로 가는 주 동선을 대체한다.
+  const primary = await screen.findByRole("link", { name: /창업자금 사전상담/ });
+  expect(primary).toHaveAttribute("href", "/simulate?region=2711051000&industry=cafe");
+
+  const secondary = screen.getByRole("link", { name: /지역 분석만 보기/ });
+  expect(secondary).toHaveAttribute("href", `/analysis?region=${REGION}&industry=cafe`);
+  expect(screen.queryByRole("link", { name: "AI 분석 →" })).not.toBeInTheDocument();
+});

@@ -103,8 +103,8 @@ export function ChatLanding() {
 
       <ol className={styles.steps} aria-label="창업 계획을 구체화하는 세 단계">
         <li><span className={styles.stepNumber}>01</span><div><h2>동네를 발견하고</h2><p>지도 위에서 상권과 업종 살펴보기</p></div><span className={styles.stepArrow} aria-hidden="true">↗</span></li>
-        <li><span className={styles.stepNumber}>02</span><div><h2>숫자를 가늠하고</h2><p>내 예산으로 창업 비용 계산하기</p></div><span className={styles.stepArrow} aria-hidden="true">↗</span></li>
-        <li><span className={styles.stepNumber}>03</span><div><h2>다음 선택을 준비해요</h2><p>상권 지표와 자금 계획 함께 보기</p></div></li>
+        <li><span className={styles.stepNumber}>02</span><div><h2>자금을 계산하고</h2><p>내 조건으로 준비자금과 조달 필요 확인하기</p></div><span className={styles.stepArrow} aria-hidden="true">↗</span></li>
+        <li><span className={styles.stepNumber}>03</span><div><h2>상담을 준비해요</h2><p>바꾼 계획과 물어볼 것을 정리해 은행 상담으로</p></div></li>
       </ol>
 
       <section className={styles.features} aria-labelledby="features-title">

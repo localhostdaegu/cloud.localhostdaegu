@@ -88,3 +88,11 @@ it("오류를 표시하고 입력을 보존해 재시도할 수 있다", async (
   await waitFor(() => expect(push).toHaveBeenCalledWith("/map?district=27110&industry=cafe&budget=50000000"));
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
 });
+
+it("세 단계 안내가 상담 준비까지 이어진다 — 지표 확인에서 끝나지 않는다", () => {
+  mount();
+
+  const steps = screen.getByRole("list", { name: /세 단계/ });
+  expect(steps).toHaveTextContent(/자금/);
+  expect(steps).toHaveTextContent(/상담/);
+});

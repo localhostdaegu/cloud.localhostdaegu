@@ -172,18 +172,20 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
             ))}
           </ul>
 
+          {/* 주 동선은 사전상담 입력이다 — 재무 입력 없이 리포트로 직행하지 않는다(전환계획 §3-1).
+              지역 분석은 남기되 금융상담 준비 완료로 다루지 않는다. */}
           <Link
-            href={`/analysis?region=${regionCode}&industry=${industry}`}
+            href={simulateHref}
             className="mt-6 rounded-md bg-[var(--accent)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--accent-fg)] transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px"
           >
-            AI 분석 →
+            이 자리로 창업자금 사전상담 →
           </Link>
 
           <Link
-            href={simulateHref}
+            href={`/analysis?region=${regionCode}&industry=${industry}`}
             className="mt-2 rounded-md border border-[var(--border)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px"
           >
-            이 자리에서 시뮬레이션 →
+            지역 분석만 보기 →
           </Link>
         </>
       )}

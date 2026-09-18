@@ -159,3 +159,29 @@ it("새로고침해도 저장된 선택안으로 결과를 복원한다", async 
 
   await waitFor(() => expect(screen.getByText("800만원")).toBeInTheDocument());
 });
+
+it("창업 단계 입력이 세션에 저장된다", async () => {
+  sessionStorage.clear();
+  stubSimulate(OUTPUT_BASELINE);
+  renderPage();
+
+  fireEvent.click(screen.getByRole("radio", { name: "아니오" }));
+
+  await waitFor(() => {
+    const draft = JSON.parse(sessionStorage.getItem("localhostdaegu.consultation.v1")!);
+    expect(draft.profile.business_registered).toBe(false);
+  });
+});
+
+it("계산 뒤에도 창업 단계 입력이 남는다", async () => {
+  sessionStorage.clear();
+  stubSimulate(OUTPUT_BASELINE);
+  renderPage();
+
+  fireEvent.click(screen.getByRole("radio", { name: "아니오" }));
+  await runSimulation();
+
+  const draft = JSON.parse(sessionStorage.getItem("localhostdaegu.consultation.v1")!);
+  expect(draft.profile.business_registered).toBe(false);
+  expect(draft.baseline.result.external_funding_need).toBe(8_000_000);
+});

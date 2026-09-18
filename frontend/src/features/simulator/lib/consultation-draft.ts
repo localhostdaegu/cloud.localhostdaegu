@@ -8,12 +8,18 @@ export type PlanKind = "baseline" | "current";
 
 /** 창업 단계·시점 — 사용자가 직접 확인해 입력한다. 모름을 0·아니오로 바꾸지 않는다(§4-2). */
 export interface ConsultationProfile {
-  business_registered: boolean | null;
+  /** null = 아직 묻지 않음 / "unknown" = 사용자가 모른다고 답함. 둘 다 미확인이지만
+   *  전자는 물어봐야 하고 후자는 상담에서 확인할 항목이다(§4-2). */
+  business_registered: boolean | "unknown" | null;
   business_age_months: number | null;
   opening_date: string | null;
   funds_needed_date: string | null;
   owner_age: number | null;
+  /** 보증·정책자금 확인서 진행 상태 — 선행 절차가 남았는지 상담에서 확인한다(§3-3). */
+  prerequisite_status: PrerequisiteStatus | null;
 }
+
+export type PrerequisiteStatus = "not_started" | "in_progress" | "done";
 
 export interface PlanSnapshot {
   input: FinanceInput;
@@ -56,6 +62,7 @@ export function emptyDraft(scope: ConsultationScope): ConsultationDraft {
       opening_date: null,
       funds_needed_date: null,
       owner_age: null,
+      prerequisite_status: null,
     },
   };
 }
