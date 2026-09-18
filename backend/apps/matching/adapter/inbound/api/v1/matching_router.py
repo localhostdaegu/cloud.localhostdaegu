@@ -36,10 +36,12 @@ def get_consultation_candidates(
     business_registered: bool | None = None,
     business_age_months: int | None = Query(default=None, ge=0),
     owner_age: int | None = Query(default=None, ge=0, le=120),
+    include_unverified: bool = False,
 ) -> list[dict]:
     """iM뱅크 상담 후보와 남은 확인 사항 (§5-2). 자격 확정이나 승인 결과가 아니다.
 
     미상 값은 쿼리에서 생략한다 — 생략을 충족·미달로 바꾸지 않는다.
+    include_unverified=True 면 취급 근거가 확인되지 않은 상품도 참고자료로 함께 준다(§5-2).
     """
     candidates = build_consultation_candidates(
         load_consultation_products(),
@@ -48,5 +50,6 @@ def get_consultation_candidates(
         business_registered=business_registered,
         business_age_months=business_age_months,
         owner_age=owner_age,
+        include_unverified=include_unverified,
     )
     return [asdict(c) for c in candidates]

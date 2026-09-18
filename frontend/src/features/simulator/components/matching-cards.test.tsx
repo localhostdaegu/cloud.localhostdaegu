@@ -96,3 +96,48 @@ it("조회 실패는 계산 실패와 구분해 알린다", async () => {
 
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/상담 후보를 불러오지 못했습니다/));
 });
+
+const REFERENCE = {
+  ...CANDIDATE,
+  product: { ...CANDIDATE.product, product_id: "dgsinbo-3", provider: "대구신용보증재단", provider_type: "guarantee", product_name: "유망 예비창업자 사전보증" },
+  metadata: { ...CANDIDATE.metadata, bank_connection: "unverified" },
+  reason: "iM뱅크 취급 여부가 공식 원문에서 확인되지 않음 — 해당 기관에 직접 확인 필요",
+};
+
+it("참고자료까지 함께 요청한다 — 근거 미확인 상품도 사용자에게 보인다", async () => {
+  const fetchMock = vi.fn(async () => new Response("[]", { status: 200 }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  renderWithClient(<MatchingCards externalFundingNeed={2_000_000} category="cafe" />);
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+  expect(String(fetchMock.mock.calls[0][0])).toContain("include_unverified=true");
+});
+
+it("iM뱅크 상담 후보와 관련 기관 참고자료를 나눠 보여준다", async () => {
+  stub([CANDIDATE, REFERENCE]);
+
+  renderWithClient(<MatchingCards externalFundingNeed={2_000_000} category="cafe" />);
+
+  await waitFor(() => expect(screen.getByText(/iM뱅크 상담 후보/)).toBeInTheDocument());
+  expect(screen.getByText(/관련 기관 참고자료/)).toBeInTheDocument();
+  expect(screen.getByText("유망 예비창업자 사전보증")).toBeInTheDocument();
+});
+
+it("참고자료만 있으면 iM뱅크 후보가 없다는 것도 함께 알린다", async () => {
+  stub([REFERENCE]);
+
+  renderWithClient(<MatchingCards externalFundingNeed={2_000_000} category="cafe" />);
+
+  await waitFor(() => expect(screen.getByText(/관련 기관 참고자료/)).toBeInTheDocument());
+  expect(screen.getByText(/iM뱅크 취급이 확인된 상품은 없어요/)).toBeInTheDocument();
+  expect(screen.queryByText(/iM뱅크 상담 후보/)).not.toBeInTheDocument();
+});
+
+it("참고자료는 상담 후보가 아님을 카드에 밝힌다", async () => {
+  stub([REFERENCE]);
+
+  renderWithClient(<MatchingCards externalFundingNeed={2_000_000} category="cafe" />);
+
+  await waitFor(() => expect(screen.getByText("근거 미확인")).toBeInTheDocument());
+});

@@ -11,6 +11,12 @@ from apps.matching.domain.matcher import _PRIORITY
 # iM뱅크 주 상담 후보가 될 수 있는 연결 분류. unverified·none 은 후보로 안내하지 않는다.
 _BANK_CANDIDATE_CONNECTIONS = frozenset({"direct", "linked"})
 
+# 참고자료로는 보여줄 수 있는 분류(§5-2). 'none'은 은행 취급이 없다고 확인된 것이라 제외한다.
+_REFERENCE_CONNECTIONS = _BANK_CANDIDATE_CONNECTIONS | {"unverified"}
+
+# 은행 후보가 참고자료보다 앞에 온다.
+_CONNECTION_ORDER = {"direct": 0, "linked": 0, "unverified": 1}
+
 _EMPTY_METADATA: dict = {
     "bank_connection": "unverified",
     "bank_connection_source_url": None,
@@ -39,22 +45,29 @@ def build_consultation_candidates(
     business_registered: bool | None,
     business_age_months: int | None,
     owner_age: int | None,
+    include_unverified: bool = False,
 ) -> list[ConsultationCandidate]:
+    """include_unverified=True 면 취급 근거가 확인되지 않은 상품도 참고자료로 함께 준다.
+    자격 조건은 똑같이 적용한다 — 참고자료라고 느슨하게 보지 않는다."""
+    allowed = _REFERENCE_CONNECTIONS if include_unverified else _BANK_CANDIDATE_CONNECTIONS
     candidates = [
         _to_candidate(product, external_funding_need, business_registered, owner_age)
         for product in products
-        if _is_bank_candidate(product) and _passes_conditions(product, category, business_age_months, owner_age)
+        if _metadata_of(product)["bank_connection"] in allowed
+        and _passes_conditions(product, category, business_age_months, owner_age)
     ]
-    return sorted(candidates, key=lambda c: _PRIORITY[c.product["provider_type"]])
+    return sorted(
+        candidates,
+        key=lambda c: (
+            _CONNECTION_ORDER[c.metadata["bank_connection"]],
+            _PRIORITY[c.product["provider_type"]],
+        ),
+    )
 
 
 def _metadata_of(product: dict) -> dict:
     """메타데이터가 없으면 미확인이다 — 기존 자료도 계속 읽을 수 있게 한다(§5-2)."""
     return {**_EMPTY_METADATA, **(product.get("consultation_metadata") or {})}
-
-
-def _is_bank_candidate(product: dict) -> bool:
-    return _metadata_of(product)["bank_connection"] in _BANK_CANDIDATE_CONNECTIONS
 
 
 def _passes_conditions(
@@ -118,12 +131,26 @@ def _status(metadata: dict, business_registered: bool | None, unresolved: list[s
     return "needs_check" if unresolved else "reviewable"
 
 
+_CONNECTION_REASONS = {
+    "direct": "iM뱅크 직접 취급으로 확인됨",
+    "linked": "iM뱅크 연계 근거가 확인됨",
+}
+
+# 미확인에도 두 상태가 있다. 원문을 본 적 없는 것과, 보았는데 은행이 안 적혀 있던 것은
+# 사용자에게 다른 사실이다. 확인하지 않은 것을 확인한 것처럼 쓰지 않는다.
+_UNCHECKED_REASON = "공식 원문을 아직 확인하지 못함 — 해당 기관에 직접 확인 필요"
+_UNNAMED_BANK_REASON = "공식 원문에 취급 은행이 명시되지 않음(시중은행 등으로만 표기) — 해당 기관에 직접 확인 필요"
+
+
+def _connection_reason(metadata: dict) -> str:
+    connection = metadata["bank_connection"]
+    if connection in _CONNECTION_REASONS:
+        return _CONNECTION_REASONS[connection]
+    return _UNNAMED_BANK_REASON if metadata["verified_at"] else _UNCHECKED_REASON
+
+
 def _reason(product: dict, metadata: dict, external_funding_need: int, business_registered: bool | None) -> str:
-    parts = [
-        "iM뱅크 직접 취급으로 확인됨"
-        if metadata["bank_connection"] == "direct"
-        else "iM뱅크 연계 근거가 확인됨"
-    ]
+    parts = [_connection_reason(metadata)]
     limit = product["loan_limit"]
     if limit is not None and limit < external_funding_need:
         parts.append(

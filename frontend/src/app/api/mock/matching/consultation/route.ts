@@ -43,6 +43,47 @@ const FIXED_CANDIDATES: ConsultationCandidate[] = [
       "적용 금리는 은행·기관 상담에서 확인",
     ],
   },
+  {
+    product: {
+      product_id: "dgsinbo-3",
+      provider: "대구신용보증재단",
+      provider_type: "guarantee",
+      product_name: "유망 예비창업자 사전보증",
+      target: "보증지원 예정 통지일로부터 6개월 이내 사업자등록증을 제출하고 창업할 예정인 예비창업자",
+      region: "대구",
+      business_age_min: 0,
+      business_age_max: null,
+      category: null,
+      owner_age_max: null,
+      loan_limit: 50_000_000,
+      interest_rate: null,
+      guarantee_fee: 0.8,
+      url: "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
+      source_url: "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
+    },
+    metadata: {
+      bank_connection: "unverified",
+      bank_connection_source_url:
+        "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
+      business_registration_required: false,
+      prerequisites: [
+        "창업교육 10시간 이상 이수 또는 컨설팅 2회·10시간 이상 이수 (최근 1년 이내)",
+        "또는 최근 2년 이내 등록된 지식재산권 사업화 예정",
+        "대표자 개인신용평점 NICE 755점 또는 KCB 670점 이상",
+        "보증지원 예정 통지일로부터 6개월 이내 사업자등록증 제출",
+      ],
+      application_steps: [],
+      documents: [],
+      verified_at: "2026-09-18",
+    },
+    status: "prerequisites_needed",
+    reason: "공식 원문에 취급 은행이 명시되지 않음(시중은행 등으로만 표기) — 해당 기관에 직접 확인 필요",
+    unresolved_conditions: [
+      "준비서류는 공식 안내에서 확인 필요",
+      "신청 경로는 공식 안내에서 확인 필요",
+      "적용 금리는 은행·기관 상담에서 확인",
+    ],
+  },
 ];
 
 export async function GET() {

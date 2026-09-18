@@ -54,3 +54,20 @@ def test_optional_inputs_can_be_omitted(monkeypatch):
 
 def test_negative_amount_is_rejected(monkeypatch):
     assert _get(monkeypatch, [_PRODUCT], "external_funding_need=-1&category=cafe").status_code == 422
+
+
+def test_reference_products_are_opt_in(monkeypatch):
+    """§5-2 — 참고자료는 명시적으로 요청할 때만 함께 준다."""
+    product = {
+        **_PRODUCT,
+        "consultation_metadata": {**_PRODUCT["consultation_metadata"], "bank_connection": "unverified"},
+    }
+
+    without = _get(monkeypatch, [product], "external_funding_need=2000000&category=cafe")
+    assert without.json() == []
+
+    with_reference = _get(
+        monkeypatch, [product], "external_funding_need=2000000&category=cafe&include_unverified=true"
+    )
+    (candidate,) = with_reference.json()
+    assert candidate["metadata"]["bank_connection"] == "unverified"

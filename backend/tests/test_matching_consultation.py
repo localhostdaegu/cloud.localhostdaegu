@@ -29,6 +29,10 @@ def _build(products, **kwargs):
     return build_consultation_candidates(products, **{**defaults, **kwargs})
 
 
+def _reference(products, **kwargs):
+    return _build(products, include_unverified=True, **kwargs)
+
+
 def test_unverified_bank_connection_is_not_a_bank_candidate():
     """취급·연계 근거가 없으면 iM뱅크 후보로 안내하지 않는다."""
     assert _build([_product(consultation_metadata={"bank_connection": "unverified"})]) == []
@@ -109,3 +113,63 @@ def test_prerequisites_are_preserved_in_order():
     ])
     assert candidate.metadata["prerequisites"] == ["소진공 확인서 발급", "보증기관 상담"]
     assert candidate.status == "prerequisites_needed"
+
+
+# --- §5-2: unverified 는 은행 후보가 아니라 '관련 기관 참고자료'로만 ------------
+
+
+def test_unverified_products_are_excluded_by_default():
+    """기본 동작은 그대로 — iM뱅크 주 상담 후보에는 들어가지 않는다."""
+    assert _build([_product(consultation_metadata={"bank_connection": "unverified"})]) == []
+
+
+def test_unverified_products_can_be_requested_as_reference():
+    (candidate,) = _build(
+        [_product(consultation_metadata={"bank_connection": "unverified"})], include_unverified=True
+    )
+
+    assert candidate.metadata["bank_connection"] == "unverified"
+    # 취급이 확인된 것처럼 쓰지 않고, 직접 확인이 필요하다고 말한다.
+    assert "직접 확인 필요" in candidate.reason
+    assert "취급으로 확인" not in candidate.reason
+
+
+def test_reference_listing_still_excludes_products_with_no_bank_route():
+    """'none'은 은행 취급 자체가 없다고 확인된 것 — 참고자료에도 넣지 않는다."""
+    assert _build(
+        [_product(consultation_metadata={"bank_connection": "none"})], include_unverified=True
+    ) == []
+
+
+def test_reference_listing_keeps_bank_candidates_first():
+    candidates = _build(
+        [
+            _product(product_id="ref", consultation_metadata={"bank_connection": "unverified"}),
+            _product(product_id="bank", consultation_metadata={"bank_connection": "direct"}),
+        ],
+        include_unverified=True,
+    )
+
+    assert [c.product["product_id"] for c in candidates] == ["bank", "ref"]
+
+
+def test_reference_listing_applies_the_same_eligibility_conditions():
+    """참고자료라고 자격 조건을 느슨하게 보지 않는다."""
+    too_old = _product(owner_age_max=39, consultation_metadata={"bank_connection": "unverified"})
+
+    assert _build([too_old], owner_age=45, include_unverified=True) == []
+
+
+def test_unchecked_product_says_it_was_never_checked():
+    """원문을 아직 안 본 것과, 보았는데 은행 명시가 없던 것은 다르다."""
+    (candidate,) = _reference([{**_BASE}])  # consultation_metadata 자체가 없다
+
+    assert "아직 확인하지 못" in candidate.reason
+
+
+def test_checked_but_unnamed_bank_says_so():
+    (candidate,) = _reference(
+        [_product(consultation_metadata={"bank_connection": "unverified", "verified_at": "2026-09-18"})]
+    )
+
+    assert "취급 은행이 명시되지 않" in candidate.reason

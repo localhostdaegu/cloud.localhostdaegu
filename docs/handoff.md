@@ -21,7 +21,7 @@
 | 신규 활용신청 5종 적재 | 📋 미착수 (§4-2) |
 | 백엔드 최종 리뷰·브랜치 정리 | ✅ 9/18 최종 리뷰(d62089e..7d4d264, 영역 A·B·C 분할) → 중요 이슈 수정 3그룹 병합·재리뷰 통과, 실서버 재시작 후 funnel·analysis E2E PASS. `main` fast-forward 병합·푸시 완료(9/18, `84385ee`) — devlog 2026-09-18 |
 | **DB 스키마 19 → 29테이블** | ✅ 9/18 — 금융상품 4·외부 데이터셋/지표 2·상담 4 신규(alembic `b93358fab70e`, additive only). 전체 pytest **392 passed/1 skipped**. ERD 문서 `docs/erd.md` 신규. ⚠️ **테스트 DB에서만 검증** — 개발 DB(5437)는 `66a23fb0c6e9`·20테이블 그대로. `external_dataset`·`regional_indicator`는 빈 테이블(센터 데이터 미확보), 상담 API는 프론트 미연결(`sessionStorage` 유지) |
-| **창업자금 사전상담 전환 (T1~T6)** | ✅ 9/18 — 전환계획 T1·T2·T3·T4·T5 + 신설 T3-0 구현. 백엔드 **433 passed/1 skipped**, 프론트 **163 passed/37 files**, tsc clean, `npm run build` 성공. funnel E2E 실백엔드 전 구간 PASS. ⚠️ **상품 12건 중 원문 근거 확인은 3건**(대구신보 사이트 TLS 인증서 오류로 9건 미확인), `consultation_*` 4테이블은 여전히 프론트 미연결 |
+| **창업자금 사전상담 전환 (T1~T7)** | ✅ 9/18 — 전환계획 T1~T5 + 신설 T3-0·T7 구현. 백엔드 **441 passed/1 skipped**, 프론트 **184 passed/39 files**, tsc clean, `npm run build` 성공. funnel·analysis E2E 실백엔드 전 구간 PASS. ⚠️ **iM뱅크 상담 후보는 12건 중 3건뿐**이다 — 대구신보 4건은 원문을 확인했으나 취급은행에 iM뱅크 명시가 없어 '관련 기관 참고자료'로만 표시한다(§5-2). 나머지 5건은 원문 미대조 |
 | 제출물 (제안요약서·시연 영상·배포·서류) | 📋 미착수 — 참가신청서 `docs/application_form.md` 9/18 개정(미검증 단정 제거·미구현 명시) |
 
 크론(crontab, 로그 `logs/*.log`): news 매시 10분 · store 04:20 · funding 05:10 · rag-indexer 05:30 · 금리/rent 월요일 05:20
@@ -81,7 +81,8 @@ node frontend/tests/funnel.cjs               # E2E (mock 기준) PASS 기대
 
 ### 0-2-3. 9/18 사전상담 전환(T1~T6) 이후 남은 것
 
-1. **대구신보 원문 대조 9건** — `dgsinbo.or.kr`이 TLS 인증서 체인 검증 실패(`unable to verify the first certificate`)로 자동 접근이 안 된다. 브라우저 수동 확인 등 다른 경로가 필요하다. 그때까지 재단 5건·정책자금 4건은 미확인이라 iM뱅크 상담 후보에 나오지 않는다. 근거·한계는 `docs/research/finance-products/2026-09-18-consultation-sources.md`.
+1. **원문 대조 — 12건 중 7건 완료, 5건 남음.** `dgsinbo.or.kr` TLS 문제는 해결했다(서버가 중간 인증서를 안 보내는 설정 오류 → 발급자 AIA 로 중간 인증서를 받아 체인 보충. `--insecure` 미사용, 재현 절차는 조사 문서 §0). 재단 4건을 대조한 결과 **취급은행이 "시중은행"·"출연 금융기관"으로만 적혀 있어 iM뱅크 명시가 없었다** — 확인 못 한 게 아니라 확인했는데 은행이 안 적혀 있다. 그래서 iM뱅크 상담 후보는 여전히 3건이다. 남은 5건: dgsinbo-5, youth-1~4. 근거·한계는 `docs/research/finance-products/2026-09-18-consultation-sources.md`.
+   - **후속 실무 과제**: 재단 4건의 실제 취급은행 목록을 재단에 문의한다. iM뱅크가 포함되면 `linked`로 올릴 수 있고, 특히 dgsinbo-3(유망 예비창업자 사전보증)은 우리 주 사용자가 사업자등록 전에 신청 가능한 유일하게 확인된 상품이라 은행 후보로 올라가면 동선이 크게 좋아진다.
 2. ~~**`consultation_*` 4테이블 미연결(T7 미실행)**~~ → **2026-09-18 배선 완료.** 상담자료를 만들 때(`/analysis` 제출) 세션과 두 계획안을 서버에 기록한다. **화면 상태의 정본은 여전히 `sessionStorage`이고**(§5-3 유지) 서버 기록은 감사·재현용 스냅샷이다 — 리포트는 이 값을 읽지 않고 13필드로 다시 계산한다. 저장 실패는 삼켜서 상담자료 생성을 막지 않는다. 남은 것: 세션의 `selected_plan_kind`·`change_reason`을 나중에 고치려면 세션 갱신 엔드포인트가 필요하다(현재는 생성 시점 값으로 고정). `consultation_note`·`consultation_document` 2테이블은 여전히 미사용.
 3. **블록체인 앵커링** — 사용자 결정으로 이번 범위에서 제외했다. `consultation_document.content_hash`는 여전히 미사용.
 4. **'유효한 0원'과 '미입력' 구분** — 폼에서 미구현이라 `open_questions`에 '미입력' 항목을 만들지 않았다. 없는 근거를 만들지 않기 위한 선택이며, 구분을 구현하면 확인 목록이 더 정확해진다.

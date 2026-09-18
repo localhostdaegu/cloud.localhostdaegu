@@ -14,7 +14,16 @@
     "interest_rate": null,
     "guarantee_fee": 0.9,
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=35",
-    "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=35"
+    "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=35",
+    "consultation_metadata": {
+      "bank_connection": "unverified",
+      "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=35",
+      "business_registration_required": null,
+      "prerequisites": [],
+      "application_steps": [],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "dgsinbo-2",
@@ -31,7 +40,18 @@
     "interest_rate": null,
     "guarantee_fee": 0.9,
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=36",
-    "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=36"
+    "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=36",
+    "consultation_metadata": {
+      "bank_connection": "unverified",
+      "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=36",
+      "business_registration_required": null,
+      "prerequisites": [
+        "전통시장·상점가·골목형상점가·상권활성화구역 등에 사업장 소재"
+      ],
+      "application_steps": [],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "dgsinbo-3",
@@ -48,7 +68,21 @@
     "interest_rate": null,
     "guarantee_fee": 0.8,
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
-    "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5"
+    "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
+    "consultation_metadata": {
+      "bank_connection": "unverified",
+      "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
+      "business_registration_required": false,
+      "prerequisites": [
+        "창업교육 10시간 이상 이수 또는 컨설팅 2회·10시간 이상 이수 (최근 1년 이내)",
+        "또는 최근 2년 이내 등록된 지식재산권 사업화 예정",
+        "대표자 개인신용평점 NICE 755점 또는 KCB 670점 이상",
+        "보증지원 예정 통지일로부터 6개월 이내 사업자등록증 제출"
+      ],
+      "application_steps": [],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "dgsinbo-4",
@@ -65,7 +99,16 @@
     "interest_rate": null,
     "guarantee_fee": 0.9,
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=30",
-    "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=30"
+    "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=30",
+    "consultation_metadata": {
+      "bank_connection": "unverified",
+      "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=30",
+      "business_registration_required": true,
+      "prerequisites": [],
+      "application_steps": [],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "dgsinbo-5",
