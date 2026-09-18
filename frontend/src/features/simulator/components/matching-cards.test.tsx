@@ -13,65 +13,86 @@ function renderWithClient(ui: React.ReactElement) {
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
 }
 
-it("빈 배열 응답이면 '조건에 맞는 상품을 찾지 못했어요' 문구를 보여준다", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => new Response(JSON.stringify([]), { status: 200 })),
+const CANDIDATE = {
+  product: {
+    product_id: "imbank-1",
+    provider: "iM뱅크",
+    provider_type: "bank",
+    product_name: "소상공인시장진흥공단 정책자금 (운전자금)",
+    loan_limit: 100_000_000,
+    interest_rate: null,
+    url: "https://www.imbank.co.kr/example",
+  },
+  metadata: {
+    bank_connection: "direct",
+    bank_connection_source_url: "https://www.imbank.co.kr/example",
+    business_registration_required: null,
+    prerequisites: ["소진공 정책자금 지원대상 확인서 발급"],
+    application_steps: ["은행 영업점에 확인서 제출"],
+    documents: [],
+    verified_at: "2026-09-18",
+  },
+  status: "prerequisites_needed",
+  reason: "iM뱅크 직접 취급으로 확인됨",
+  unresolved_conditions: ["준비서류는 공식 안내에서 확인 필요"],
+};
+
+const stub = (body: unknown) =>
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })));
+
+it("후보가 없으면 일반 상담 경로와 질문을 남긴다 — 조건만 바꾸라고 하지 않는다", async () => {
+  stub([]);
+
+  renderWithClient(<MatchingCards externalFundingNeed={20_000_000} category="cafe" />);
+
+  await waitFor(() =>
+    expect(screen.getByText(/iM뱅크 취급이 확인된 상품을 찾지 못했어요/)).toBeInTheDocument(),
   );
-
-  renderWithClient(<MatchingCards fundingGap={20_000_000} category="cafe" />);
-
-  await waitFor(() => expect(screen.getByText(/조건에 맞는 상품을 찾지 못했어요/)).toBeInTheDocument());
+  expect(screen.getByRole("link", { name: /iM뱅크 공식 상담 안내/ })).toBeInTheDocument();
+  expect(screen.getByText(/현재 창업 단계에서 상담 가능한 자금/)).toBeInTheDocument();
 });
 
-it("category 미지정이어도 요청 URL에 category 파라미터가 항상 포함된다 (백엔드 필수 파라미터)", async () => {
-  const fetchMock = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
+it("후보의 연결 근거·선행 절차·미확인 조건을 함께 보여준다", async () => {
+  stub([CANDIDATE]);
+
+  renderWithClient(<MatchingCards externalFundingNeed={20_000_000} category="cafe" />);
+
+  await waitFor(() => expect(screen.getByText(/소상공인시장진흥공단 정책자금/)).toBeInTheDocument());
+  expect(screen.getByText("iM뱅크 직접 취급으로 확인됨")).toBeInTheDocument();
+  expect(screen.getByText(/소진공 정책자금 지원대상 확인서 발급/)).toBeInTheDocument();
+  expect(screen.getByText(/은행 영업점에 확인서 제출/)).toBeInTheDocument();
+  expect(screen.getByText(/준비서류는 공식 안내에서 확인 필요/)).toBeInTheDocument();
+  expect(screen.getByText(/2026-09-18 확인/)).toBeInTheDocument();
+});
+
+it("선행 절차가 남은 후보임을 표시한다 — 신청 완료처럼 보이지 않게", async () => {
+  stub([CANDIDATE]);
+
+  renderWithClient(<MatchingCards externalFundingNeed={20_000_000} category="cafe" />);
+
+  await waitFor(() => expect(screen.getByText("선행 절차 필요")).toBeInTheDocument());
+});
+
+it("상담 정보를 쿼리에 실어 보내고, 미입력 값은 생략한다", async () => {
+  const fetchMock = vi.fn(async () => new Response("[]", { status: 200 }));
   vi.stubGlobal("fetch", fetchMock);
 
-  renderWithClient(<MatchingCards fundingGap={20_000_000} />);
+  renderWithClient(
+    <MatchingCards externalFundingNeed={2_000_000} category="cafe" businessRegistered={false} ownerAge={null} />,
+  );
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-  const requestedUrl = String(fetchMock.mock.calls[0][0]);
-  expect(requestedUrl).toContain("category=");
+  const url = String(fetchMock.mock.calls[0][0]);
+  expect(url).toContain("/matching/consultation?");
+  expect(url).toContain("external_funding_need=2000000");
+  expect(url).toContain("business_registered=false");
+  expect(url).not.toContain("owner_age");
 });
 
-function product(overrides: Record<string, unknown>) {
-  return {
-    product_id: "dgsinbo-1",
-    provider: "대구신용보증재단",
-    provider_type: "guarantee",
-    product_name: "대구형 창업·성장 플러스 특별보증",
-    target: "",
-    region: "대구광역시",
-    business_age_min: 0,
-    business_age_max: null,
-    category: null,
-    owner_age_max: null,
-    loan_limit: 100_000_000,
-    interest_rate: 2.5,
-    guarantee_fee: 0.9,
-    url: "https://example.com",
-    source_url: "https://example.com",
-    ...overrides,
-  };
-}
+it("조회 실패는 계산 실패와 구분해 알린다", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 500 })));
 
-it("금리가 null이면 '은행별 상이'로 표시하고 카드 어디에도 'null'이 찍히지 않는다", async () => {
-  const body = [product({ interest_rate: null, guarantee_fee: null, loan_limit: null })];
-  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })));
+  renderWithClient(<MatchingCards externalFundingNeed={20_000_000} category="cafe" />);
 
-  const { container } = renderWithClient(<MatchingCards fundingGap={20_000_000} category="cafe" />);
-
-  await waitFor(() => expect(screen.getByText(/은행별 상이/)).toBeInTheDocument());
-  expect(screen.getByText(/한도 미정/)).toBeInTheDocument();
-  expect(container.textContent).not.toMatch(/null/);
-});
-
-it("금리 수치가 있으면 '금리 N%'로 표시한다", async () => {
-  const body = [product({ interest_rate: 2.5 })];
-  vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })));
-
-  renderWithClient(<MatchingCards fundingGap={20_000_000} category="cafe" />);
-
-  await waitFor(() => expect(screen.getByText(/금리 2\.5%/)).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/상담 후보를 불러오지 못했습니다/));
 });

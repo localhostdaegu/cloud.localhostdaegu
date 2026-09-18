@@ -105,6 +105,7 @@ export function SimulatorPage() {
             result={plan.result}
             input={plan.input}
             category={industry ?? undefined}
+            profile={draft.profile}
             backHref={`/simulate?${searchParams.toString()}`}
             analysisHref={analysisHref}
           />

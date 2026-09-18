@@ -160,3 +160,22 @@ export interface LatestRate {
   value_percent: number; // 연%
   value_ratio: number; // 비율 — FinanceInput.loan_rate 단위
 }
+
+/** 전환계획 §5-2 — GET /matching/consultation 응답. 자격 확정이 아니다. */
+export interface ConsultationProductMetadata {
+  bank_connection: "direct" | "linked" | "unverified" | "none";
+  bank_connection_source_url: string | null;
+  business_registration_required: boolean | null;
+  prerequisites: string[];
+  application_steps: string[];
+  documents: string[];
+  verified_at: string | null;
+}
+
+export interface ConsultationCandidate {
+  product: MatchingProduct;
+  metadata: ConsultationProductMetadata;
+  status: "reviewable" | "prerequisites_needed" | "needs_check";
+  reason: string;
+  unresolved_conditions: string[];
+}

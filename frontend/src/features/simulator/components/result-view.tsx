@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ConsultationFinanceOutput, FinanceInput } from "@/shared/api/types";
+import type { ConsultationProfile } from "../lib/consultation-draft";
 import { formatKrw } from "@/shared/format";
 import { MatchingCards } from "./matching-cards";
 
@@ -11,6 +12,8 @@ interface ResultViewProps {
   /** 결론을 만든 제출값 — 미확보 희망대출을 결과와 함께 보여주기 위해 필요하다(§7-2). */
   input: FinanceInput;
   category?: string;
+  /** 창업 단계 — 상담 후보 조회 조건. 미입력은 쿼리에서 생략된다(§5-2). */
+  profile?: ConsultationProfile;
   /** 루프백(⑤) — "조건 바꿔보기" 링크. 시뮬레이터 폼으로 복귀. */
   backHref?: string;
   /** 상담 준비 CTA — 선택안을 실어 /analysis로 이동. 없으면 링크를 그리지 않는다. */
@@ -26,7 +29,14 @@ const SUMMARY_ITEMS: { key: "bep_revenue" | "total_required_funds" | "external_f
 
 /** 결론 화면 — 요약 스트립 → 3시나리오 → 자금 구성 → 상담 후보 → 루프백·상담 준비.
  *  MatchingCards는 react-query를 쓰므로, 페이지 전역 Provider 없이도 단독 렌더될 수 있도록 자체 QueryClient를 둔다. */
-export function ResultView({ result, input, category, backHref = "/simulate", analysisHref }: ResultViewProps) {
+export function ResultView({
+  result,
+  input,
+  category,
+  profile,
+  backHref = "/simulate",
+  analysisHref,
+}: ResultViewProps) {
   const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
   const needsFunding = result.external_funding_need > 0;
 
@@ -85,10 +95,14 @@ export function ResultView({ result, input, category, backHref = "/simulate", an
                 {formatKrw(result.funding_gap)}입니다.
               </p>
             )}
-            {/* 백엔드 파라미터 이름은 funding_gap 이지만, 상담 주제가 되는 금액은 조달 필요액이다.
-                이름 통일은 T4 범위 — 여기서는 보내는 값만 맞춘다. */}
             <QueryClientProvider client={client}>
-              <MatchingCards fundingGap={result.external_funding_need} category={category} />
+              <MatchingCards
+                externalFundingNeed={result.external_funding_need}
+                category={category}
+                businessRegistered={profile?.business_registered === "unknown" ? null : profile?.business_registered}
+                businessAgeMonths={profile?.business_age_months}
+                ownerAge={profile?.owner_age}
+              />
             </QueryClientProvider>
           </>
         ) : (

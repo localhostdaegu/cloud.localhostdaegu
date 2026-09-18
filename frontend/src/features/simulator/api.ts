@@ -1,5 +1,11 @@
 import { apiGet, apiPost } from "@/shared/api/client";
-import type { ConsultationFinanceOutput, FinanceInput, LatestRate, MatchingProduct } from "@/shared/api/types";
+import type {
+  ConsultationCandidate,
+  ConsultationFinanceOutput,
+  FinanceInput,
+  LatestRate,
+  MatchingProduct,
+} from "@/shared/api/types";
 
 export function simulateFinance(payload: FinanceInput): Promise<ConsultationFinanceOutput> {
   return apiPost<ConsultationFinanceOutput>("/finance/simulate", payload);
@@ -20,4 +26,26 @@ export function fetchMatching(fundingGap: number, category?: string): Promise<Ma
   });
   params.set("category", category ?? "");
   return apiGet<MatchingProduct[]>(`/matching?${params.toString()}`);
+}
+
+
+export interface ConsultationQuery {
+  externalFundingNeed: number;
+  category?: string;
+  businessRegistered?: boolean | null;
+  businessAgeMonths?: number | null;
+  ownerAge?: number | null;
+}
+
+/** GET /matching/consultation — 미입력 값은 쿼리에서 생략한다.
+ *  생략을 '해당 없음'으로 바꾸면 백엔드가 자격 판정을 잘못하게 된다(§5-2). */
+export function fetchConsultationCandidates(query: ConsultationQuery): Promise<ConsultationCandidate[]> {
+  const params = new URLSearchParams({
+    external_funding_need: String(query.externalFundingNeed),
+    category: query.category ?? "",
+  });
+  if (query.businessRegistered != null) params.set("business_registered", String(query.businessRegistered));
+  if (query.businessAgeMonths != null) params.set("business_age_months", String(query.businessAgeMonths));
+  if (query.ownerAge != null) params.set("owner_age", String(query.ownerAge));
+  return apiGet<ConsultationCandidate[]>(`/matching/consultation?${params.toString()}`);
 }
