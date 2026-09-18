@@ -19,7 +19,7 @@ def main() -> None:
     parser.add_argument(
         "--provider",
         default="gemini",
-        choices=["fp16", "ollama", "gemini"],
+        choices=["fp16", "ollama", "bge-m3", "gemini"],
         help="색인 임베더 (기본: gemini)",
     )
     args = parser.parse_args()

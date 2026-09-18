@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     vworld_service_domain: str = "beyondfacade.cloud"
     gemini_api_key: str = ""
     gemini_report_model: str = "gemini-3.8-flash"  # AI 리포트 생성 모델 — 환경변수 GEMINI_REPORT_MODEL 로 교체
+    # 리포트 작성기 경로 — gemini(온라인) | ollama(오프라인). 오프라인 모델은 docs/model-evaluation.md 로 고른다.
+    report_writer_provider: str = "gemini"
+    ollama_report_model: str = "gemma4:12b"
     region: str = "daegu"
     # 배포 오리진 — 쉼표 구분. 예: https://localhostdaegu.cloud,https://www.localhostdaegu.cloud
     cors_allow_origins: str = ""

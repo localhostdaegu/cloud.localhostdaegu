@@ -92,3 +92,25 @@ def test_caching_proxy_reads_files_only_once():
     second = proxy.geojson()
     assert first is second
     assert reader.read_count == 1
+
+
+def test_caching_proxy_forwards_year_to_summary():
+    """year 가 프록시에서 끊기면 지도 선택 연도가 리포트에 전달되지 않는다(2026-09-18 하네스에서 발견한 TypeError)."""
+    from apps.master.app.use_cases.region_use_case_proxy import CachingRegionUseCaseProxy
+
+    class _Inner:
+        calls = []
+
+        def myself(self):
+            raise NotImplementedError
+
+        def geojson(self):
+            raise NotImplementedError
+
+        def summary(self, region_code, industry_id, year=None):
+            self.calls.append((region_code, industry_id, year))
+            return "dto"
+
+    inner = _Inner()
+    assert CachingRegionUseCaseProxy(inner).summary("2711059500", "cafe", 2025) == "dto"
+    assert inner.calls == [("2711059500", "cafe", 2025)]

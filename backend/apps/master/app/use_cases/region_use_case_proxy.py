@@ -17,5 +17,7 @@ class CachingRegionUseCaseProxy(RegionUseCase):
             self._geojson = self._inner.geojson()
         return self._geojson
 
-    def summary(self, region_code: str, industry_id: str) -> RegionSummaryDto:
-        return self._inner.summary(region_code, industry_id)  # 지표는 일 배치 갱신 — 캐시 없음
+    def summary(
+        self, region_code: str, industry_id: str, year: int | None = None
+    ) -> RegionSummaryDto:
+        return self._inner.summary(region_code, industry_id, year)  # 지표는 일 배치 갱신 — 캐시 없음

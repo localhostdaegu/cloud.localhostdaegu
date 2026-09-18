@@ -264,6 +264,7 @@ cd frontend && npm run dev &                              # :3300 (브라우저 
 - 저장소: `부트캠프 과제.pdf`(1.2MB) 커밋에 포함됨 — 제출 저장소 정리 시 제거 검토
 - 9/17 해결분(참고): 온통청년 간헐 400/403/500 → 재시도 + 전국 1회 조회·대구(군위 포함) 필터 / 크론 로그 `exit 0` 오표기 수정 / "신규 만료 22건" 반복 = 테스트가 개발 DB 오염 → 테스트 DB 분리 / 프론트 브이월드 키는 새 키와 동일 확인(9/16 미결 해소)
 - 팀 구성(1~4인)·참가신청서 — 기획서 §10 미결 2
+- **오프라인·온라인 가용성(9/18)**: 임베딩은 로컬 3종·외부 6종, 리포트 LLM은 로컬 3종·외부 1종 전부 평가 완료 — 로컬 대체는 qwen3-embedding:4b@2560(Top-1 0.762, Gemini 0.700~0.738)·gemma4:12b(게이트 1.000, Gemini와 동일). 임베딩+LLM 동주 11.6 GiB 확인. 기록 `docs/model-evaluation.md`. 이월: ① 오프라인 전환에 `rag_chunk.embedding` 2560 마이그레이션 + 전량 재색인 + 임베딩 provider 환경변수화 필요(LLM은 `REPORT_WRITER_PROVIDER=ollama`로 전환 가능) ② 평가셋 80건 검수(candidate→confirmed) ③ 자동 폴백 미설계(수동 전환) ④ 하네스가 찾은 운영 버그(`CachingRegionUseCaseProxy` year 누락)는 수정 완료
 
 ## 6. 제출 체크리스트 (기획서 §11 — D-1)
 
@@ -286,6 +287,7 @@ cd frontend && npm run dev &                              # :3300 (브라우저 
 | 백엔드 계획서 | `docs/superpowers/plans/2026-09-15-daegu-backend-port.md` |
 | **ERD (29테이블·엣지·역정규화 근거)** | `docs/erd.md` |
 | 스키마 마이그레이션 설계 확정안 | `docs/superpowers/specs/2026-09-18-schema-migration-design.md` |
+| **모델 평가 — 오프라인·온라인 가용성(임베딩·LLM)** | `docs/model-evaluation.md` · 하네스 `backend/apps/rag/adapter/inbound/cli/compare_embedders.py`·`backend/apps/analysis/adapter/inbound/cli/compare_report_writers.py` · 결과 `data/eval/results/{embed,llm}_compare_*.json`(git 미추적) |
 | 프론트 계획서 (실행 완료) | `docs/superpowers/plans/2026-09-15-daegu-frontend.md` |
 | 태스크 브리프·리포트 (백엔드 4·5·10) | `.superpowers/sdd/2026-09-15-daegu-backend-port/task-{4,5}-brief.md` |
 | SDD 스크립트 | `.claude/skills/subagent-driven-development/scripts/{task-brief,review-package,sdd-workspace}` |

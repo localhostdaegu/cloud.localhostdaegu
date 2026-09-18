@@ -138,3 +138,80 @@ def test_gemini_adapter_logger_uses_project_namespace():
     from apps.rag.adapter.outbound.embeddings.gemini_embedding_adapter import LOGGER
 
     assert LOGGER.name == "localhostdaegu.rag.embedding"
+
+
+# ---------- 차원 지정·bge-m3 어댑터 (로컬/외부 임베더 비교 평가용) ----------
+
+
+def test_qwen_adapter_accepts_native_2560_dimensions():
+    """OllamaQwen3EmbeddingAdapter(dimensions=2560): 요청 바디 dimensions·model_name 접미사."""
+    captured = []
+
+    def handler(request):
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json={"embeddings": [[1.0] + [0.0] * 2559]})
+
+    adapter = OllamaQwen3EmbeddingAdapter(dimensions=2560, transport=httpx.MockTransport(handler))
+    vec = adapter.embed_documents(["문서"])[0]
+    assert captured[0]["dimensions"] == 2560
+    assert len(vec) == 2560
+    assert adapter.model_name == "qwen3-embedding-4b-q4-2560d"
+
+
+def test_qwen_adapter_default_model_name_is_unchanged():
+    """기본 1536은 기존 DB embedded_by 값과 같아야 한다 (호환성)."""
+    adapter = OllamaQwen3EmbeddingAdapter(transport=_transport([]))
+    assert adapter.model_name == "qwen3-embedding-4b-q4"
+
+
+def test_bge_m3_adapter_sends_no_prefix_and_no_dimensions():
+    """bge-m3는 1024 고정·instruct 프리픽스 없음 — dimensions 키를 보내지 않는다."""
+    from apps.rag.adapter.outbound.embeddings.ollama_bge_m3_adapter import (
+        OllamaBgeM3EmbeddingAdapter,
+    )
+
+    captured = []
+
+    def handler(request):
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json={"embeddings": [[3.0, 4.0] + [0.0] * 1022]})
+
+    adapter = OllamaBgeM3EmbeddingAdapter(transport=httpx.MockTransport(handler))
+    vec = adapter.embed_query("카페 지원")
+    assert captured[0]["model"] == "bge-m3"
+    assert captured[0]["input"] == ["카페 지원"]
+    assert "dimensions" not in captured[0]
+    assert len(vec) == 1024
+    assert abs(sum(v * v for v in vec) - 1.0) < 1e-6
+    assert adapter.model_name == "bge-m3"
+    assert adapter.provider == "ollama"
+
+
+def test_gemini_adapter_output_dimensionality_is_configurable(monkeypatch):
+    """GeminiEmbeddingAdapter(output_dimensionality=2560): config 전달·model_name 접미사."""
+    from apps.rag.adapter.outbound.embeddings.gemini_embedding_adapter import GeminiEmbeddingAdapter
+
+    adapter = GeminiEmbeddingAdapter(api_key="test-key", output_dimensionality=2560)
+    configs, models = [], []
+
+    def fake_embed_content(model, contents, config):
+        configs.append(config)
+        models.append(model)
+        return _FakeEmbedResult(len(contents))
+
+    monkeypatch.setattr(adapter._client.models, "embed_content", fake_embed_content)
+    adapter.embed_query("질의")
+    assert configs[0].output_dimensionality == 2560
+    assert models[0] == "gemini-embedding-001"  # API 모델 ID에는 차원 접미사가 붙으면 안 된다
+    assert adapter.model_name == "gemini-embedding-001-2560d"
+    assert GeminiEmbeddingAdapter(api_key="test-key").model_name == "gemini-embedding-001"
+
+
+def test_registry_exposes_bge_m3_provider():
+    """레지스트리에 bge-m3가 등록돼 provider 문자열로 고를 수 있다."""
+    from apps.rag.adapter.outbound.embeddings.ollama_bge_m3_adapter import (
+        OllamaBgeM3EmbeddingAdapter,
+    )
+    from apps.rag.dependencies.rag_dependencies import _INDEX_EMBEDDER_REGISTRY
+
+    assert _INDEX_EMBEDDER_REGISTRY["bge-m3"] is OllamaBgeM3EmbeddingAdapter

@@ -32,13 +32,19 @@ class GeminiEmbeddingAdapter(EmbeddingPort):
     MODEL_NAME = "gemini-embedding-001"
     PROVIDER = "gemini"
 
-    def __init__(self, api_key: str | None = None) -> None:
+    def __init__(
+        self, api_key: str | None = None, output_dimensionality: int = EMBEDDING_DIM
+    ) -> None:
         self._client = genai.Client(api_key=api_key or get_settings().gemini_api_key)
+        # gemini-embedding-001은 MRL: 지정 차원 벡터 == 3072 벡터의 앞부분(2026-09-18 실측 cos 1.0)
+        self._output_dimensionality = output_dimensionality
 
     @property
     def model_name(self) -> str:
-        """모델명."""
-        return self.MODEL_NAME
+        """모델명 — 기본 차원이 아니면 접미사로 차원을 밝힌다 (embedded_by 혼용 차단)."""
+        if self._output_dimensionality == EMBEDDING_DIM:
+            return self.MODEL_NAME
+        return f"{self.MODEL_NAME}-{self._output_dimensionality}d"
 
     @property
     def provider(self) -> str:
@@ -60,11 +66,11 @@ class GeminiEmbeddingAdapter(EmbeddingPort):
         while True:
             try:
                 return self._client.models.embed_content(
-                    model=self.model_name,
+                    model=self.MODEL_NAME,  # API 모델 ID — 차원 접미사가 붙는 model_name과 구분
                     contents=batch,
                     config=types.EmbedContentConfig(
                         task_type=task_type,
-                        output_dimensionality=EMBEDDING_DIM,
+                        output_dimensionality=self._output_dimensionality,
                     ),
                 )
             except errors.ClientError as exc:

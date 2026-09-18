@@ -9,6 +9,9 @@ from apps.rag.adapter.outbound.embeddings.fp16_qwen3_adapter import Fp16Qwen3Emb
 from apps.rag.adapter.outbound.embeddings.gemini_embedding_adapter import (
     GeminiEmbeddingAdapter,
 )
+from apps.rag.adapter.outbound.embeddings.ollama_bge_m3_adapter import (
+    OllamaBgeM3EmbeddingAdapter,
+)
 from apps.rag.adapter.outbound.embeddings.ollama_qwen3_adapter import (
     OllamaQwen3EmbeddingAdapter,
 )
@@ -24,6 +27,7 @@ from apps.rag.app.use_cases.rag_interactor import RagIndexInteractor, RagSearchI
 _INDEX_EMBEDDER_REGISTRY = {
     "fp16": Fp16Qwen3EmbeddingAdapter,
     "ollama": OllamaQwen3EmbeddingAdapter,
+    "bge-m3": OllamaBgeM3EmbeddingAdapter,
     "gemini": GeminiEmbeddingAdapter,
 }
 

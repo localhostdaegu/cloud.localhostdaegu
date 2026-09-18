@@ -86,7 +86,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--evalset", default="data/eval/rag_evalset.jsonl")
     parser.add_argument(
-        "--provider", default="gemini", choices=["ollama", "fp16", "gemini"]
+        "--provider", default="gemini", choices=["ollama", "bge-m3", "fp16", "gemini"]
     )
     args = parser.parse_args()
 

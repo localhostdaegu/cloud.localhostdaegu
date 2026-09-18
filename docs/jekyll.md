@@ -6,6 +6,31 @@
 
 ## 2026-09-18
 
+### 모델 평가 — 로컬 임베딩(bge-m3·qwen3-embedding) 대 Gemini (오프라인·온라인 가용성)
+
+서비스가 온라인(외부 API)·오프라인(로컬) 어느 쪽으로도 응대해야 하므로, 두 경로를 같은 코퍼스·질문으로 **모두** 평가했다는 기록이 필요했다. 로컬 3종·외부 6종 전부 실행. 기록은 `docs/model-evaluation.md`(선행 프로젝트 research.remakeday.com/experiments/model-selection 과 같은 틀).
+
+- **어댑터**: Ollama 공통 베이스(Template Method) 위에 qwen(차원 인자)·bge-m3 어댑터, Gemini 어댑터에 `output_dimensionality`. 기본 차원이면 `model_name`이 기존 값 그대로라 DB `embedded_by` 호환, 다른 차원이면 `-2560d` 접미사. 레지스트리에 `bge-m3` 등록. **회귀 1건**: 접미사 붙은 `model_name`이 API 호출에도 나가 404 — API 모델 ID를 상수로 분리하고 테스트에 고정.
+- **평가셋**: gemma4:12b로 funding 60·news 20 질문 생성(전부 candidate, 미검수). gemma4는 thinking 모델이라 질문 1건 25초 → `think:false`로 0.9초. 생성기에 `--source-type`·think 차단 추가.
+- **하네스** `compare_embedders.py`: DB 컬럼이 `vector(1536)` 고정이라 1024·2560은 저장 불가 → DB 밖 numpy 코사인. Gemini는 MRL 실측(절단+정규화와 코사인 1.0)을 근거로 3072만 호출하고 나머지 차원은 잘라 만듦.
+- **실측(80건)**: Top-1 qwen@2560 **0.762** > gemini@1024 0.738 > gemini@1536(현 운영) 0.713 > gemini@3072 0.700 > bge-m3 0.650. 질문 단위로 qwen만 맞힘 8 / Gemini만 3. 로컬↔Gemini Top-1 일치 0.71·Jaccard@5 0.45 — **정확도는 동급이어도 근거 문서 절반은 다르다.** 질문 지연 로컬 94~118 ms 대 Gemini 394 ms.
+- **같은 차원 실호출**: 사용자 요구로 Gemini 1024·2560을 API에 직접 지정해 전량 재임베딩(`gemini-api@*`). 절단 파생과 순위 완전 일치(일치·Jaccard·ρ 1.000) — 같은 차원 비교가 절단 여부와 무관하게 성립.
+- **결론**: 로컬 대체는 qwen@2560, bge-m3 탈락. 운영 전환은 마감 뒤(컬럼 2560 마이그레이션 + 전량 재색인 + provider 설정화). 
+- **미결**: ① 평가셋 80건 검수·confirmed 승격. ② news 질문은 제목 기반이라 포괄적 — 모든 모델 Top-1 0.35~0.50, 본문 기반으로 다시 만들어야 함.
+
+### 모델 평가 — 리포트 LLM 로컬 3종(gemma4·exaone·kanana) 대 gemini-3.8-flash
+
+로컬 후보는 한국어 적합성과 오프라인에서 임베딩(qwen 4.1 GiB)과 LLM을 16 GB GPU에 동시에 올려야 하는 자원 한계로 골랐다. exaone은 NC 라이선스라 운영 후보가 아니지만 한국어 모델 중 평가 기준점으로 가장 좋아 잣대로 넣었다(모두 사용자 결정). 기록 `docs/model-evaluation.md` §10.
+
+- **어댑터**: `OllamaReportWriter`(ReportWriterPort, Gemini와 같은 temperature 0.3·1024토큰·`think:false`) 신설. `analysis_dependencies`에 작성기 레지스트리(gemini/ollama)와 설정 `REPORT_WRITER_PROVIDER`·`OLLAMA_REPORT_MODEL`. 에이전트 배선을 `build_agents()`로 빼서 하네스가 운영과 같은 배선으로 컨텍스트를 채운다.
+- **운영 버그 1건 발견·수정**: 하네스가 운영 에이전트를 돌리자 `CachingRegionUseCaseProxy.summary()`가 `year`를 받지 않아 TypeError. 09-18 연도 전달 작업에서 프록시가 빠져 있었다 — 운영에서는 예외를 삼켜 market 섹션이 비어 나갔을 것. 프록시 수정 + 테스트 고정.
+- **하네스** `compare_report_writers.py`: 실제 DB 컨텍스트 3개(review 재무 있음/없음·handoff) × LLM 섹션 6종 + verdict 방향 일치 짝 2 = 14 프롬프트 × 2회. 게이트는 결정론(제목·대괄호 금지, 분량 상한, 프롬프트에 없는 숫자, 「」 인용이 실제 제목인지, 한국어 비율, red/green 방향 일치). 1차에서 인용 게이트가 문장부호까지 정확 일치를 요구해 Gemini 정당 인용을 위반으로 잡음 → 정규화 후 재실행.
+- **실측(후보당 28건)**: 게이트 전부 통과 gemini **1.000** = gemma4:12b **1.000** > kanana 0.857 > exaone 0.536. 숫자 환각은 네 후보 모두 0, 방향 일치 전부 1.0. 위반은 kanana가 funding 인용 형식(태그 생략·기관명 병기) 4건, exaone이 불릿 초과 6건·인용 남발(사용자 질문·키워드에 「」) 7건. 지어낸 문서·숫자는 없었다. 지연: gemma4 TTFT 0.46 s·총 2.95 s(48 tok/s), Gemini 1.68 s·2.12 s.
+- **동주 실측**: GPU 비운 뒤 qwen3-embedding:4b(2560)+LLM — gemma4 11.6 GiB, exaone 8.9, kanana 9.0 모두 상주. 하네스 본실행의 "동주 False"는 직전 후보 잔류로 인한 측정 순서 문제.
+- **결론**: 오프라인 리포트 작성기는 **gemma4:12b**, kanana 차선. exaone은 기준점(형식 지시는 흘려도 숫자·방향은 지킴)으로만 읽는다. 기본 provider는 여전히 gemini.
+- **미결**: 컨텍스트 3·반복 2로 표본이 작다 / 설득력·해석 정확도는 안 쟀다(LLM-as-judge 미도입) / 자동 폴백(외부 실패→로컬) 미설계.
+
+
 ### 백엔드·프론트 — 창업자금 사전상담 전환 (T1~T6)
 
 `docs/2026-09-18-imbank-consultation-plan.md`의 T1~T5 + 신설 T3-0을 구현했다. 브랜치 `feat/consultation-db-schema`, 커밋 9개. **사용자 결정으로 09-19 18:00 코드 프리즈를 무시하고 진행했고, 블록체인 앵커링은 범위에서 뺐다.**

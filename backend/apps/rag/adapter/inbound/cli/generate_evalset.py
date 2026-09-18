@@ -9,6 +9,7 @@ candidate → confirmed 승격은 사용자 검수 몫이며 이 CLI의 범위 �
 (backend_ver_log.md v0.19.0 참고).
 
 실행: python -m apps.rag.adapter.inbound.cli.generate_evalset [--limit 50] [--model gemma3:12b]
+      [--source-type funding|news] [--output data/eval/rag_evalset.jsonl]
 """
 
 import argparse
@@ -25,35 +26,43 @@ from core.matrix.grid_oracle_database_manager import session_scope
 # apps/rag/adapter/inbound/cli/generate_evalset.py → parents[6] == 리포지토리 루트
 _REPO_ROOT = Path(__file__).resolve().parents[6]
 
-_PROMPT_TEMPLATE = (
-    "다음은 정책자금 공고 내용이다. 이 공고를 찾기 위해 사용자가 검색창에 입력할 법한 "
-    "자연어 질문을 한국어로 딱 1개만 만들어라. 공고명을 그대로 베끼지 말고, "
-    "질문 문장 하나만 출력하라 (다른 설명이나 따옴표 없이).\n\n공고 내용:\n{content}"
-)
+# source_type → 질문 생성 프롬프트 (dict 디스패치)
+_PROMPT_TEMPLATES = {
+    "funding": (
+        "다음은 정책자금 공고 내용이다. 이 공고를 찾기 위해 사용자가 검색창에 입력할 법한 "
+        "자연어 질문을 한국어로 딱 1개만 만들어라. 공고명을 그대로 베끼지 말고, "
+        "질문 문장 하나만 출력하라 (다른 설명이나 따옴표 없이).\n\n공고 내용:\n{content}"
+    ),
+    "news": (
+        "다음은 대구 소상공인·상권 관련 뉴스 제목이다. 이 뉴스를 찾기 위해 예비창업자가 "
+        "검색창에 입력할 법한 자연어 질문을 한국어로 딱 1개만 만들어라. 제목을 그대로 베끼지 말고, "
+        "질문 문장 하나만 출력하라 (다른 설명이나 따옴표 없이).\n\n뉴스 제목:\n{content}"
+    ),
+}
 
 
-def _fetch_funding_sample(limit: int) -> list[dict]:
+def _fetch_sample(source_type: str, limit: int) -> list[dict]:
     with session_scope() as session:
         rows = session.execute(
             select(RagChunkOrm.chunk_id, RagChunkOrm.content)
-            .where(RagChunkOrm.source_type == "funding")
+            .where(RagChunkOrm.source_type == source_type)
             .order_by(RagChunkOrm.chunk_id)
             .limit(limit)
         ).all()
         return [{"chunk_id": row.chunk_id, "content": row.content} for row in rows]
 
 
-def _generate_question(client: httpx.Client, model: str, content: str) -> str:
-    response = client.post(
-        "/api/chat",
-        json={
-            "model": model,
-            "messages": [{"role": "user", "content": _PROMPT_TEMPLATE.format(content=content)}],
-            "stream": False,
-        },
-    )
+def _generate_question(client: httpx.Client, model: str, prompt: str, think: bool) -> str:
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+    }
+    if not think:
+        payload["think"] = False  # thinking 모델(gemma4 등)의 추론 토큰 차단 — 질문 1문장에 불필요
+    response = client.post("/api/chat", json=payload)
     response.raise_for_status()
-    return response.json()["message"]["content"].strip()
+    return response.json()["message"]["content"].strip().strip("\"“”'")  # 모델이 붙이는 따옴표 제거
 
 
 def _resolve(path_str: str) -> Path:
@@ -67,9 +76,12 @@ def main() -> None:
     parser.add_argument("--model", default="gemma3:12b", help="질문 생성 모델")
     parser.add_argument("--base-url", default="http://127.0.0.1:11434", help="Ollama 서버 URL")
     parser.add_argument("--output", default="data/eval/rag_evalset.jsonl")
+    parser.add_argument("--source-type", default="funding", choices=sorted(_PROMPT_TEMPLATES))
+    parser.add_argument("--think", action="store_true", help="thinking 모델의 추론 토큰 허용 (기본 차단)")
     args = parser.parse_args()
 
-    sample = _fetch_funding_sample(args.limit)
+    template = _PROMPT_TEMPLATES[args.source_type]
+    sample = _fetch_sample(args.source_type, args.limit)
     output_path = _resolve(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -78,11 +90,13 @@ def main() -> None:
     with httpx.Client(base_url=args.base_url, timeout=120.0) as client:
         with output_path.open("w", encoding="utf-8") as f:
             for i, chunk in enumerate(sample, start=1):
-                question = _generate_question(client, args.model, chunk["content"])
+                question = _generate_question(
+                    client, args.model, template.format(content=chunk["content"]), args.think
+                )
                 row = {
                     "question": question,
                     "relevant_ids": [chunk["chunk_id"]],
-                    "source_type": "funding",
+                    "source_type": args.source_type,
                     "status": "candidate",
                 }
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
