@@ -17,12 +17,16 @@ class MarketDataGateway(MarketDataPort):
         self._region = region_use_case
         self._risk = risk_use_case
 
-    def fetch(self, region_code: str, industry_id: str) -> MarketSnapshot | None:
+    def fetch(
+        self, region_code: str, industry_id: str, year: int | None = None
+    ) -> MarketSnapshot | None:
+        # 지도에서 고른 연도를 지표·위험도 양쪽에 같이 넘긴다 — 한쪽만 넘기면 카드와
+        # 위험도의 기준연도가 어긋난다. 미지정이면 각 유스케이스의 마지막 완결 연도.
         try:
-            summary = self._region.summary(region_code, industry_id)
+            summary = self._region.summary(region_code, industry_id, year)
         except RegionNotFoundError:
             return None
-        risk = self._risk.score_for(region_code, industry_id, None)
+        risk = self._risk.score_for(region_code, industry_id, year)
         return MarketSnapshot(
             region_name=summary.name,
             industry_name=self._industry_name(industry_id),

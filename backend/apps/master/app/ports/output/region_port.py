@@ -24,5 +24,7 @@ class RegionBoundaryReaderPort(ABC):
 
 class RegionMetricSummaryPort(ABC):
     @abstractmethod
-    def fetch(self, region_code: str, industry_id: str) -> RegionMetricSnapshot | None:
-        """해당 행정동×업종의 최신 연도 지표 스냅샷 — 집계 데이터 없으면 None."""
+    def fetch(
+        self, region_code: str, industry_id: str, year: int | None = None
+    ) -> RegionMetricSnapshot | None:
+        """해당 행정동×업종 지표 스냅샷. year 미지정이면 마지막 완결 연도. 없으면 None."""

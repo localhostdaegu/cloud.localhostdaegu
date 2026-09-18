@@ -115,3 +115,20 @@ class ConsultationDetailResponse(BaseModel):
     session: ConsultationSessionResponse
     plans: list[ConsultationPlanResponse] = []
     notes: list[ConsultationNoteResponse] = []
+
+
+class ConsultationDocumentRequest(BaseModel):
+    """생성된 상담자료 저장 입력. plan_id 는 서버가 (session_id, plan_kind)로 찾는다."""
+
+    plan_kind: str
+    purpose: str  # review / handoff
+    content_markdown: str
+
+
+class ConsultationDocumentResponse(BaseModel):
+    document_id: str
+    session_id: str
+    plan_id: str
+    purpose: str
+    generated_at: datetime
+    content_hash: str  # sha256(content_markdown) — 내용 변경 확인용

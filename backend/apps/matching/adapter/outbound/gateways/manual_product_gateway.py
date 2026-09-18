@@ -10,10 +10,12 @@ from functools import lru_cache
 from pathlib import Path
 
 from apps.matching.domain.matcher import PROVIDER_TYPES
-from apps.product.adapter.outbound.repositories.finance_product_repository import (
-    SqlAlchemyFinanceProductRepository,
+# cross-BC 접근은 이 어댑터에서만 하고, product BC 의 **유스케이스**만 본다(§7·§11).
+# 리포지토리(Adapter)를 직접 import 하지 않는다 — analysis 의 market_data_gateway 와 같은 형태.
+from apps.product.app.ports.input.finance_product_use_case import FinanceProductUseCase
+from apps.product.dependencies.finance_product_dependencies import (
+    get_finance_product_use_case,
 )
-from apps.product.app.ports.output.finance_product_port import FinanceProductRepositoryPort
 from apps.product.domain.entities.finance_product_entity import FinanceProduct
 
 _logger = logging.getLogger(__name__)
@@ -34,12 +36,12 @@ def load_consultation_products() -> list[dict]:
     GET /matching 의 15필드 응답 계약을 흔들지 않으려고 로더를 분리했다.
     메타데이터가 없는 상품은 키 자체를 넣지 않아 '미확인'으로 남는다(§5-2).
     """
-    return load_consultation_products_from(SqlAlchemyFinanceProductRepository())
+    return load_consultation_products_from(get_finance_product_use_case())
 
 
-def load_consultation_products_from(repository: FinanceProductRepositoryPort) -> list[dict]:
+def load_consultation_products_from(catalog: FinanceProductUseCase) -> list[dict]:
     try:
-        products = repository.list_all()
+        products = catalog.list_all()
     except Exception:
         _logger.warning("finance_product 조회 실패 — 상담 후보를 구성하지 않는다", exc_info=True)
         return []
@@ -73,13 +75,13 @@ def _consultation_metadata(product: FinanceProduct) -> dict | None:
 @lru_cache(maxsize=1)
 def load_all_products() -> list[dict]:
     """DB 정본에서 상품을 읽고, 비어 있거나 실패하면 수기 JSON 으로 폴백한다."""
-    return load_all_products_from(SqlAlchemyFinanceProductRepository())
+    return load_all_products_from(get_finance_product_use_case())
 
 
-def load_all_products_from(repository: FinanceProductRepositoryPort) -> list[dict]:
-    """주입된 리포지토리로 상품을 읽는다 — 테스트가 DB 없이 두 경로를 모두 검증할 수 있게 분리."""
+def load_all_products_from(catalog: FinanceProductUseCase) -> list[dict]:
+    """주입된 유스케이스로 상품을 읽는다 — 테스트가 DB 없이 두 경로를 모두 검증할 수 있게 분리."""
     try:
-        products = repository.list_all()
+        products = catalog.list_all()
     except Exception:  # DB 미구성·연결 실패 — 데모가 멈추지 않게 JSON 으로 계속한다
         _logger.warning("finance_product 조회 실패 — data/manual JSON 폴백", exc_info=True)
         return _load_from_json()

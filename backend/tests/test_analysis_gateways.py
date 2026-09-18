@@ -29,7 +29,7 @@ class FakeRegionUseCase(RegionUseCase):
     def geojson(self) -> dict:
         raise NotImplementedError
 
-    def summary(self, region_code: str, industry_id: str) -> RegionSummaryDto:
+    def summary(self, region_code: str, industry_id: str, year: int | None = None) -> RegionSummaryDto:
         if region_code != "2711059500":
             raise RegionNotFoundError(region_code)
         return RegionSummaryDto(

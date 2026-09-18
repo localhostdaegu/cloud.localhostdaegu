@@ -71,3 +71,15 @@ class ConsultationDetailDto:
     session: ConsultationSessionDto
     plans: list[ConsultationPlanDto] = field(default_factory=list)
     notes: list[ConsultationNoteDto] = field(default_factory=list)
+
+
+@dataclass
+class ConsultationDocumentDto:
+    """생성된 상담자료. content_hash 는 내용 변경 확인용이며 블록체인 앵커링이 아니다."""
+
+    document_id: str
+    session_id: str
+    plan_id: str
+    purpose: str
+    generated_at: datetime
+    content_hash: str

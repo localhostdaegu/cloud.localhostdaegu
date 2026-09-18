@@ -24,6 +24,16 @@
 - **E2E**: `funnel.cjs`를 첫 입력 → 지도 선택 → 사전상담 → 최초 계산 → 조건 수정 → 재계산 → 최초안 재선택 → 상담자료 → 공식 링크까지 확장해 **실백엔드(8300)로 전 구간 PASS**. 미제출 수정 경고와 '자기자본으로 충분' 문구 부재도 단계로 넣었다.
 - **미결·주의**: ① 대구신보 9건 원문 대조 미완 — 인증서 문제를 우회할 접근 경로 필요. ② `external_dataset`·`regional_indicator`는 여전히 0행(센터 D1·D2 미신청). ③ `consultation_*` 4테이블은 아직 프론트가 쓰지 않는다 — 화면 상태는 `sessionStorage`이고 서버 저장 배선(T7)은 하지 않았다. ④ 블록체인 앵커링은 사용자 결정으로 범위에서 제외. ⑤ '유효한 0원과 미입력 구분'은 폼에서 미구현이라 `open_questions`에 '미입력' 항목을 만들지 않았다(없는 근거를 만들지 않기 위해). ⑥ 지도 선택 연도의 리포트 미전달은 그대로 이월.
 
+### 후속 과제 6건 — 미입력 구분 · 연도 전달 · BC 경계 · 문서 저장 · 세션 갱신 · 고립 테이블
+
+- **① '유효한 0원'과 '미입력' 구분**: 테스트를 쓰다가 **실제 UX 결함**이 드러났다 — 필드가 처음부터 `0`을 보여주면 사용자가 0을 입력해도 값이 같아 변경 이벤트가 나지 않는다. 즉 **0을 확인할 방법이 없었다.** 손대지 않은 0원은 빈 칸(placeholder "미입력")으로 보여주고, 제출 시 미입력 목록을 `PlanSnapshot.unconfirmed`에 기록해 확인 목록에 "보증금 미입력 — 0원이 맞는지 확인 필요"로 싣는다. 비율 필드는 업종 벤치마크·ECOS 조회라는 출처가 있어 판정에서 뺐다.
+- **② 지도 선택 연도의 리포트 전달**: `AnalysisRequest.year` → `MarketDataPort.fetch` → `RegionUseCase.summary`·`RegionMetricSummaryPort.fetch`·`RiskUseCase.score_for` 까지 이었다. 전부 기본값 `None`(마지막 완결 연도)이라 기존 동작을 보존한다. **지표 카드와 위험도에 같은 연도를 넘긴다** — 한쪽만 넘기면 기준연도가 어긋난다. funnel E2E 의 `/analysis` URL 에 `year=2025` 가 실리는 것을 확인했다.
+- **③ 교차 BC 엣지 정리**: `manual_product_gateway`가 `apps.product`의 **Adapter**(`SqlAlchemyFinanceProductRepository`)를 직접 import 하던 것을 product BC 의 **입력 포트**(`FinanceProductUseCase`) 주입으로 바꿨다 — `analysis` 의 `market_data_gateway` 와 같은 형태다. product BC 에 입력 포트·인터랙터·조립 루트 3파일을 신설했다. `tests/test_matching_bc_boundary.py`로 **AST 를 훑어 다른 BC 어댑터 import 를 금지**하고 도메인이 어느 BC 도 모르는지 검사한다.
+- **④ `consultation_document` 배선**: `POST /consultation/{id}/documents` 신설. 상담자료를 내려받으면 어떤 선택안(`plan_id`)으로 만든 자료인지와 sha256 해시를 남긴다. 서버가 `(session_id, plan_kind)`로 `plan_id`를 찾으므로 프론트가 내부 id 를 다루지 않는다. 내려받기는 이미 끝난 뒤라 기록 실패는 삼킨다. **해시는 내용 변경 확인용이며 블록체인 앵커링이 아니다.**
+- **⑤ 세션 갱신**: `PUT /consultation/{id}` 신설 — 부분 병합이 아니라 **교체**다(클라이언트가 늘 전체 초안을 들고 있다). 초안에 `session_id`를 남겨 선택안을 바꿔 다시 상담자료를 만들어도 세션이 쌓이지 않는다. 앞서 "소비처가 없다"고 만들지 않았는데, 재방문 시 세션이 계속 새로 생기는 문제가 실제 소비처였다.
+- **⑥ 고립 테이블 2건 — 고치지 않기로 하고 대신 감시**: 엣지를 만드는 쪽이 더 나쁘다고 판단했다. `interest_rate`는 전국 시계열이라 `region`을 붙이면 3NF 위반이고, `funding_program`은 **실측 결과 지역 M:N 이 무의미**했다 — 1,693건 중 자치구 언급 35건의 대부분이 부산·광주·대전·울산이고(순진한 매칭은 틀린 엣지를 만든다), `org='대구광역시'`+`[대구]`로 안전하게 좁히면 **7건**만 남는다. 대신 `tests/test_schema_isolation.py`로 예외 2건을 이름·근거와 함께 고정했다 — 새 고립 테이블이 생기거나 예외가 해소됐는데 목록에 남아 있으면 실패한다. ORM 은 `apps/**/*_orm.py`를 직접 훑어 등록한다(alembic env.py 목록에 빠진 ORM 도 잡기 위해).
+- **테스트**: 백엔드 **472 passed/1 skipped**(직전 458), 프론트 **203 passed/40 files**(직전 187), tsc clean, build 성공, 실백엔드 E2E `funnel`·`analysis` 전 구간 PASS.
+
 ### 후속 과제 3건 — 지역 한정 상품 매칭 · 노트 쓰기 경로 · mock 서울 잔재
 
 - **지역 한정 상품 매칭**(가치 가장 큼): `finance_product.district_code`(자치구 5자리, nullable FK → `district`, alembic `079cb96619ca`)를 추가하고 지역 한정 2건의 `category`를 `[]`에서 `null`로 되돌렸다. `[]`는 '해당 업종 없음'이라는 다른 뜻인데 '지역 한정이라 제외'로 오용되고 있었다. 사용자 자치구는 **행정동 10자리의 앞 5자리**(`2711059500` → `27110`). 자치구 미상이면 거르지 않고 "달성군 사업장만 신청 가능 — 지역 조건 확인 필요"를 확인 사항에 남긴다(연령 미입력 처리와 같은 원칙). 실측 **중구 10건 / 달성군 11건(dgsinbo-5) / 북구 11건(youth-1)**이고, 두 상품 모두 `linked`라 해당 지역에서는 **차선이 아니라 iM뱅크 후보 1군**으로 올라온다.

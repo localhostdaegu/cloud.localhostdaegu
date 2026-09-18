@@ -43,7 +43,7 @@ class FakeMetricSummary(RegionMetricSummaryPort):
     def __init__(self, snapshot: RegionMetricSnapshot | None) -> None:
         self._snapshot = snapshot
 
-    def fetch(self, region_code: str, industry_id: str) -> RegionMetricSnapshot | None:
+    def fetch(self, region_code: str, industry_id: str, year: int | None = None) -> RegionMetricSnapshot | None:
         return self._snapshot
 
 

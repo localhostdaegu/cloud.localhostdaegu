@@ -24,6 +24,7 @@ def to_request(body: AnalysisStartRequest) -> AnalysisRequest:
         industry=body.industry,
         question=body.question,
         finance=None if body.finance is None else body.finance.model_dump(),
+        year=body.year,
         purpose=body.purpose,
         consultation=_to_consultation(body.consultation),
     )

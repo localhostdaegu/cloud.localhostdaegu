@@ -34,6 +34,7 @@ class AnalysisStartRequest(BaseModel):
     industry: str = Field(min_length=1, max_length=32)
     question: str | None = Field(default=None, max_length=500)  # 프롬프트 4개·임베딩 질의 2개에 들어간다
     finance: SimulateRequest | None = None
+    year: int | None = Field(default=None, ge=2000, le=2100)  # 지도에서 고른 기준연도
     purpose: Literal["review", "handoff"] = "review"
     consultation: ConsultationContextRequest | None = None
 

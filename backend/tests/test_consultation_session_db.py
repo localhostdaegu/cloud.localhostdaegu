@@ -135,3 +135,85 @@ def test_session_without_notes_stays_empty():
     session_id = _create_session(client, region_code="2711059500", industry_id="cafe")
 
     assert client.get(f"/consultation/{session_id}").json()["notes"] == []
+
+
+def test_saving_a_document_records_hash_and_links_the_plan():
+    """상담자료를 저장하면 어떤 선택안으로 만든 자료인지 함께 남는다.
+    content_hash 는 내용 변경 확인용이며 블록체인 앵커링이 아니다."""
+    import hashlib
+
+    client = TestClient(app)
+    session_id = _create_session(client, region_code="2711059500", industry_id="cafe")
+    client.put(f"/consultation/{session_id}/plans/current", json=_PLAN_INPUT)
+
+    markdown = "# 창업자금 상담 준비자료\n\n총 준비자금 62,600,000원\n"
+    saved = client.post(
+        f"/consultation/{session_id}/documents",
+        json={"plan_kind": "current", "purpose": "handoff", "content_markdown": markdown},
+    )
+
+    assert saved.status_code == 201, saved.text
+    body = saved.json()
+    assert body["content_hash"] == hashlib.sha256(markdown.encode()).hexdigest()
+    assert body["purpose"] == "handoff"
+    assert body["plan_id"]
+
+
+def test_document_for_a_missing_plan_is_rejected():
+    client = TestClient(app)
+    session_id = _create_session(client, region_code="2711059500", industry_id="cafe")
+
+    response = client.post(
+        f"/consultation/{session_id}/documents",
+        json={"plan_kind": "baseline", "purpose": "handoff", "content_markdown": "x"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_document_for_a_missing_session_is_rejected():
+    response = TestClient(app).post(
+        "/consultation/deadbeef/documents",
+        json={"plan_kind": "current", "purpose": "handoff", "content_markdown": "x"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_updating_a_session_replaces_state_without_creating_a_new_one():
+    """선택안을 바꿔 다시 상담자료를 만들어도 세션이 쌓이지 않는다.
+
+    부분 병합이 아니라 **교체**다 — 클라이언트가 늘 전체 초안을 들고 있기 때문이다.
+    """
+    client = TestClient(app)
+    session_id = _create_session(
+        client,
+        region_code="2711059500",
+        industry_id="cafe",
+        selected_plan_kind="baseline",
+        change_reason="처음 계획",
+        open_questions=["설비 견적 미확정"],
+    )
+
+    updated = client.put(
+        f"/consultation/{session_id}",
+        json={
+            "region_code": "2711059500",
+            "industry_id": "cafe",
+            "selected_plan_kind": "current",
+            "change_reason": "월세가 낮은 자리로 바꿨습니다",
+            "open_questions": ["보증기관 보증서 진행 상태 미확인"],
+        },
+    )
+    assert updated.status_code == 200, updated.text
+
+    body = client.get(f"/consultation/{session_id}").json()
+    assert body["session"]["selected_plan_kind"] == "current"
+    assert body["session"]["change_reason"] == "월세가 낮은 자리로 바꿨습니다"
+    assert [n["content"] for n in body["notes"]] == ["보증기관 보증서 진행 상태 미확인"]
+
+
+def test_updating_a_missing_session_is_rejected():
+    response = TestClient(app).put("/consultation/deadbeef", json={"industry_id": "cafe"})
+
+    assert response.status_code == 404

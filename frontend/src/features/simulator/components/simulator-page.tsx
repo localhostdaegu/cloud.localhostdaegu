@@ -51,10 +51,13 @@ export function SimulatorPage() {
     setDraft(next);
   };
 
+  // 제출 시점의 미입력 목록을 계산 성공까지 들고 간다 — onSuccess 는 variables 만 받는다.
+  const [unconfirmed, setUnconfirmed] = useState<(keyof FinanceInput)[]>([]);
+
   const mutation = useMutation({
     mutationFn: simulateFinance,
     onSuccess: (result, input) => setDraft((prev) => {
-      const next = recordCalculation(prev, input, result);
+      const next = recordCalculation(prev, input, result, unconfirmed);
       saveDraft(next);
       return next;
     }),
@@ -69,7 +72,12 @@ export function SimulatorPage() {
   // 선택안의 입력만 리포트로 넘긴다 — 폼에서 고치는 중인 미제출 값은 싣지 않는다(§5-3).
   const analysisHref =
     plan && region && industry
-      ? `/analysis?${new URLSearchParams({ region, industry, finance: encodeFinanceParam(plan.input) }).toString()}`
+      ? `/analysis?${new URLSearchParams({
+          region,
+          industry,
+          ...(searchParams.get("year") ? { year: searchParams.get("year")! } : {}),
+          finance: encodeFinanceParam(plan.input),
+        }).toString()}`
       : undefined;
 
   return (
@@ -89,7 +97,10 @@ export function SimulatorPage() {
 
       <SimulatorForm
         defaults={defaults}
-        onSubmit={(payload) => mutation.mutate(payload)}
+        onSubmit={(payload, missing) => {
+          setUnconfirmed(missing);
+          mutation.mutate(payload);
+        }}
         submitting={mutation.isPending}
         onValuesChange={useCallback((values: FinanceInput) => setFormValues(values), [])}
       />

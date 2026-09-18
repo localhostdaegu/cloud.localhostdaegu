@@ -34,7 +34,7 @@ export async function recordConsultationSession(draft: ConsultationDraft): Promi
   // 가정·미확인 항목은 전송 계약과 같은 규칙으로 만든다 — 화면·리포트·세션이 같은 문장을 쓴다.
   const context = toConsultationContext(draft);
   try {
-    const { session_id } = await apiPost<{ session_id: string }>("/consultation", {
+    const body = {
       region_code: draft.region,
       industry_id: draft.industry,
       // '모름'은 null 로 보낸다 — 아니오로 바꾸면 신청 요건 판단이 틀어진다(§4-2).
@@ -49,14 +49,39 @@ export async function recordConsultationSession(draft: ConsultationDraft): Promi
       change_reason: draft.change_reason,
       assumptions: context.assumptions,
       open_questions: context.open_questions,
-    });
+    };
+
+    // 이미 만든 세션이 있으면 교체한다 — 선택안을 바꿔 다시 만들어도 세션이 쌓이지 않는다.
+    const sessionId = draft.session_id
+      ? (await apiPut<{ session: { session_id: string } }>(`/consultation/${draft.session_id}`, body))
+          .session.session_id
+      : (await apiPost<{ session_id: string }>("/consultation", body)).session_id;
 
     // 순서를 보존한다 — 같은 plan_kind 재전송은 서버가 멱등 upsert 한다.
     for (const kind of plans) {
-      await apiPut(`/consultation/${session_id}/plans/${kind}`, toPlanBody(draft[kind]!));
+      await apiPut(`/consultation/${sessionId}/plans/${kind}`, toPlanBody(draft[kind]!));
     }
-    return session_id;
+    return sessionId;
   } catch {
     return null;
+  }
+}
+
+
+/** 생성된 상담자료를 서버에 남긴다 — 어떤 선택안으로 만든 자료인지 함께 기록한다.
+ *  내려받기는 이미 끝난 뒤이므로 실패는 삼킨다. content_hash 는 서버가 계산한다. */
+export async function recordConsultationDocument(
+  sessionId: string,
+  planKind: PlanKind,
+  contentMarkdown: string,
+): Promise<void> {
+  try {
+    await apiPost(`/consultation/${sessionId}/documents`, {
+      plan_kind: planKind,
+      purpose: "handoff",
+      content_markdown: contentMarkdown,
+    });
+  } catch {
+    // 기록 실패가 사용자가 받은 파일을 되돌리지는 않는다.
   }
 }

@@ -8,9 +8,11 @@ from apps.metric.dependencies.region_industry_metric_dependencies import (
 
 
 class MetricSummaryGateway(RegionMetricSummaryPort):
-    def fetch(self, region_code: str, industry_id: str) -> RegionMetricSnapshot | None:
+    def fetch(
+        self, region_code: str, industry_id: str, year: int | None = None
+    ) -> RegionMetricSnapshot | None:
         # 연도 미지정 → 마지막 완결 연도 (부분 연도를 연간 카드로 보이지 않게)
-        dto = get_region_industry_metric_use_case().find(region_code, industry_id, None)
+        dto = get_region_industry_metric_use_case().find(region_code, industry_id, year)
         if dto is None:
             return None
         return RegionMetricSnapshot(

@@ -33,6 +33,13 @@ function stubApi(sessionOk = true) {
       if (path.endsWith("/consultation")) {
         return new Response(JSON.stringify({ session_id: "sess-1" }), { status: 201 });
       }
+      // 세션 교체는 ConsultationDetailResponse 를 돌려준다 (계획안 저장과 형태가 다르다).
+      if (/\/consultation\/[^/]+$/.test(path)) {
+        return new Response(
+          JSON.stringify({ session: { session_id: "sess-1" }, plans: [], notes: [] }),
+          { status: 200 },
+        );
+      }
       return new Response(JSON.stringify({ plan_kind: "baseline" }), { status: 200 });
     }),
   );
@@ -113,5 +120,28 @@ describe("상담 세션 기록", () => {
     expect(body.open_questions).toEqual(
       expect.arrayContaining([expect.stringMatching(/보증기관 보증서 진행 상태 미확인/)]),
     );
+  });
+});
+
+describe("세션 재사용", () => {
+  it("세션이 없으면 새로 만든다", async () => {
+    await recordConsultationSession(twoPlans());
+
+    expect(calls[0][0]).toBe("POST");
+  });
+
+  it("세션이 있으면 교체한다 — 다시 만들 때마다 쌓이지 않는다", async () => {
+    await recordConsultationSession({ ...twoPlans(), session_id: "sess-1" });
+
+    const [method, path] = calls[0];
+    expect(method).toBe("PUT");
+    expect(path).toContain("/consultation/sess-1");
+    expect(path).not.toContain("/plans/");
+  });
+
+  it("교체 뒤에도 계획안을 다시 저장한다 — 선택안이 바뀌었을 수 있다", async () => {
+    await recordConsultationSession({ ...twoPlans(), session_id: "sess-1" });
+
+    expect(calls.map(([, p]) => p.split("/").pop())).toEqual(["sess-1", "baseline", "current"]);
   });
 });

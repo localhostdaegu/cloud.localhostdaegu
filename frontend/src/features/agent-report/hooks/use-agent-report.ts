@@ -13,6 +13,8 @@ export interface StartAnalysisParams {
   /** 시뮬레이터에서 넘어온 재무 입력 — 있으면 백엔드가 재무 시뮬레이션(calculator) 섹션을 추가한다. */
   finance?: FinanceInput;
   /** 전환계획 §5-1 — handoff 는 finance 와 consultation 이 함께 있어야 한다. */
+  /** 지도에서 고른 기준연도 — 지역 근거의 연도를 화면과 맞춘다(§7-3). */
+  year?: number;
   purpose?: "review" | "handoff";
   consultation?: ConsultationContext;
 }

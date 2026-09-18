@@ -39,7 +39,7 @@ class MarketAgent(AnalysisAgent):
         self._market = market
 
     def collect(self, ctx: AnalysisContext) -> Iterator[ToolCallEvent]:
-        ctx.market = self._market.fetch(ctx.request.region, ctx.request.industry)
+        ctx.market = self._market.fetch(ctx.request.region, ctx.request.industry, ctx.request.year)
         yield ToolCallEvent(
             agent=self.name,
             tool="region_metrics",

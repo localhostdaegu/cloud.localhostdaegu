@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 from apps.consultation.app.dtos.consultation_dto import (
     ConsultationDetailDto,
+    ConsultationDocumentDto,
     ConsultationPlanDto,
     ConsultationSessionDto,
 )
@@ -21,6 +22,16 @@ class ConsultationUseCase(ABC):
     @abstractmethod
     def get_session(self, session_id: str) -> ConsultationDetailDto | None:
         """세션 + 계획안 + 노트. 없는 session_id는 None — 라우터가 404로 옮긴다."""
+
+    @abstractmethod
+    def replace_session(self, session_id: str, draft: ConsultationSessionDto) -> bool:
+        """세션 상태를 교체한다. 없는 세션이면 False — 라우터가 404 로 옮긴다."""
+
+    @abstractmethod
+    def save_document(
+        self, session_id: str, plan_kind: str, purpose: str, content_markdown: str
+    ) -> ConsultationDocumentDto | None:
+        """생성된 상담자료를 남긴다. 세션이나 그 계획안이 없으면 None — 라우터가 404."""
 
     @abstractmethod
     def save_plan(

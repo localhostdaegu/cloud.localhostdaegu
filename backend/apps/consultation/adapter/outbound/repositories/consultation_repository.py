@@ -2,6 +2,7 @@ from sqlalchemy import delete, select
 
 from apps.consultation.adapter.outbound.orm_mappers.consultation_orm_mapper import (
     apply_plan_to_orm,
+    document_to_orm,
     note_to_entity,
     note_to_orm,
     plan_to_entity,
@@ -17,6 +18,7 @@ from apps.consultation.adapter.outbound.orms.consultation_session_orm import (
 from apps.consultation.app.ports.output.consultation_port import ConsultationRepositoryPort
 from apps.consultation.domain.entities.consultation_entity import (
     NOTE_TYPES,
+    ConsultationDocument,
     ConsultationNote,
     ConsultationPlan,
     ConsultationSession,
@@ -63,6 +65,31 @@ class SqlAlchemyConsultationRepository(ConsultationRepositoryPort):
             ).scalars()
             return [note_to_entity(orm) for orm in orms]
 
+    def replace_session(self, session_entity: ConsultationSession) -> bool:
+        """교체 — 부분 병합이 아니다. 클라이언트가 늘 전체 초안을 들고 있다."""
+        with session_scope() as session:
+            orm = session.get(ConsultationSessionOrm, session_entity.session_id)
+            if orm is None:
+                return False
+            for name in _SESSION_REPLACEABLE:
+                setattr(orm, name, getattr(session_entity, name))
+            orm.updated_at = session_entity.updated_at
+            return True
+
+    def find_plan(self, session_id: str, plan_kind: str) -> ConsultationPlan | None:
+        with session_scope() as session:
+            orm = session.scalars(
+                select(ConsultationPlanOrm)
+                .where(ConsultationPlanOrm.session_id == session_id)
+                .where(ConsultationPlanOrm.plan_kind == plan_kind)
+            ).one_or_none()
+            return None if orm is None else plan_to_entity(orm)
+
+    def save_document(self, document: ConsultationDocument) -> ConsultationDocument:
+        with session_scope() as session:
+            session.add(document_to_orm(document))
+        return document
+
     def replace_notes(self, session_id: str, notes: list[ConsultationNote]) -> None:
         """통째로 교체 — 같은 세션에 다시 보내도 행이 누적되지 않는다."""
         for note in notes:
@@ -94,3 +121,19 @@ class SqlAlchemyConsultationRepository(ConsultationRepositoryPort):
                 orm = existing
             session.flush()
             return plan_to_entity(orm)
+
+
+# 교체 대상 — session_id·created_at 은 바뀌지 않는다.
+_SESSION_REPLACEABLE = (
+    "region_code",
+    "industry_id",
+    "business_registered",
+    "business_age_months",
+    "planned_opening_date",
+    "funds_needed_by",
+    "owner_age",
+    "guarantee_status",
+    "policy_confirmation_status",
+    "selected_plan_kind",
+    "change_reason",
+)

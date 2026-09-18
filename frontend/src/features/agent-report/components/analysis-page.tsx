@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { parseFinanceParam } from "@/shared/finance-param";
 import { industryLabel } from "@/shared/industries";
 import {
   loadDraft,
+  saveDraft,
   selectedPlan,
   toConsultationContext,
 } from "@/features/simulator/lib/consultation-draft";
@@ -27,13 +29,23 @@ export function AnalysisPage() {
   const plan = draft === null ? null : selectedPlan(draft);
   const finance = plan?.input ?? parseFinanceParam(searchParams.get("finance"));
 
+  // 지도에서 고른 연도를 그대로 넘긴다. 없으면 백엔드가 마지막 완결 연도를 쓴다.
+  const year = Number(searchParams.get("year")) || undefined;
+
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
   const startWithConsultation = (params: StartAnalysisParams) => {
-    if (draft === null || plan === null) return start(params);
+    const withYear = { ...params, ...(year ? { year } : {}) };
+    if (draft === null || plan === null) return start(withYear);
     // 감사·재현용 서버 기록 — 화면 상태의 정본은 sessionStorage 다(§5-3).
     // 실패해도 상담자료 생성을 막지 않으므로 결과를 기다리지 않는다.
-    void recordConsultationSession(draft);
+    void recordConsultationSession(draft).then((id) => {
+      setSessionId(id);
+      // 초안에 남겨 다음 상담자료 생성 때 같은 세션을 교체한다(세션이 쌓이지 않게).
+      if (id) saveDraft({ ...draft, session_id: id });
+    });
     return start({
-      ...params,
+      ...withYear,
       finance: plan.input,
       purpose: "handoff",
       consultation: toConsultationContext(draft),
@@ -64,6 +76,8 @@ export function AnalysisPage() {
           <ReportView state={state} />
           <BankHandoff
             state={state}
+            sessionId={sessionId}
+            planKind={draft?.selected ?? null}
             meta={{
               regionLabel: searchParams.get("region") ?? "",
               industryLabel: industryLabel(searchParams.get("industry") ?? ""),

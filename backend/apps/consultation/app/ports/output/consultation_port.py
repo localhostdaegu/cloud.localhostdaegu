@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 
 from apps.consultation.domain.entities.consultation_entity import (
+    ConsultationDocument,
     ConsultationNote,
     ConsultationPlan,
     ConsultationSession,
@@ -35,6 +36,18 @@ class ConsultationRepositoryPort(ABC):
     @abstractmethod
     def replace_notes(self, session_id: str, notes: list[ConsultationNote]) -> None:
         """세션의 노트를 통째로 교체한다 — 재전송해도 행이 쌓이지 않는다."""
+
+    @abstractmethod
+    def replace_session(self, session: ConsultationSession) -> bool:
+        """세션 상태를 통째로 바꾼다. 없는 세션이면 False — 새로 만들지 않는다."""
+
+    @abstractmethod
+    def find_plan(self, session_id: str, plan_kind: str) -> ConsultationPlan | None:
+        """세션의 특정 계획안. 없으면 None — 문서를 그 안에 묶을 수 없다."""
+
+    @abstractmethod
+    def save_document(self, document: ConsultationDocument) -> ConsultationDocument:
+        """생성된 상담자료를 남긴다. 같은 세션에 여러 건이 쌓인다(생성 이력)."""
 
     @abstractmethod
     def upsert_plan(self, plan: ConsultationPlan) -> ConsultationPlan:

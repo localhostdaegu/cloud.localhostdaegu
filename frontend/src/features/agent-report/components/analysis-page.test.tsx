@@ -5,7 +5,7 @@ import { DRAFT_KEY, emptyDraft, recordCalculation } from "@/features/simulator/l
 import type { ConsultationFinanceOutput, FinanceInput } from "@/shared/api/types";
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams("region=2711059500&industry=cafe"),
+  useSearchParams: () => new URLSearchParams("region=2711059500&industry=cafe&year=2025"),
 }));
 
 const INPUT: FinanceInput = {
@@ -98,4 +98,24 @@ it("저장된 선택안이 없으면 세션도 기록하지 않는다", async ()
 
   await waitFor(() => expect(posted).not.toBeNull());
   expect(requests.some(([, p]) => p.includes("/consultation"))).toBe(false);
+});
+
+it("지도에서 고른 연도를 리포트 요청에 싣는다 — 화면과 기준연도를 맞춘다", async () => {
+  render(<AnalysisPage />);
+  submit();
+
+  await waitFor(() => expect(posted).not.toBeNull());
+  expect(posted!.year).toBe(2025);
+});
+
+it("기록한 세션 id를 초안에 남긴다 — 다시 만들 때 재사용한다", async () => {
+  const draft = recordCalculation(emptyDraft({ region: "2711059500", industry: "cafe" }), INPUT, RESULT);
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+  render(<AnalysisPage />);
+  submit();
+
+  await waitFor(() =>
+    expect(JSON.parse(sessionStorage.getItem(DRAFT_KEY)!).session_id).toBe("sess-1"),
+  );
 });

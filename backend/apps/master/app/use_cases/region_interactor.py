@@ -65,11 +65,13 @@ class RegionInteractor(RegionUseCase):
             )
         return {"type": "FeatureCollection", "features": features}
 
-    def summary(self, region_code: str, industry_id: str) -> RegionSummaryDto:
+    def summary(
+        self, region_code: str, industry_id: str, year: int | None = None
+    ) -> RegionSummaryDto:
         region = self._repository.find(region_code)
         if region is None:
             raise RegionNotFoundError(region_code)
-        snapshot = self._metric_summary.fetch(region_code, industry_id)
+        snapshot = self._metric_summary.fetch(region_code, industry_id, year)
         if snapshot is None:
             cards = [
                 SummaryCardDto(label=label, value=_NO_DATA, grade="fact")

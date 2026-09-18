@@ -14,6 +14,7 @@ from apps.consultation.app.dtos.consultation_dto import (
 from apps.consultation.app.ports.output.consultation_port import ConsultationRepositoryPort
 from apps.consultation.app.use_cases.consultation_interactor import ConsultationInteractor
 from apps.consultation.domain.entities.consultation_entity import (
+    ConsultationDocument,
     ConsultationNote,
     ConsultationPlan,
     ConsultationSession,
@@ -27,6 +28,7 @@ class FakeConsultationRepository(ConsultationRepositoryPort):
         self.sessions: dict[str, ConsultationSession] = {}
         self.plans: dict[tuple[str, str], ConsultationPlan] = {}
         self.notes: list[ConsultationNote] = []
+        self.documents: list[ConsultationDocument] = []
 
     def create_session(self, session: ConsultationSession) -> None:
         self.sessions[session.session_id] = session
@@ -42,6 +44,19 @@ class FakeConsultationRepository(ConsultationRepositoryPort):
 
     def replace_notes(self, session_id: str, notes: list[ConsultationNote]) -> None:
         self.notes = [n for n in self.notes if n.session_id != session_id] + list(notes)
+
+    def replace_session(self, session: ConsultationSession) -> bool:
+        if session.session_id not in self.sessions:
+            return False
+        self.sessions[session.session_id] = session
+        return True
+
+    def find_plan(self, session_id: str, plan_kind: str) -> ConsultationPlan | None:
+        return self.plans.get((session_id, plan_kind))
+
+    def save_document(self, document: ConsultationDocument) -> ConsultationDocument:
+        self.documents.append(document)
+        return document
 
     def upsert_plan(self, plan: ConsultationPlan) -> ConsultationPlan:
         key = (plan.session_id, plan.plan_kind)
@@ -183,3 +198,22 @@ def test_start_session_records_assumptions_and_open_questions(interactor):
         ("open_question", 1, "설비 견적 미확정"),
         ("open_question", 2, "보증기관 보증서 진행 상태 미확인"),
     ]
+
+
+def test_save_document_returns_none_when_the_plan_is_missing(interactor):
+    """계획안을 저장하기 전에는 상담자료를 그 안에 묶을 수 없다 — 라우터가 404 로 옮긴다."""
+    session_id = interactor.start_session(ConsultationSessionDto(session_id=""))
+
+    assert interactor.save_document(session_id, "current", "handoff", "# 자료") is None
+
+
+def test_save_document_hashes_the_content(interactor):
+    import hashlib
+
+    session_id = interactor.start_session(ConsultationSessionDto(session_id=""))
+    interactor.save_plan(session_id, "current", _plan_dto())
+
+    saved = interactor.save_document(session_id, "current", "handoff", "# 자료\n")
+
+    assert saved.content_hash == hashlib.sha256("# 자료\n".encode()).hexdigest()
+    assert saved.purpose == "handoff"

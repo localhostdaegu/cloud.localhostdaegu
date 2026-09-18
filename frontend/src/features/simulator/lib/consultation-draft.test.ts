@@ -198,3 +198,38 @@ describe("상담 정보 전송 형태", () => {
     expect(toConsultationContext(draft).change_reason).toBe("월세가 싼 자리");
   });
 });
+
+describe("미입력 금액 보존", () => {
+  it("계산안에 미입력 항목을 함께 기록한다", () => {
+    const draft = recordCalculation(emptyDraft(SCOPE), BASELINE_INPUT, BASELINE_RESULT, ["deposit", "key_money"]);
+
+    expect(draft.baseline?.unconfirmed).toEqual(["deposit", "key_money"]);
+  });
+
+  it("미입력 항목이 없으면 빈 배열이다", () => {
+    expect(recordCalculation(emptyDraft(SCOPE), BASELINE_INPUT, BASELINE_RESULT).baseline?.unconfirmed).toEqual([]);
+  });
+
+  it("선택안의 미입력 항목이 확인 목록에 사람 말로 실린다", () => {
+    const draft = recordCalculation(emptyDraft(SCOPE), BASELINE_INPUT, BASELINE_RESULT, ["deposit", "desired_loan"]);
+
+    const questions = toConsultationContext(draft).open_questions;
+
+    expect(questions).toContain("보증금 미입력 — 0원이 맞는지 확인 필요");
+    expect(questions).toContain("희망 대출금 미입력 — 0원이 맞는지 확인 필요");
+  });
+
+  it("입력한 0원은 확인 목록에 넣지 않는다 — 유효한 0원과 미입력을 구분한다", () => {
+    const draft = recordCalculation(emptyDraft(SCOPE), { ...BASELINE_INPUT, key_money: 0 }, BASELINE_RESULT, []);
+
+    expect(toConsultationContext(draft).open_questions.join(" ")).not.toMatch(/권리금/);
+  });
+
+  it("복원 시 미입력 항목이 없어도 구조 검증을 통과한다 — 이전 버전 저장값 호환", () => {
+    const draft = recordCalculation(emptyDraft(SCOPE), BASELINE_INPUT, BASELINE_RESULT);
+    delete (draft.baseline as { unconfirmed?: string[] }).unconfirmed;
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+    expect(loadDraft()).not.toBeNull();
+  });
+});

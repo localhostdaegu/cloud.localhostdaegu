@@ -34,6 +34,7 @@ class AnalysisRequest:
     industry: str  # industry_id
     question: str | None = None
     finance: dict | None = None  # /finance/simulate 요청 13필드(원 단위) — 있으면 시뮬레이션·계산표 포함
+    year: int | None = None  # 지도에서 고른 기준연도 — 미지정이면 마지막 완결 연도
     purpose: str = "review"  # review = 계획 점검 / handoff = 상담자료 (§5-1)
     consultation: ConsultationContext | None = None
 

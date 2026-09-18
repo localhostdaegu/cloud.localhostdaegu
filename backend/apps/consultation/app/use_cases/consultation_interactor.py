@@ -3,6 +3,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from apps.consultation.app.dtos.consultation_dto import (
+    ConsultationDocumentDto,
     ConsultationDetailDto,
     ConsultationNoteDto,
     ConsultationPlanDto,
@@ -11,6 +12,7 @@ from apps.consultation.app.dtos.consultation_dto import (
 from apps.consultation.app.ports.input.consultation_use_case import ConsultationUseCase
 from apps.consultation.app.ports.output.consultation_port import ConsultationRepositoryPort
 from apps.consultation.domain.entities.consultation_entity import (
+    ConsultationDocument,
     ConsultationNote,
     ConsultationPlan,
     ConsultationSession,
@@ -114,6 +116,44 @@ class ConsultationInteractor(ConsultationUseCase):
             session=_to_session_dto(session),
             plans=[_to_plan_dto(plan) for plan in self._repository.list_plans(session_id)],
             notes=[_to_note_dto(note) for note in self._repository.list_notes(session_id)],
+        )
+
+    def replace_session(self, session_id: str, draft: ConsultationSessionDto) -> bool:
+        replaced = self._repository.replace_session(
+            ConsultationSession(
+                session_id=session_id,
+                created_at=None,
+                updated_at=datetime.now(),
+                **{name: getattr(draft, name) for name in _SESSION_PROFILE_FIELDS},
+            )
+        )
+        if replaced:
+            self._repository.replace_notes(session_id, _to_notes(session_id, draft))
+        return replaced
+
+    def save_document(
+        self, session_id: str, plan_kind: str, purpose: str, content_markdown: str
+    ) -> ConsultationDocumentDto | None:
+        plan = self._repository.find_plan(session_id, plan_kind)
+        if plan is None or plan.plan_id is None:
+            return None  # 세션이 없거나 그 계획안을 아직 저장하지 않았다
+        saved = self._repository.save_document(
+            ConsultationDocument(
+                document_id=uuid4().hex,
+                session_id=session_id,
+                plan_id=plan.plan_id,
+                purpose=purpose,
+                generated_at=datetime.now(),
+                content_markdown=content_markdown,
+            )
+        )
+        return ConsultationDocumentDto(
+            document_id=saved.document_id,
+            session_id=saved.session_id,
+            plan_id=saved.plan_id,
+            purpose=saved.purpose,
+            generated_at=saved.generated_at,
+            content_hash=saved.content_hash,
         )
 
     def save_plan(

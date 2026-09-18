@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { BankHandoff } from "./bank-handoff";
 import { initialAgentState } from "../lib/agent-events";
 
@@ -65,4 +65,34 @@ test("링크 이동이 은행에 자료를 보내는 것이 아님을 밝힌다"
   expect(screen.getByText(/자료가 전송되지 않습니다/).closest("p")).toHaveTextContent(
     /직접 지참.*전송되지 않습니다/,
   );
+});
+
+test("자료를 저장하면 서버에도 기록한다 — 어떤 선택안으로 만든 자료인지 남는다", async () => {
+  const fetchMock = vi.fn(async () => new Response("{}", { status: 201 }));
+  vi.stubGlobal("fetch", fetchMock);
+  vi.stubGlobal("URL", { ...URL, createObjectURL: vi.fn(() => "blob:fake"), revokeObjectURL: vi.fn() });
+  render(<BankHandoff state={DONE} meta={META} sessionId="sess-1" planKind="current" />);
+
+  fireEvent.click(screen.getByRole("button", { name: /상담자료 저장/ }));
+
+  await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+  const [url, init] = fetchMock.mock.calls[0];
+  expect(String(url)).toContain("/consultation/sess-1/documents");
+  expect(JSON.parse(String((init as RequestInit).body))).toMatchObject({
+    plan_kind: "current",
+    purpose: "handoff",
+  });
+});
+
+test("세션이 없으면 내려받기만 하고 서버 기록은 건너뛴다", async () => {
+  const fetchMock = vi.fn(async () => new Response("{}", { status: 201 }));
+  vi.stubGlobal("fetch", fetchMock);
+  const createObjectURL = vi.fn(() => "blob:fake");
+  vi.stubGlobal("URL", { ...URL, createObjectURL, revokeObjectURL: vi.fn() });
+  render(<BankHandoff state={DONE} meta={META} />);
+
+  fireEvent.click(screen.getByRole("button", { name: /상담자료 저장/ }));
+
+  expect(createObjectURL).toHaveBeenCalledTimes(1);
+  expect(fetchMock).not.toHaveBeenCalled();
 });

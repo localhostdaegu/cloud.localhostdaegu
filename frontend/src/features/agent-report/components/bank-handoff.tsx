@@ -2,6 +2,8 @@
 
 import type { AgentState } from "../lib/agent-events";
 import { canExport, toConsultationMarkdown, type ExportMeta } from "../lib/consultation-export";
+import { recordConsultationDocument } from "@/features/simulator/lib/consultation-session";
+import type { PlanKind } from "@/features/simulator/lib/consultation-draft";
 
 /** 공식 경로 — 금융상품 문의와 경영컨설팅은 목적이 다르므로 나눠 안내한다(§6 T5). */
 const OFFICIAL_LINKS = [
@@ -15,6 +17,9 @@ const BUTTON =
 interface BankHandoffProps {
   state: AgentState;
   meta: ExportMeta;
+  /** 서버에 자료를 남길 세션 — 없으면 내려받기만 한다. */
+  sessionId?: string | null;
+  planKind?: PlanKind | null;
 }
 
 function download(markdown: string, meta: ExportMeta) {
@@ -29,7 +34,7 @@ function download(markdown: string, meta: ExportMeta) {
 
 /** 상담자료 저장·인쇄와 공식 상담 경로 안내(§6 T5).
  *  은행으로의 이동을 강제하지 않는다 — 보류·추가 확인을 골라도 저장은 가능하다. */
-export function BankHandoff({ state, meta }: BankHandoffProps) {
+export function BankHandoff({ state, meta, sessionId, planKind }: BankHandoffProps) {
   const ready = canExport(state);
 
   return (
@@ -46,7 +51,11 @@ export function BankHandoff({ state, meta }: BankHandoffProps) {
         <button
           type="button"
           disabled={!ready}
-          onClick={() => download(toConsultationMarkdown(state, meta), meta)}
+          onClick={() => {
+            const markdown = toConsultationMarkdown(state, meta);
+            download(markdown, meta);
+            if (sessionId && planKind) void recordConsultationDocument(sessionId, planKind, markdown);
+          }}
           className={`${BUTTON} bg-[var(--accent)] text-[var(--accent-fg)] hover:opacity-90`}
         >
           상담자료 저장 (Markdown)

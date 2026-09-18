@@ -108,15 +108,19 @@ def full_context() -> AnalysisContext:
 class FakeMarketData(MarketDataPort):
     def __init__(self, snapshot: MarketSnapshot | None = MARKET) -> None:
         self.snapshot = snapshot
-        self.calls: list[tuple[str, str]] = []
+        self.calls: list[tuple[str, str, int | None]] = []
 
-    def fetch(self, region_code: str, industry_id: str) -> MarketSnapshot | None:
-        self.calls.append((region_code, industry_id))
+    def fetch(
+        self, region_code: str, industry_id: str, year: int | None = None
+    ) -> MarketSnapshot | None:
+        self.calls.append((region_code, industry_id, year))
         return self.snapshot
 
 
 class ExplodingMarketData(MarketDataPort):
-    def fetch(self, region_code: str, industry_id: str) -> MarketSnapshot | None:
+    def fetch(
+        self, region_code: str, industry_id: str, year: int | None = None
+    ) -> MarketSnapshot | None:
         raise RuntimeError("DB 장애")
 
 

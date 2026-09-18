@@ -25,6 +25,9 @@ export type PreparationStatus = "not_started" | "in_progress" | "issued" | "unkn
 export interface PlanSnapshot {
   input: FinanceInput;
   result: ConsultationFinanceOutput;
+  /** 사용자가 한 번도 입력하지 않은 금액 필드. 유효한 0원과 구분하기 위한 기록이다(§5-3).
+   *  이전 버전 저장값에는 없을 수 있어 복원 시 빈 배열로 본다. */
+  unconfirmed?: (keyof FinanceInput)[];
 }
 
 export interface ConsultationScope {
@@ -42,6 +45,8 @@ export interface ConsultationDraft extends ConsultationScope {
   profile: ConsultationProfile;
   /** 사용자가 직접 쓴 변경 이유 — 추정하지 않는다(§5-1). */
   change_reason: string;
+  /** 서버에 기록한 상담 세션. 다시 만들 때 재사용해 세션이 쌓이지 않게 한다. */
+  session_id?: string | null;
 }
 
 const AMOUNT_FIELDS = [
@@ -78,8 +83,13 @@ export function recordCalculation(
   draft: ConsultationDraft,
   input: FinanceInput,
   result: ConsultationFinanceOutput,
+  unconfirmed: (keyof FinanceInput)[] = [],
 ): ConsultationDraft {
-  const snapshot: PlanSnapshot = { input: { ...input }, result: { ...result } };
+  const snapshot: PlanSnapshot = {
+    input: { ...input },
+    result: { ...result },
+    unconfirmed: [...unconfirmed],
+  };
   return draft.baseline === null
     ? { ...draft, baseline: snapshot, selected: "baseline" }
     : { ...draft, current: snapshot, selected: "current" };
@@ -148,6 +158,20 @@ function isValidPlan(plan: PlanSnapshot | null): boolean {
 
 const percent = (ratio: number) => `${Math.round(ratio * 1000) / 10}%`;
 
+/** 미입력 안내에 쓰는 금액 필드 이름 — 시뮬레이터 폼 라벨과 같게 둔다. */
+const AMOUNT_LABELS: Partial<Record<keyof FinanceInput, string>> = {
+  deposit: "보증금",
+  key_money: "권리금",
+  interior_cost: "인테리어 비용",
+  equipment_cost: "설비 비용",
+  monthly_rent: "월세",
+  monthly_payroll: "월 인건비",
+  monthly_insurance: "월 보험료",
+  equity: "자기자본",
+  desired_loan: "희망 대출금",
+  expected_monthly_revenue: "예상 월매출",
+};
+
 /** 화면 상태 → 전송 계약. '모름'은 null 로 보내되 확인 목록에 남겨 가정으로 둔갑하지 않게 한다(§5-1). */
 export function toConsultationContext(draft: ConsultationDraft): ConsultationContext {
   const profile = draft.profile;
@@ -159,6 +183,12 @@ export function toConsultationContext(draft: ConsultationDraft): ConsultationCon
     openQuestions.push("소진공 정책자금 확인서 진행 상태 미확인");
   }
   if (profile.funds_needed_by === null) openQuestions.push("자금 필요 시점 미확인");
+
+  // 입력하지 않아 0으로 계산된 금액 — 유효한 0원과 구분해 남긴다(§5-3).
+  for (const field of selectedPlan(draft)?.unconfirmed ?? []) {
+    const label = AMOUNT_LABELS[field];
+    if (label) openQuestions.push(`${label} 미입력 — 0원이 맞는지 확인 필요`);
+  }
 
   return {
     profile: {

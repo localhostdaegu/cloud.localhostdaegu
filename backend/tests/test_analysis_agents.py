@@ -31,7 +31,7 @@ def test_market_agent_fetches_snapshot_and_reports_two_tools():
 
     events = list(MarketAgent(market).collect(ctx))
 
-    assert market.calls == [("2711059500", "cafe")]
+    assert market.calls == [("2711059500", "cafe", None)]
     assert ctx.market == MARKET
     assert [(e.agent, e.tool) for e in events] == [("market", "region_metrics"), ("market", "risk_score")]
     assert events[0].summary == "대신동 카페 점포수·폐업률·성장률 조회"
@@ -107,3 +107,23 @@ def test_funding_agent_skips_baseline_when_there_is_nothing_to_compare():
 
     assert simulation.calls == [FINANCE]
     assert ctx.baseline_simulation is None
+
+
+def test_market_agent_passes_the_selected_year_to_the_data_port():
+    """지도에서 고른 연도가 리포트 지역 근거에 그대로 쓰여야 한다(§7-3).
+    전달하지 않으면 화면과 리포트의 기준연도가 어긋난다."""
+    market = FakeMarketData()
+    ctx = _context()
+    ctx.request = replace(ctx.request, year=2024)
+
+    list(MarketAgent(market).collect(ctx))
+
+    assert market.calls == [("2711059500", "cafe", 2024)]
+
+
+def test_market_agent_leaves_year_unset_when_not_chosen():
+    market = FakeMarketData()
+
+    list(MarketAgent(market).collect(_context()))
+
+    assert market.calls == [("2711059500", "cafe", None)]

@@ -14,8 +14,14 @@ from apps.analysis.domain.analysis_context import (
 
 class MarketDataPort(ABC):
     @abstractmethod
-    def fetch(self, region_code: str, industry_id: str) -> MarketSnapshot | None:
-        """행정동×업종 상권 지표·위험도. 미등록 행정동이면 None."""
+    def fetch(
+        self, region_code: str, industry_id: str, year: int | None = None
+    ) -> MarketSnapshot | None:
+        """행정동×업종 상권 지표·위험도. 미등록 행정동이면 None.
+
+        year 미지정이면 마지막 완결 연도 — 지도에서 고른 연도를 그대로 넘겨
+        화면과 리포트의 기준연도를 맞춘다(§7-3).
+        """
 
 
 class EvidenceSearchPort(ABC):
