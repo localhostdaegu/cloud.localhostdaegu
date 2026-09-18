@@ -1,8 +1,8 @@
 import { apiGet, apiPost } from "@/shared/api/client";
-import type { FinanceInput, FinanceOutput, LatestRate, MatchingProduct } from "@/shared/api/types";
+import type { ConsultationFinanceOutput, FinanceInput, LatestRate, MatchingProduct } from "@/shared/api/types";
 
-export function simulateFinance(payload: FinanceInput): Promise<FinanceOutput> {
-  return apiPost<FinanceOutput>("/finance/simulate", payload);
+export function simulateFinance(payload: FinanceInput): Promise<ConsultationFinanceOutput> {
+  return apiPost<ConsultationFinanceOutput>("/finance/simulate", payload);
 }
 
 /** ECOS 적재 금리 중 rate_type의 최신 월 값 (GET /shocks/rates/latest). */
