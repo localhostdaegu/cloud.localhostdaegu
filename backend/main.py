@@ -2,6 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
+from core.matrix.grid_cors import allowed_origins
+from core.matrix.grid_keymaker_secret_manager import get_settings
+
 from apps.analysis.adapter.inbound.api.v1.analysis_router import router as analysis_router
 from apps.consultation.adapter.inbound.api.v1.consultation_router import (
     router as consultation_router,
@@ -24,7 +27,7 @@ from apps.store.adapter.inbound.api.v1.store_router import router as store_route
 app = FastAPI(title="대구 창업 금융 네비게이터 backend")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3300", "http://127.0.0.1:3300"],
+    allow_origins=allowed_origins(get_settings().cors_allow_origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )

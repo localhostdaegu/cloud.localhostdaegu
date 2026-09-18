@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
     gemini_report_model: str = "gemini-3.8-flash"  # AI 리포트 생성 모델 — 환경변수 GEMINI_REPORT_MODEL 로 교체
     region: str = "daegu"
+    # 배포 오리진 — 쉼표 구분. 예: https://localhostdaegu.cloud,https://www.localhostdaegu.cloud
+    cors_allow_origins: str = ""
 
 
 @lru_cache
