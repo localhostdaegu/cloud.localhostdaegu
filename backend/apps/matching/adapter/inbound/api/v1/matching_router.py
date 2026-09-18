@@ -1,7 +1,14 @@
 """매칭 라우터 — GET /matching 엔드포인트."""
 
-from fastapi import APIRouter
-from apps.matching.adapter.outbound.gateways.manual_product_gateway import load_all_products
+from dataclasses import asdict
+
+from fastapi import APIRouter, Query
+
+from apps.matching.adapter.outbound.gateways.manual_product_gateway import (
+    load_all_products,
+    load_consultation_products,
+)
+from apps.matching.domain.consultation import build_consultation_candidates
 from apps.matching.domain.matcher import match_products
 
 router = APIRouter(prefix="/matching", tags=["matching"])
@@ -20,3 +27,26 @@ def get_matching(
     """부족금액·업종·업력·연령으로 상품 매칭. 우선순위: 보증→은행→정책자금."""
     products = load_all_products()
     return match_products(products, funding_gap, category, business_age_months, owner_age)
+
+
+@router.get("/consultation")
+def get_consultation_candidates(
+    external_funding_need: int = Query(ge=0),
+    category: str = "",
+    business_registered: bool | None = None,
+    business_age_months: int | None = Query(default=None, ge=0),
+    owner_age: int | None = Query(default=None, ge=0, le=120),
+) -> list[dict]:
+    """iM뱅크 상담 후보와 남은 확인 사항 (§5-2). 자격 확정이나 승인 결과가 아니다.
+
+    미상 값은 쿼리에서 생략한다 — 생략을 충족·미달로 바꾸지 않는다.
+    """
+    candidates = build_consultation_candidates(
+        load_consultation_products(),
+        external_funding_need=external_funding_need,
+        category=category,
+        business_registered=business_registered,
+        business_age_months=business_age_months,
+        owner_age=owner_age,
+    )
+    return [asdict(c) for c in candidates]

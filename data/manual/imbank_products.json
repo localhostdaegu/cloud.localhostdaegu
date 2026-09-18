@@ -14,7 +14,21 @@
     "interest_rate": null,
     "guarantee_fee": null,
     "url": "https://www.imbank.co.kr/cms/fnm/loan/product/giup/01/sda_41216/1221451_5612.html",
-    "source_url": "https://www.imbank.co.kr/cms/fnm/loan/product/giup/01/sda_41216/1221451_5612.html"
+    "source_url": "https://www.imbank.co.kr/cms/fnm/loan/product/giup/01/sda_41216/1221451_5612.html",
+    "consultation_metadata": {
+      "bank_connection": "direct",
+      "bank_connection_source_url": "https://www.imbank.co.kr/cms/fnm/loan/product/giup/01/sda_41216/1221451_5612.html",
+      "business_registration_required": null,
+      "prerequisites": [
+        "소상공인시장진흥공단(지역센터 포함)에 신청 후 '정책자금 지원대상 확인서' 발급",
+        "신용보증기관 연계 시 보증서 발급"
+      ],
+      "application_steps": [
+        "은행 영업점에 정책자금 지원대상 확인서 제출"
+      ],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "imbank-2",
@@ -31,7 +45,21 @@
     "interest_rate": null,
     "guarantee_fee": null,
     "url": "https://www.imbank.co.kr/cms/fnm/loan/product/giup/01/sda_41216/1221451_5612.html",
-    "source_url": "https://www.imbank.co.kr/cms/fnm/loan/product/giup/01/sda_41216/1221451_5612.html"
+    "source_url": "https://www.imbank.co.kr/cms/fnm/loan/product/giup/01/sda_41216/1221451_5612.html",
+    "consultation_metadata": {
+      "bank_connection": "direct",
+      "bank_connection_source_url": "https://www.imbank.co.kr/cms/fnm/loan/product/giup/01/sda_41216/1221451_5612.html",
+      "business_registration_required": null,
+      "prerequisites": [
+        "소상공인시장진흥공단(지역센터 포함)에 신청 후 '정책자금 지원대상 확인서' 발급",
+        "신용보증기관 연계 시 보증서 발급"
+      ],
+      "application_steps": [
+        "은행 영업점에 정책자금 지원대상 확인서 제출"
+      ],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   },
   {
     "product_id": "imbank-3",
@@ -48,6 +76,17 @@
     "interest_rate": null,
     "guarantee_fee": 0.8,
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=34",
-    "source_url": "https://www.imaeil.com/page/view/2025113013422798725"
+    "source_url": "https://www.imaeil.com/page/view/2025113013422798725",
+    "consultation_metadata": {
+      "bank_connection": "linked",
+      "bank_connection_source_url": "https://www.imaeil.com/page/view/2025113013422798725",
+      "business_registration_required": null,
+      "prerequisites": [],
+      "application_steps": [
+        "iM뱅크 영업점 방문 신청 (보증재단 직접 방문 불필요)"
+      ],
+      "documents": [],
+      "verified_at": "2026-09-18"
+    }
   }
 ]
