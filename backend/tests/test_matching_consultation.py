@@ -52,7 +52,8 @@ def test_direct_and_linked_are_candidates():
         _product(product_id="a", consultation_metadata={"bank_connection": "direct"}),
         _product(product_id="b", provider_type="guarantee", consultation_metadata={"bank_connection": "linked"}),
     ])
-    assert [c.product["product_id"] for c in candidates] == ["b", "a"]  # 보증 → 은행 순
+    # iM뱅크 자사 취급이 최우선 — 보증→은행 정렬보다 은행 연결 등급이 먼저다.
+    assert [c.product["product_id"] for c in candidates] == ["a", "b"]
 
 
 def test_registration_required_before_registering_needs_prerequisites():
@@ -173,3 +174,37 @@ def test_checked_but_unnamed_bank_says_so():
     )
 
     assert "취급 은행이 명시되지 않" in candidate.reason
+
+
+# --- 은행 우선순위: iM뱅크 직접 취급 → 연계 → 취급 미확인 --------------------
+
+
+def test_direct_handling_outranks_linked():
+    """같은 iM뱅크 후보라도 자사 취급 고시가 연계 근거보다 앞선다."""
+    candidates = _build([
+        _product(product_id="linked", consultation_metadata={"bank_connection": "linked"}),
+        _product(product_id="direct", consultation_metadata={"bank_connection": "direct"}),
+    ])
+
+    assert [c.product["product_id"] for c in candidates] == ["direct", "linked"]
+
+
+def test_bank_priority_beats_provider_priority():
+    """보증→은행→정책 정렬보다 은행 연결 등급이 먼저다 — iM뱅크가 최우선이다."""
+    candidates = _reference([
+        _product(product_id="guarantee-ref", provider_type="guarantee",
+                 consultation_metadata={"bank_connection": "unverified"}),
+        _product(product_id="policy-direct", provider_type="policy",
+                 consultation_metadata={"bank_connection": "direct"}),
+    ])
+
+    assert [c.product["product_id"] for c in candidates] == ["policy-direct", "guarantee-ref"]
+
+
+def test_provider_priority_still_orders_within_the_same_bank_grade():
+    candidates = _build([
+        _product(product_id="bank", provider_type="bank", consultation_metadata={"bank_connection": "direct"}),
+        _product(product_id="guarantee", provider_type="guarantee", consultation_metadata={"bank_connection": "direct"}),
+    ])
+
+    assert [c.product["product_id"] for c in candidates] == ["guarantee", "bank"]

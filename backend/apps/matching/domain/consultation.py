@@ -14,8 +14,10 @@ _BANK_CANDIDATE_CONNECTIONS = frozenset({"direct", "linked"})
 # 참고자료로는 보여줄 수 있는 분류(§5-2). 'none'은 은행 취급이 없다고 확인된 것이라 제외한다.
 _REFERENCE_CONNECTIONS = _BANK_CANDIDATE_CONNECTIONS | {"unverified"}
 
-# 은행 후보가 참고자료보다 앞에 온다.
-_CONNECTION_ORDER = {"direct": 0, "linked": 0, "unverified": 1}
+# 은행 우선순위 — iM뱅크가 최우선이고, 없으면 차선으로 내려간다.
+# 자사 취급 고시(direct) > 연계 근거(linked) > 취급 미확인(unverified).
+# 이 등급이 보증→은행→정책 정렬(_PRIORITY)보다 먼저다.
+_CONNECTION_ORDER = {"direct": 0, "linked": 1, "unverified": 2}
 
 _EMPTY_METADATA: dict = {
     "bank_connection": "unverified",

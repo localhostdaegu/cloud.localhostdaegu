@@ -119,8 +119,8 @@ it("iM뱅크 상담 후보와 관련 기관 참고자료를 나눠 보여준다"
 
   renderWithClient(<MatchingCards externalFundingNeed={2_000_000} category="cafe" />);
 
-  await waitFor(() => expect(screen.getByText(/iM뱅크 상담 후보/)).toBeInTheDocument());
-  expect(screen.getByText(/관련 기관 참고자료/)).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByText(/iM뱅크에서 상담할 상품/)).toBeInTheDocument());
+  expect(screen.getByText(/차선 후보/)).toBeInTheDocument();
   expect(screen.getByText("유망 예비창업자 사전보증")).toBeInTheDocument();
 });
 
@@ -129,9 +129,9 @@ it("참고자료만 있으면 iM뱅크 후보가 없다는 것도 함께 알린�
 
   renderWithClient(<MatchingCards externalFundingNeed={2_000_000} category="cafe" />);
 
-  await waitFor(() => expect(screen.getByText(/관련 기관 참고자료/)).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByText(/차선 후보/)).toBeInTheDocument());
   expect(screen.getByText(/iM뱅크 취급이 확인된 상품은 없어요/)).toBeInTheDocument();
-  expect(screen.queryByText(/iM뱅크 상담 후보/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/iM뱅크에서 상담할 상품/)).not.toBeInTheDocument();
 });
 
 it("참고자료는 상담 후보가 아님을 카드에 밝힌다", async () => {

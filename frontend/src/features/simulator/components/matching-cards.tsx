@@ -20,7 +20,8 @@ const PROVIDER_STYLE: Record<ProviderType, string> = {
   policy: "border border-[var(--violet)] text-[var(--violet)]",
 };
 
-/** 취급 근거가 확인되지 않은 상품 — iM뱅크 후보가 아니라 참고자료로만 보여준다(§5-2). */
+/** 취급 근거가 확인되지 않은 상품 — iM뱅크 후보가 아니라 차선 후보로 따로 보여준다(§5-2).
+ *  은행 우선순위는 iM뱅크 최우선이고, 확인된 iM뱅크 상품이 없을 때 차선으로 내려간다. */
 const UNVERIFIED = "unverified";
 
 /** 검토 단계 — 승인이나 신청 완료가 아니다. */
@@ -127,7 +128,7 @@ export function MatchingCards({
     <div className="flex flex-col gap-5">
       {bankCandidates.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">iM뱅크 상담 후보</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">iM뱅크에서 상담할 상품</h3>
           <CandidateList items={bankCandidates} />
         </section>
       )}
@@ -139,10 +140,11 @@ export function MatchingCards({
               iM뱅크 취급이 확인된 상품은 없어요
             </p>
           )}
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">관련 기관 참고자료</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">차선 후보 — iM뱅크 취급 미확인</h3>
           <p className="text-xs text-[var(--text-secondary)]">
-            조건은 맞지만 공식 원문에 취급 은행이 &lsquo;시중은행&rsquo; 등으로만 적혀 있어 iM뱅크 취급 여부를 확인하지
-            못한 상품입니다. 해당 기관에 직접 확인하세요.
+            조건은 맞지만 iM뱅크에서 취급하는지 공식 원문으로 확인하지 못한 상품입니다. 취급 은행이
+            &lsquo;시중은행&rsquo; 등으로만 적혀 있거나 아직 원문을 확인하지 못했습니다. 상담 전에 해당 기관에 직접
+            확인하세요.
           </p>
           <CandidateList items={references} />
         </section>

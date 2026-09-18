@@ -21,7 +21,7 @@
 | 신규 활용신청 5종 적재 | 📋 미착수 (§4-2) |
 | 백엔드 최종 리뷰·브랜치 정리 | ✅ 9/18 최종 리뷰(d62089e..7d4d264, 영역 A·B·C 분할) → 중요 이슈 수정 3그룹 병합·재리뷰 통과, 실서버 재시작 후 funnel·analysis E2E PASS. `main` fast-forward 병합·푸시 완료(9/18, `84385ee`) — devlog 2026-09-18 |
 | **DB 스키마 19 → 29테이블** | ✅ 9/18 — 금융상품 4·외부 데이터셋/지표 2·상담 4 신규(alembic `b93358fab70e`, additive only). 전체 pytest **392 passed/1 skipped**. ERD 문서 `docs/erd.md` 신규. ⚠️ **테스트 DB에서만 검증** — 개발 DB(5437)는 `66a23fb0c6e9`·20테이블 그대로. `external_dataset`·`regional_indicator`는 빈 테이블(센터 데이터 미확보), 상담 API는 프론트 미연결(`sessionStorage` 유지) |
-| **창업자금 사전상담 전환 (T1~T7)** | ✅ 9/18 — 전환계획 T1~T5 + 신설 T3-0·T7 구현. 백엔드 **441 passed/1 skipped**, 프론트 **184 passed/39 files**, tsc clean, `npm run build` 성공. funnel·analysis E2E 실백엔드 전 구간 PASS. ⚠️ **iM뱅크 상담 후보는 12건 중 3건뿐**이다 — 대구신보 4건은 원문을 확인했으나 취급은행에 iM뱅크 명시가 없어 '관련 기관 참고자료'로만 표시한다(§5-2). 나머지 5건은 원문 미대조 |
+| **창업자금 사전상담 전환 (T1~T7)** | ✅ 9/18 — 전환계획 T1~T5 + 신설 T3-0·T7 구현. 백엔드 **441 passed/1 skipped**, 프론트 **184 passed/39 files**, tsc clean, `npm run build` 성공. funnel·analysis E2E 실백엔드 전 구간 PASS. ⚠️ **iM뱅크 상담 후보는 12건 중 3건뿐**이다 — 대구신보 4건은 원문을 확인했으나 취급은행에 iM뱅크 명시가 없어 '차선 후보'로 분리 표시한다(은행 우선순위: direct → linked → unverified). 나머지 5건은 원문 미대조 |
 | 제출물 (제안요약서·시연 영상·배포·서류) | 📋 미착수 — 참가신청서 `docs/application_form.md` 9/18 개정(미검증 단정 제거·미구현 명시) |
 
 크론(crontab, 로그 `logs/*.log`): news 매시 10분 · store 04:20 · funding 05:10 · rag-indexer 05:30 · 금리/rent 월요일 05:20
