@@ -19,8 +19,14 @@ from core.matrix.grid_keymaker_secret_manager import get_settings
 from core.matrix.grid_oracle_database_manager import OrmBase
 
 # autogenerate 대상 — 모든 BC의 ORM 모듈을 여기 등록한다 (import만 하면 metadata에 잡힌다)
+import apps.consultation.adapter.outbound.orms.consultation_document_orm  # noqa: F401
+import apps.consultation.adapter.outbound.orms.consultation_note_orm  # noqa: F401
+import apps.consultation.adapter.outbound.orms.consultation_plan_orm  # noqa: F401
+import apps.consultation.adapter.outbound.orms.consultation_session_orm  # noqa: F401
 import apps.convenience.adapter.outbound.orms.convenience_store_orm  # noqa: F401
+import apps.dataset.adapter.outbound.orms.external_dataset_orm  # noqa: F401
 import apps.funding.adapter.outbound.orms.funding_program_orm  # noqa: F401
+import apps.indicator.adapter.outbound.orms.regional_indicator_orm  # noqa: F401
 import apps.master.adapter.outbound.orms.district_orm  # noqa: F401
 import apps.master.adapter.outbound.orms.region_orm  # noqa: F401
 import apps.master.adapter.outbound.orms.industry_orm  # noqa: F401
@@ -29,6 +35,10 @@ import apps.master.adapter.outbound.orms.industry_subcategory_orm  # noqa: F401
 import apps.master.adapter.outbound.orms.population_stat_orm  # noqa: F401
 import apps.metric.adapter.outbound.orms.region_industry_metric_orm  # noqa: F401
 import apps.news.adapter.outbound.orms.news_article_orm  # noqa: F401
+import apps.product.adapter.outbound.orms.finance_product_category_orm  # noqa: F401
+import apps.product.adapter.outbound.orms.finance_product_orm  # noqa: F401
+import apps.product.adapter.outbound.orms.product_consultation_metadata_orm  # noqa: F401
+import apps.product.adapter.outbound.orms.product_procedure_step_orm  # noqa: F401
 import apps.rag.adapter.outbound.orms.rag_chunk_orm  # noqa: F401
 import apps.rent.adapter.outbound.orms.rent_price_orm  # noqa: F401
 import apps.shock.adapter.outbound.orms.interest_rate_orm  # noqa: F401
