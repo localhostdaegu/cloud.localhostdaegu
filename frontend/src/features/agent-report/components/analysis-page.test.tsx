@@ -23,13 +23,20 @@ const RESULT: ConsultationFinanceOutput = {
 };
 
 let posted: Record<string, unknown> | null = null;
+let requests: [string, string][] = [];
 
 beforeEach(() => {
   sessionStorage.clear();
   posted = null;
+  requests = [];
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (_url: string, init?: RequestInit) => {
+    vi.fn(async (url: string, init?: RequestInit) => {
+      const path = String(url);
+      requests.push([init?.method ?? "GET", path]);
+      if (path.includes("/consultation")) {
+        return new Response(JSON.stringify({ session_id: "sess-1" }), { status: 201 });
+      }
       posted = JSON.parse(String(init?.body ?? "{}"));
       return new Response(JSON.stringify({ analysis_id: "a".repeat(32) }), { status: 200 });
     }),
@@ -70,4 +77,25 @@ it("저장된 선택안이 없으면 기존 review 경로를 유지한다", asyn
   await waitFor(() => expect(posted).not.toBeNull());
   expect(posted!.purpose).toBeUndefined();
   expect(posted!.consultation).toBeUndefined();
+});
+
+it("상담자료를 만들 때 세션을 서버에 기록한다 — 감사·재현용 스냅샷", async () => {
+  const draft = { ...recordCalculation(emptyDraft({ region: "2711059500", industry: "cafe" }), INPUT, RESULT), change_reason: "월세가 낮은 자리" };
+  sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+  render(<AnalysisPage />);
+  submit();
+
+  await waitFor(() => expect(requests.some(([m, p]) => m === "POST" && p.endsWith("/consultation"))).toBe(true));
+  await waitFor(() =>
+    expect(requests.some(([m, p]) => m === "PUT" && p.endsWith("/consultation/sess-1/plans/baseline"))).toBe(true),
+  );
+});
+
+it("저장된 선택안이 없으면 세션도 기록하지 않는다", async () => {
+  render(<AnalysisPage />);
+  submit();
+
+  await waitFor(() => expect(posted).not.toBeNull());
+  expect(requests.some(([, p]) => p.includes("/consultation"))).toBe(false);
 });

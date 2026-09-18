@@ -22,3 +22,10 @@ export const apiPost = <T>(path: string, body: unknown, base: string = config.ap
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   }).then((r) => handle<T>(r));
+
+export const apiPut = <T>(path: string, body: unknown) =>
+  fetch(`${config.apiBase}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then((r) => handle<T>(r));

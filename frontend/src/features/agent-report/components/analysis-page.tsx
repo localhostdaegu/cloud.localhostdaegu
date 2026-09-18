@@ -8,6 +8,7 @@ import {
   selectedPlan,
   toConsultationContext,
 } from "@/features/simulator/lib/consultation-draft";
+import { recordConsultationSession } from "@/features/simulator/lib/consultation-session";
 import type { StartAnalysisParams } from "../hooks/use-agent-report";
 import { AnalysisForm } from "./analysis-form";
 import { BankHandoff } from "./bank-handoff";
@@ -26,12 +27,18 @@ export function AnalysisPage() {
   const plan = draft === null ? null : selectedPlan(draft);
   const finance = plan?.input ?? parseFinanceParam(searchParams.get("finance"));
 
-  const startWithConsultation = (params: StartAnalysisParams) =>
-    start(
-      draft === null || plan === null
-        ? params
-        : { ...params, finance: plan.input, purpose: "handoff", consultation: toConsultationContext(draft) },
-    );
+  const startWithConsultation = (params: StartAnalysisParams) => {
+    if (draft === null || plan === null) return start(params);
+    // 감사·재현용 서버 기록 — 화면 상태의 정본은 sessionStorage 다(§5-3).
+    // 실패해도 상담자료 생성을 막지 않으므로 결과를 기다리지 않는다.
+    void recordConsultationSession(draft);
+    return start({
+      ...params,
+      finance: plan.input,
+      purpose: "handoff",
+      consultation: toConsultationContext(draft),
+    });
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8">

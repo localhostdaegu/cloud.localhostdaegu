@@ -82,10 +82,10 @@ node frontend/tests/funnel.cjs               # E2E (mock 기준) PASS 기대
 ### 0-2-3. 9/18 사전상담 전환(T1~T6) 이후 남은 것
 
 1. **대구신보 원문 대조 9건** — `dgsinbo.or.kr`이 TLS 인증서 체인 검증 실패(`unable to verify the first certificate`)로 자동 접근이 안 된다. 브라우저 수동 확인 등 다른 경로가 필요하다. 그때까지 재단 5건·정책자금 4건은 미확인이라 iM뱅크 상담 후보에 나오지 않는다. 근거·한계는 `docs/research/finance-products/2026-09-18-consultation-sources.md`.
-2. **`consultation_*` 4테이블 미연결(T7 미실행)** — 화면 상태는 `sessionStorage`이고 서버 저장 배선은 하지 않았다. 스키마·API(POST/PUT)는 있으나 부르는 곳이 없다. 스키마 존재를 "서버 세션 사용"으로 쓰지 않는다.
+2. ~~**`consultation_*` 4테이블 미연결(T7 미실행)**~~ → **2026-09-18 배선 완료.** 상담자료를 만들 때(`/analysis` 제출) 세션과 두 계획안을 서버에 기록한다. **화면 상태의 정본은 여전히 `sessionStorage`이고**(§5-3 유지) 서버 기록은 감사·재현용 스냅샷이다 — 리포트는 이 값을 읽지 않고 13필드로 다시 계산한다. 저장 실패는 삼켜서 상담자료 생성을 막지 않는다. 남은 것: 세션의 `selected_plan_kind`·`change_reason`을 나중에 고치려면 세션 갱신 엔드포인트가 필요하다(현재는 생성 시점 값으로 고정). `consultation_note`·`consultation_document` 2테이블은 여전히 미사용.
 3. **블록체인 앵커링** — 사용자 결정으로 이번 범위에서 제외했다. `consultation_document.content_hash`는 여전히 미사용.
 4. **'유효한 0원'과 '미입력' 구분** — 폼에서 미구현이라 `open_questions`에 '미입력' 항목을 만들지 않았다. 없는 근거를 만들지 않기 위한 선택이며, 구분을 구현하면 확인 목록이 더 정확해진다.
-5. **mock SSE는 여전히 review 섹션** — `NEXT_PUBLIC_API_BASE` 미설정으로 프론트만 띄우면 상담자료 섹션이 아니라 기존 리포트가 보인다. `GET /matching/consultation` mock은 추가했다.
+5. ~~**mock SSE는 여전히 review 섹션**~~ → **2026-09-18 해소.** mock 도 `purpose=handoff` 면 상담자료 6섹션을 낸다(수치는 재무 엔진 검산값). 다만 **review 경로의 mock 본문은 서울/강남구 잔재 그대로**다 — 시연 동선이 handoff 라 손대지 않았다.
 6. **지도 선택 연도의 리포트 미전달** — 기존 이월 사항 그대로.
 
 ### 0-2-2. 9/18 스키마 확장에서 남긴 후속 과제 (ERD 문서 작성 중 실측)
