@@ -28,6 +28,9 @@ class StressResult:
 @dataclass(frozen=True)
 class FinanceResult:
     capex: int; monthly_fixed: int; bep_revenue: int; funding_gap: int
+    # funding_gap = 희망대출 반영 후 남는 부족액. external_funding_need 와 다르다 — 전환계획 §4-1
+    reserve_months: int; operating_reserve: int
+    total_required_funds: int; external_funding_need: int
     scenarios: list[SimulationScenario] = field(default_factory=list)
     stress: list[StressResult] = field(default_factory=list)
 
@@ -48,8 +51,10 @@ def simulate(inp: FinanceInput) -> FinanceResult:
     var_ratio = inp.cost_ratio + inp.fee_ratio
     bep_revenue = int(fixed / (1 - var_ratio))
     available_cash = inp.equity + inp.desired_loan - capex
-    need = capex + fixed * _WORKING_CAPITAL_MONTHS
-    funding_gap = max(0, need - (inp.equity + inp.desired_loan))
+    operating_reserve = fixed * _WORKING_CAPITAL_MONTHS
+    total_required_funds = capex + operating_reserve
+    external_funding_need = max(0, total_required_funds - inp.equity)
+    funding_gap = max(0, total_required_funds - inp.equity - inp.desired_loan)
 
     scenarios = []
     for name, mult in _SCENARIO_MULTIPLIERS:
@@ -62,4 +67,7 @@ def simulate(inp: FinanceInput) -> FinanceResult:
 
     stress = [StressResult(d, _fixed(inp, inp.loan_rate + d), _profit_at(inp.expected_monthly_revenue, var_ratio, _fixed(inp, inp.loan_rate + d)))
               for d in _STRESS_DELTAS]
-    return FinanceResult(capex, fixed, bep_revenue, funding_gap, scenarios, stress)
+    return FinanceResult(capex, fixed, bep_revenue, funding_gap,
+                         _WORKING_CAPITAL_MONTHS, operating_reserve,
+                         total_required_funds, external_funding_need,
+                         scenarios, stress)

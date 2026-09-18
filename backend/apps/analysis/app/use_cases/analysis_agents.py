@@ -77,8 +77,9 @@ class FundingAgent(AnalysisAgent):
         self._region_name = region_name
 
     def collect(self, ctx: AnalysisContext) -> Iterator[ToolCallEvent]:
-        # finance 는 선택 입력이다 — 있으면 시뮬레이션을 먼저 돌려 부족 자금을 계산하고,
-        # 없으면 0원 기준으로 상품 매칭만 한다 (타입/상태 분기가 아닌 입력 유무 분기).
+        # finance 는 선택 입력이다 — 있으면 시뮬레이션을 돌려 상품을 매칭하고,
+        # 없으면 둘 다 건너뛴다. 누락 재무를 0원으로 간주해 후보를 구하지 않는다
+        # (전환계획 §3-1, 타입/상태 분기가 아닌 입력 유무 분기).
         if ctx.request.finance is not None:
             ctx.simulation = self._simulation.simulate(ctx.request.finance)
             yield ToolCallEvent(
@@ -86,10 +87,10 @@ class FundingAgent(AnalysisAgent):
                 tool="finance_simulate",
                 summary=f"재무 시뮬레이션 — 부족 자금 {ctx.funding_gap:,}원",
             )
-        ctx.products = self._matching.match(ctx.funding_gap, ctx.request.industry)
-        yield ToolCallEvent(
-            agent=self.name, tool="product_matching", summary=f"금융상품 매칭 — {len(ctx.products)}건"
-        )
+            ctx.products = self._matching.match(ctx.funding_gap, ctx.request.industry)
+            yield ToolCallEvent(
+                agent=self.name, tool="product_matching", summary=f"금융상품 매칭 — {len(ctx.products)}건"
+            )
         query = _with_question(f"{self._region_name} {ctx.industry_label} 소상공인 창업 정책자금 보증 대출", ctx)
         ctx.funding_docs = self._search.search(query, "funding", FUNDING_TOP_K)
         yield ToolCallEvent(

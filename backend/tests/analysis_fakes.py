@@ -75,6 +75,10 @@ SIMULATION = SimulationSummary(
     monthly_fixed=3_141_666,
     bep_revenue=5_236_109,
     funding_gap=18_849_996,
+    reserve_months=6,
+    operating_reserve=18_849_996,
+    total_required_funds=58_849_996,
+    external_funding_need=28_849_996,
     scenarios=[
         ScenarioLine("비관", 4_800_000, -261_665, None),
         ScenarioLine("기준", 8_000_000, 1_658_335, 24.1),

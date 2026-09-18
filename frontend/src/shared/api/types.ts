@@ -100,6 +100,16 @@ export interface FinanceOutput {
   stress: FinanceStress[];
 }
 
+/** 전환계획 §4-1 자금 구성 4수치를 더한 확장 응답.
+ *  funding_gap 은 '희망대출 반영 후 남는 부족액', external_funding_need 는
+ *  '자기자본 외 조달 필요액'으로 서로 다른 금액이다. */
+export interface ConsultationFinanceOutput extends FinanceOutput {
+  reserve_months: number;
+  operating_reserve: number;
+  total_required_funds: number;
+  external_funding_need: number;
+}
+
 export type ProviderType = "guarantee" | "bank" | "policy";
 
 /** GET /matching 응답 각 항목 — 백엔드 필드명 그대로. */

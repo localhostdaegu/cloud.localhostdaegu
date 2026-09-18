@@ -140,3 +140,13 @@ def test_matching_gateway_filters_by_gap_and_industry_and_orders_guarantee_first
         MatchedProduct("대구신용보증재단", "창업 보증", 50_000_000, 3.2),
         MatchedProduct("iM뱅크", "창업대출", 100_000_000, 5.5),
     ]
+
+
+def test_simulation_gateway_carries_funding_breakdown():
+    """전환계획 §4-1 — 분석 요약도 자기자본 외 조달 필요액을 함께 전달한다.
+    리포트가 부족액 0원만 보고 '자기자본으로 충분'이라고 쓰지 못하게 하는 근거값이다."""
+    summary = EngineSimulationGateway().simulate(FINANCE)
+    assert summary.reserve_months == 6
+    assert summary.operating_reserve == 18_849_996
+    assert summary.total_required_funds == 58_849_996
+    assert summary.external_funding_need == 28_849_996

@@ -1,13 +1,17 @@
-import type { FinanceOutput } from "@/shared/api/types";
+import type { ConsultationFinanceOutput } from "@/shared/api/types";
 
 /** 백엔드 계약(POST /finance/simulate) 형태의 고정 응답.
  *  값은 backend/tests/test_finance_engine.py의 BASE 입력을 backend/apps/finance/domain/engine.py로
  *  검산한 결과와 정확히 일치한다(화면 개발용 고정 fixture). */
-const FIXED_RESPONSE: FinanceOutput = {
+const FIXED_RESPONSE: ConsultationFinanceOutput = {
   capex: 60_000_000,
   monthly_fixed: 8_575_000,
   bep_revenue: 15_043_859,
   funding_gap: 41_450_000,
+  reserve_months: 6,
+  operating_reserve: 51_450_000,
+  total_required_funds: 111_450_000,
+  external_funding_need: 61_450_000,
   scenarios: [
     {
       name: "비관",

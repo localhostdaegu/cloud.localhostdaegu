@@ -55,7 +55,11 @@ class SimulationSummary:
     capex: int
     monthly_fixed: int
     bep_revenue: int
-    funding_gap: int
+    funding_gap: int  # 희망대출 반영 후 남는 부족액 — external_funding_need 와 다르다 (§4-1)
+    reserve_months: int
+    operating_reserve: int
+    total_required_funds: int
+    external_funding_need: int  # 자기자본 외 조달 필요액 — 상담 주제가 되는 금액
     scenarios: list[ScenarioLine]
 
 

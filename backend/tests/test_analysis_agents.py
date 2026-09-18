@@ -47,7 +47,9 @@ def test_shock_agent_searches_news_with_question():
     assert [(e.agent, e.tool, e.summary) for e in events] == [("shock", "news_search", "뉴스 RAG 검색 — 1건")]
 
 
-def test_funding_agent_without_finance_skips_simulation_and_matches_with_zero_gap():
+def test_funding_agent_without_finance_skips_simulation_and_matching():
+    """전환계획 §3-1 — 재무 입력이 없으면 0원으로 상품을 매칭하지 않는다.
+    개인별 상품 안내를 건너뛰고, 지역 공통 정책자금 공고 검색만 남긴다."""
     search, simulation, matching = FakeEvidenceSearch(), FakeSimulation(), FakeMatching()
     ctx = _context()
     ctx.market = MARKET
@@ -55,11 +57,11 @@ def test_funding_agent_without_finance_skips_simulation_and_matches_with_zero_ga
     events = list(FundingAgent(search, simulation, matching, "대구").collect(ctx))
 
     assert simulation.calls == []
-    assert matching.calls == [(0, "cafe")]
+    assert matching.calls == []
+    assert ctx.products == []
     assert search.calls == [("대구 카페 소상공인 창업 정책자금 보증 대출", "funding", 5)]
-    assert ctx.products == [PRODUCT]
     assert ctx.funding_docs == [FUNDING_DOC]
-    assert [e.tool for e in events] == ["product_matching", "funding_search"]
+    assert [e.tool for e in events] == ["funding_search"]
 
 
 def test_funding_agent_with_finance_simulates_first_and_matches_with_gap():

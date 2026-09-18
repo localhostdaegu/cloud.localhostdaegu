@@ -46,7 +46,7 @@ def test_stream_emits_events_in_mock_sse_order():
         ("tool_call", "shock", "news_search"),
         ("agent_status", "shock", "done"),
         ("agent_status", "funding", "running"),
-        ("tool_call", "funding", "product_matching"),
+        # 재무 입력이 없는 기본 컨텍스트 — product_matching 은 발생하지 않는다 (§3-1)
         ("tool_call", "funding", "funding_search"),
         ("agent_status", "funding", "done"),
         ("report_delta", "verdict", ""),

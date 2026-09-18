@@ -28,7 +28,11 @@ class SimulateResponse(BaseModel):
     capex: int
     monthly_fixed: int
     bep_revenue: int
-    funding_gap: int
+    funding_gap: int  # 희망대출 반영 후 남는 부족액 — external_funding_need 와 다르다 (§4-1)
+    reserve_months: int
+    operating_reserve: int
+    total_required_funds: int
+    external_funding_need: int  # 자기자본 외 조달 필요액 — 상담 주제가 되는 금액
     scenarios: list[SimulationScenarioResponse]
     stress: list[StressResultResponse]
 
@@ -39,6 +43,10 @@ class SimulateResponse(BaseModel):
             monthly_fixed=result.monthly_fixed,
             bep_revenue=result.bep_revenue,
             funding_gap=result.funding_gap,
+            reserve_months=result.reserve_months,
+            operating_reserve=result.operating_reserve,
+            total_required_funds=result.total_required_funds,
+            external_funding_need=result.external_funding_need,
             scenarios=[
                 SimulationScenarioResponse(**asdict(s)) for s in result.scenarios
             ],

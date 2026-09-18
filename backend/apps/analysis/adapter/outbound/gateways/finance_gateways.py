@@ -19,6 +19,10 @@ class EngineSimulationGateway(SimulationPort):
             monthly_fixed=result.monthly_fixed,
             bep_revenue=result.bep_revenue,
             funding_gap=result.funding_gap,
+            reserve_months=result.reserve_months,
+            operating_reserve=result.operating_reserve,
+            total_required_funds=result.total_required_funds,
+            external_funding_need=result.external_funding_need,
             scenarios=[
                 ScenarioLine(s.name, s.monthly_revenue, s.operating_profit, s.payback_months)
                 for s in result.scenarios
