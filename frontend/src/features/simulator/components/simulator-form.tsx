@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FinanceInput } from "@/shared/api/types";
 import { manwonToWon, wonToManwon } from "../lib/money";
 
@@ -8,6 +8,8 @@ interface SimulatorFormProps {
   defaults: FinanceInput;
   onSubmit: (payload: FinanceInput) => void;
   submitting?: boolean;
+  /** 미제출 수정 감지용 — 제출 전 값이 결과와 어긋나는지 페이지가 판단한다(§5-3). */
+  onValuesChange?: (values: FinanceInput) => void;
 }
 
 const FIELD =
@@ -68,7 +70,7 @@ function RatioField({
 }
 
 /** 프리필 확인 섹션("확인해주세요") + 상세 입력 섹션("입력해주세요") 두 개로 구성된 재무 시뮬레이션 폼. */
-export function SimulatorForm({ defaults, onSubmit, submitting }: SimulatorFormProps) {
+export function SimulatorForm({ defaults, onSubmit, submitting, onValuesChange }: SimulatorFormProps) {
   const [values, setValues] = useState<FinanceInput>(defaults);
   // 대출금리 기본값은 최신 금리 조회 후 늦게 바뀐다 — 사용자가 아직 손대지 않았을 때만 따라간다.
   const [baseLoanRate, setBaseLoanRate] = useState(defaults.loan_rate);
@@ -76,6 +78,8 @@ export function SimulatorForm({ defaults, onSubmit, submitting }: SimulatorFormP
     setBaseLoanRate(defaults.loan_rate);
     if (values.loan_rate === baseLoanRate) setValues((prev) => ({ ...prev, loan_rate: defaults.loan_rate }));
   }
+
+  useEffect(() => onValuesChange?.(values), [values, onValuesChange]);
 
   const set =
     <K extends keyof FinanceInput>(key: K) =>

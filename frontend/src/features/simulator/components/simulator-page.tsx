@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { industryLabel } from "@/shared/industries";
 import { encodeFinanceParam } from "@/shared/finance-param";
+import type { FinanceInput } from "@/shared/api/types";
 import { buildDefaults } from "../lib/form-defaults";
 import {
   emptyDraft,
@@ -56,7 +57,11 @@ export function SimulatorPage() {
     }),
   });
 
+  // 폼이 결과보다 앞서 있으면(제출 전 수정) 이전 입력 기준임을 알리고 새 선택을 막는다(§5-3).
+  const [formValues, setFormValues] = useState<FinanceInput | null>(null);
   const plan = selectedPlan(draft);
+  const stale =
+    plan !== null && formValues !== null && JSON.stringify(formValues) !== JSON.stringify(plan.input);
 
   // 선택안의 입력만 리포트로 넘긴다 — 폼에서 고치는 중인 미제출 값은 싣지 않는다(§5-3).
   const analysisHref =
@@ -83,11 +88,18 @@ export function SimulatorPage() {
         defaults={defaults}
         onSubmit={(payload) => mutation.mutate(payload)}
         submitting={mutation.isPending}
+        onValuesChange={useCallback((values: FinanceInput) => setFormValues(values), [])}
       />
 
       {mutation.isError && (
         <p role="alert" className="text-sm text-[var(--danger)]">
           {mutation.error instanceof Error ? mutation.error.message : "시뮬레이션에 실패했습니다."}
+        </p>
+      )}
+
+      {stale && (
+        <p role="status" className="text-sm text-[var(--warn)]">
+          아래 결과는 이전 입력 기준이에요. 다시 계산하면 새 안으로 비교·선택할 수 있습니다.
         </p>
       )}
 
@@ -100,6 +112,7 @@ export function SimulatorPage() {
             onSelect={(kind: PlanKind) => update(selectPlan(draft, kind))}
             changeReason={draft.change_reason}
             onChangeReason={(change_reason) => update({ ...draft, change_reason })}
+            disabled={stale}
           />
           <ResultView
             result={plan.result}

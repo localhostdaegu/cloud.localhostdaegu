@@ -11,6 +11,8 @@ interface PlanComparisonProps {
   onSelect: (kind: PlanKind) => void;
   changeReason: string;
   onChangeReason: (reason: string) => void;
+  /** 폼이 결과보다 앞서 있으면 새 선택을 막는다(§5-3). */
+  disabled?: boolean;
 }
 
 const MONEY_LABELS: Partial<Record<keyof FinanceInput, string>> = {
@@ -55,12 +57,14 @@ function PlanCard({
   plan,
   checked,
   onSelect,
+  disabled,
 }: {
   kind: PlanKind;
   label: string;
   plan: PlanSnapshot;
   checked: boolean;
   onSelect: (kind: PlanKind) => void;
+  disabled?: boolean;
 }) {
   return (
     <label
@@ -73,6 +77,7 @@ function PlanCard({
           type="radio"
           name="consultation-plan"
           checked={checked}
+          disabled={disabled}
           onChange={() => onSelect(kind)}
           className="accent-[var(--accent)]"
         />
@@ -96,6 +101,7 @@ export function PlanComparison({
   onSelect,
   changeReason,
   onChangeReason,
+  disabled,
 }: PlanComparisonProps) {
   if (baseline === null || current === null) return null;
 
@@ -105,8 +111,22 @@ export function PlanComparison({
     <section className="flex flex-col gap-4">
       <h2 className="text-sm font-semibold text-[var(--text-primary)]">상담할 안 선택</h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        <PlanCard kind="baseline" label="최초안" plan={baseline} checked={selected === "baseline"} onSelect={onSelect} />
-        <PlanCard kind="current" label="현재안" plan={current} checked={selected === "current"} onSelect={onSelect} />
+        <PlanCard
+          kind="baseline"
+          label="최초안"
+          plan={baseline}
+          checked={selected === "baseline"}
+          onSelect={onSelect}
+          disabled={disabled}
+        />
+        <PlanCard
+          kind="current"
+          label="현재안"
+          plan={current}
+          checked={selected === "current"}
+          onSelect={onSelect}
+          disabled={disabled}
+        />
       </div>
       <ul className="flex flex-col gap-1 text-xs text-[var(--text-secondary)]">
         {changes.length === 0 ? (

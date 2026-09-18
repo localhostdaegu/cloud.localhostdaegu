@@ -185,3 +185,36 @@ it("계산 뒤에도 창업 단계 입력이 남는다", async () => {
   expect(draft.profile.business_registered).toBe(false);
   expect(draft.baseline.result.external_funding_need).toBe(8_000_000);
 });
+
+it("폼을 고치고 아직 계산하지 않았으면 이전 결과임을 알리고 선택을 막는다", async () => {
+  sessionStorage.clear();
+  stubSimulate(OUTPUT_BASELINE, OUTPUT_REVISED);
+  renderPage();
+
+  await runSimulation();
+  setRent("100");
+  fireEvent.click(screen.getByRole("button", { name: "시뮬레이션 실행" }));
+  await waitFor(() => expect(screen.getByRole("radio", { name: /현재안/ })).toBeChecked());
+
+  setRent("150"); // 고치기만 하고 재계산하지 않는다
+
+  expect(screen.getByRole("status")).toHaveTextContent(/이전 입력 기준/);
+  expect(screen.getByRole("radio", { name: /최초안/ })).toBeDisabled();
+});
+
+it("재계산하면 경고가 사라지고 다시 선택할 수 있다", async () => {
+  sessionStorage.clear();
+  stubSimulate(OUTPUT_BASELINE, OUTPUT_REVISED);
+  renderPage();
+
+  await runSimulation();
+  setRent("100");
+  fireEvent.click(screen.getByRole("button", { name: "시뮬레이션 실행" }));
+  await waitFor(() => expect(screen.getByRole("radio", { name: /현재안/ })).toBeChecked());
+
+  setRent("150");
+  fireEvent.click(screen.getByRole("button", { name: "시뮬레이션 실행" }));
+
+  await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+  expect(screen.getByRole("radio", { name: /최초안/ })).toBeEnabled();
+});
