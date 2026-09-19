@@ -35,3 +35,25 @@ def test_to_wgs84_rejects_out_of_range():
     assert _to_wgs84(None, None) == (None, None)
     lat, lng = _to_wgs84("344556.519", "264651.134")  # 대구 중구 실좌표
     assert 35.7 < lat < 36.0 and 128.4 < lng < 128.8
+
+
+def test_to_entity_keeps_road_address_with_lot_fallback():
+    # 2026-09-19 실응답(중구 rest_cafes) 축약 — 좌표 없는 인허가(5,558건)를 SGIS로 지오코딩하려면 주소가 있어야 한다
+    from apps.store.adapter.outbound.gateways.mois_permit_gateway import MoisPermitGateway
+    from apps.store.app.dtos.store_dto import IngestTarget
+
+    target = IngestTarget(industry_id="cafe", slug="rest_cafes", authority_code="3410000", district_code="27110")
+    item = {
+        "MNG_NO": "1", "BPLC_NM": "유아이유 동성로1호점", "LCPMT_YMD": "2024-01-02", "CLSBIZ_YMD": "",
+        "DTL_SALS_STTS_CD": "01", "DTL_SALS_STTS_NM": "영업", "CRD_INFO_X": "", "CRD_INFO_Y": "",
+        "DAT_UPDT_PNT": "2026-09-18 22:18:00",
+        "ROAD_NM_ADDR": "대구광역시 중구 동성로 34-1, 1,2층 (동성로2가)",
+        "LOTNO_ADDR": "대구광역시 중구 동성로2가 0067-0003 1,2층",
+    }
+    store = MoisPermitGateway._to_entity(item, target)
+    assert store.address == "대구광역시 중구 동성로 34-1, 1,2층 (동성로2가)"
+    assert (store.lat, store.lng) == (None, None)
+
+    lot_only = MoisPermitGateway._to_entity({**item, "ROAD_NM_ADDR": ""}, target)
+    assert lot_only.address == "대구광역시 중구 동성로2가 0067-0003 1,2층"
+    assert MoisPermitGateway._to_entity({**item, "ROAD_NM_ADDR": "", "LOTNO_ADDR": None}, target).address is None

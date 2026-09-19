@@ -2,10 +2,13 @@
 
 - 원천: 나이스 교육정보 개방포털 acaInsTiInfo(대구교육청 D10) — 현행 스냅샷 전량, 매 실행 멱등 재수집
   (2026-09-19 서울 열린데이터 OA-20528에서 교체 — 서울 게이트웨이 모듈은 파싱 보조 함수 원천으로 보존)
-- 적재: store 업서트(industry_id=academy) + academy_course 재적재(delete+insert)
+- 적재: store 업서트(industry_id=academy, 좌표·행정동 이월) + academy_course 재적재(delete+insert)
+  + 스냅샷 소실 폐업(추정) — 원천이 폐원분을 주지 않아 broker 전례를 따른다
 - 호출: 1회 1,000건 × 9페이지 = 9회/스냅샷
 - 실행: python -m apps.store.adapter.inbound.cli.academy_collector
 """
+
+from datetime import date
 
 from sqlalchemy import select
 
@@ -33,9 +36,9 @@ def main() -> None:
         course_repository=SqlAlchemyAcademyCourseRepository(),
         gateway=gateway,
     )
-    stores, courses = interactor.ingest()
+    stores, courses, closed = interactor.ingest(date.today())
     print(
-        f"academy collector: 점포 {stores}건 업서트, 교습과정 {courses}건 재적재"
+        f"academy collector: 점포 {stores}건 업서트, 교습과정 {courses}건 재적재, 폐업(추정) {closed}건"
         f" (API {gateway.call_count}회 호출)",
         flush=True,
     )

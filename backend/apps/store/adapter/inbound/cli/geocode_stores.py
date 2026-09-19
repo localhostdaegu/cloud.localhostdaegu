@@ -86,14 +86,22 @@ def source_coordinate_is_wrong(
 
 
 def resolve_points(
-    gateway: SgisGeocodeGateway, cache_path: Path, addresses: list[str]
+    gateway: SgisGeocodeGateway,
+    cache_path: Path,
+    addresses: list[str],
+    *,
+    retry_failed: bool = False,
 ) -> dict[str, tuple[float, float] | None]:
-    """캐시에 없는 주소만 SGIS에 묻고, 결과(실패 포함)를 캐시에 추가한다."""
+    """캐시에 없는 주소만 SGIS에 묻고, 결과(실패 포함)를 캐시에 추가한다.
+
+    retry_failed: 캐시에 실패(None)로 남은 주소도 다시 묻는다 — 게이트웨이 재시도 규칙이 바뀐 뒤 복구용.
+    캐시 파일은 append 전용이라 같은 주소가 두 번 실리고, load_cache 는 마지막 행을 취한다.
+    """
     cache = load_cache(cache_path)
     unique = list(dict.fromkeys(addresses))  # 같은 건물 주소 중복 호출 방지
     pending: list[tuple[str, tuple[float, float] | None]] = []
     for index, address in enumerate(unique, start=1):
-        if address in cache:
+        if address in cache and not (retry_failed and cache[address] is None):
             continue
         cache[address] = gateway.geocode(address)
         pending.append((address, cache[address]))
@@ -124,7 +132,9 @@ def _flush(session, orm, updates: list[dict]) -> None:
         session.execute(update(orm), updates[start : start + _UPDATE_CHUNK])
 
 
-def geocode_stores(gateway: SgisGeocodeGateway, industry: str | None, limit: int | None) -> None:
+def geocode_stores(
+    gateway: SgisGeocodeGateway, industry: str | None, limit: int | None, *, retry_failed: bool = False
+) -> None:
     with session_scope() as session:
         statement = (
             select(StoreOrm.store_id, StoreOrm.address)
@@ -140,7 +150,7 @@ def geocode_stores(gateway: SgisGeocodeGateway, industry: str | None, limit: int
         if not rows:
             return
 
-        cache = resolve_points(gateway, _CACHE_PATH, [r.address for r in rows])
+        cache = resolve_points(gateway, _CACHE_PATH, [r.address for r in rows], retry_failed=retry_failed)
         updates, failed, out_of_range = _apply(rows, cache, "store_id")
         _flush(session, StoreOrm, updates)
         print(
@@ -209,13 +219,16 @@ def main() -> None:
     parser.add_argument(
         "--childcare", action="store_true", help="store 대신 어린이집 원천 좌표 오류분 보정"
     )
+    parser.add_argument(
+        "--retry-failed", action="store_true", help="캐시에 실패로 남은 주소도 다시 묻는다 (재시도 규칙 변경 후 복구)"
+    )
     args = parser.parse_args()
 
     gateway = SgisGeocodeGateway()
     if args.childcare:
         geocode_childcare(gateway, args.limit)
     else:
-        geocode_stores(gateway, args.industry, args.limit)
+        geocode_stores(gateway, args.industry, args.limit, retry_failed=args.retry_failed)
 
 
 if __name__ == "__main__":

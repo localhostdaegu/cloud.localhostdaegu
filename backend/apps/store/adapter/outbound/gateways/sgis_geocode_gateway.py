@@ -12,12 +12,13 @@
   권고 한도 일 5만 회이므로 호출은 CLI 캐시가 억제하고, 실사용량은 call_count로 보고한다
 """
 
+import re
 import time
 
 import httpx
 from pyproj import Transformer
 
-from apps.indicator.adapter.inbound.cli.load_open_data import normalize_address
+from core.matrix.grid_address_normalizer import normalize_address
 from core.matrix.grid_http_error_translator import translate_http_errors
 from core.matrix.grid_keymaker_secret_manager import get_settings
 
@@ -26,6 +27,28 @@ _TRANSFORMER = Transformer.from_crs(5179, 4326, always_xy=True)  # UTM-K → WGS
 _TOKEN_MARGIN_SEC = 60  # 만료 직전 호출이 인증 오류로 떨어지지 않도록 앞당겨 재발급
 # 주소 자체의 실패 — 재시도해도 같으므로 예외가 아니라 None (CLI가 실패로 캐시해 재호출을 막는다)
 _NO_RESULT_CODES = {-100, -200}
+
+
+_LOT_NUMBER = re.compile(r"^(?P<head>.*?\S)\s+(?P<main>\d+)(?:-(?P<sub>\d+))?(?P<tail>\s.*)?$")
+
+
+def address_variants(address: str) -> list[str]:
+    """SGIS가 받아 주는 순서로 주소를 단순화한 후보 목록(중복 제거, 원문 정규화본이 첫 번째).
+
+    1) 정규화(괄호·지하 제거) 원문
+    2) 번지의 앞자리 0 제거 + 번지 뒤 토큰(층·호·건물명) 제거  예: "동성로2가 0067-0003 1,2층" → "동성로2가 67-3"
+    3) 부번 제거  예: "송현동 554-2" → "송현동 554"  (SGIS 실측: 부번 지번은 무결과, 본번은 결과)
+    동 이름만 남기는 단계는 두지 않는다 — 법정동 중심점은 행정동 판정을 한쪽으로 몰아 지표를 왜곡한다.
+    """
+    first = normalize_address(address)
+    variants = [first]
+    match = _LOT_NUMBER.match(first)
+    if match:
+        head, main, sub = match.group("head"), str(int(match.group("main"))), match.group("sub")
+        variants.append(f"{head} {main}-{int(sub)}" if sub else f"{head} {main}")
+        if sub:
+            variants.append(f"{head} {main}")
+    return list(dict.fromkeys(variants))
 
 
 def _raise_on_error(payload: dict) -> None:
@@ -44,12 +67,23 @@ class SgisGeocodeGateway:
         self._client = httpx.Client(timeout=httpx.Timeout(60, connect=10))
 
     def geocode(self, address: str) -> tuple[float, float] | None:
-        """주소 → (lng, lat). 원천이 찾지 못하면 None (0,0으로 채우지 않는다)."""
+        """주소 → (lng, lat). 원천이 찾지 못하면 None (0,0으로 채우지 않는다).
+
+        지번 주소는 부번·앞자리 0·층호 때문에 못 찾는 경우가 많아(2026-09-19 인허가 5,547건 중 47% 실패)
+        address_variants 순서로 단순화하며 재시도하고 첫 성공에서 멈춘다.
+        """
+        for variant in address_variants(address):
+            point = self._geocode_once(variant)
+            if point is not None:
+                return point
+        return None
+
+    def _geocode_once(self, address: str) -> tuple[float, float] | None:
         payload = self._request(
             f"{_BASE_URL}/addr/geocode.json",
             {
                 "accessToken": self._access_token(),
-                "address": normalize_address(address),
+                "address": address,
                 "pagenum": 0,
                 "resultcount": 1,
             },

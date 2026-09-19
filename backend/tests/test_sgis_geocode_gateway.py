@@ -100,3 +100,39 @@ def test_geocode_normalizes_address(monkeypatch):
     gateway.geocode("대구광역시 중구 중앙대로 지하 403 (성내동)")
 
     assert calls[1]["address"] == "대구광역시 중구 중앙대로 403"
+
+
+_NO_RESULT = {"errCd": -100, "errMsg": "검색결과가 존재하지 않습니다."}
+
+
+def test_address_variants_progressively_simplify_lot_number():
+    # 2026-09-19 실측: SGIS는 부번이 붙은 지번("송현동 554-2")을 못 찾고 본번("송현동 554")은 찾는다.
+    # 인허가 지번은 "0067-0003"처럼 0이 앞에 붙고 층·호가 뒤에 붙는다.
+    from apps.store.adapter.outbound.gateways.sgis_geocode_gateway import address_variants
+
+    assert address_variants("대구광역시 중구 동성로2가 0067-0003 1,2층") == [
+        "대구광역시 중구 동성로2가 0067-0003 1,2층",
+        "대구광역시 중구 동성로2가 67-3",
+        "대구광역시 중구 동성로2가 67",
+    ]
+    assert address_variants("대구광역시 달서구 송현동 554-2") == [
+        "대구광역시 달서구 송현동 554-2",
+        "대구광역시 달서구 송현동 554",
+    ]
+    # 도로명·본번만 있는 주소는 더 줄일 게 없다 — 중복 없이 1개
+    assert address_variants("대구광역시 달서구 와룡로 70") == ["대구광역리 달서구 와룡로 70".replace("광역리", "광역시")]
+
+
+def test_geocode_falls_back_through_variants_and_stops_at_first_hit(monkeypatch):
+    gateway, calls = _gateway(monkeypatch, [_AUTH, _NO_RESULT, _GEOCODE, _NO_RESULT])
+
+    point = gateway.geocode("대구광역시 달서구 송현동 554-2 2층")
+
+    assert point is not None
+    assert [c["address"] for c in calls[1:]] == ["대구광역시 달서구 송현동 554-2 2층", "대구광역시 달서구 송현동 554-2"]
+
+
+def test_geocode_returns_none_when_every_variant_misses(monkeypatch):
+    gateway, calls = _gateway(monkeypatch, [_AUTH, _NO_RESULT, _NO_RESULT, _NO_RESULT])
+    assert gateway.geocode("대구광역시 달서구 송현동 554-2 2층") is None
+    assert len(calls) == 4  # 인증 1 + 변형 3

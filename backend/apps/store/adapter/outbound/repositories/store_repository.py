@@ -31,30 +31,25 @@ class SqlAlchemyStoreRepository(StoreRepositoryPort, StoreSnapshotRepositoryPort
                 )
             ).scalar()
 
-    def active_store_ids(self, industry_id: str, district_code: str) -> set[str]:
+    def active_store_ids(self, industry_id: str, district_code: str | None = None) -> set[str]:
         with session_scope() as session:
-            rows = session.execute(
-                select(StoreOrm.store_id).where(
-                    StoreOrm.industry_id == industry_id,
-                    StoreOrm.district_code == district_code,
-                    StoreOrm.close_date.is_(None),
-                )
-            ).scalars()
-            return set(rows)
+            statement = select(StoreOrm.store_id).where(
+                StoreOrm.industry_id == industry_id, StoreOrm.close_date.is_(None)
+            )
+            if district_code is not None:
+                statement = statement.where(StoreOrm.district_code == district_code)
+            return set(session.execute(statement).scalars())
 
     def existing_locations(
-        self, industry_id: str, district_code: str
+        self, industry_id: str, district_code: str | None = None
     ) -> dict[str, tuple[float, float, str | None]]:
         with session_scope() as session:
-            rows = session.execute(
-                select(
-                    StoreOrm.store_id, StoreOrm.lat, StoreOrm.lng, StoreOrm.region_code
-                ).where(
-                    StoreOrm.industry_id == industry_id,
-                    StoreOrm.district_code == district_code,
-                    StoreOrm.lat.is_not(None),
-                )
-            ).all()
+            statement = select(
+                StoreOrm.store_id, StoreOrm.lat, StoreOrm.lng, StoreOrm.region_code
+            ).where(StoreOrm.industry_id == industry_id, StoreOrm.lat.is_not(None))
+            if district_code is not None:
+                statement = statement.where(StoreOrm.district_code == district_code)
+            rows = session.execute(statement).all()
             return {row.store_id: (row.lat, row.lng, row.region_code) for row in rows}
 
     def mark_closed(

@@ -11,7 +11,8 @@ data/raw/daegu_extra/ 의 공공데이터포털 파일(MANIFEST.md)과 브이월
 - open-onnuri-merchant    : 온누리 가맹점 소속 시장명 → 전통시장 행정동 → 행정동 가맹점 수 (시장명 미매칭은 제외)
 - open-subway-ridership   : 역 주소 → 지오코더 → 행정동, 월별 승차·시간대별 승차(2026-01~07)
 
-지오코딩 결과는 data/raw/daegu_extra/*_geocoded.csv 에 캐시한다 (재실행 시 API 호출 없음).
+지오코딩은 SGIS(통계청 오픈API, 저장 제한 조항 없음 — docs/plan/licenses.md)로 하고 결과를 data/raw/daegu_extra/*_geocoded_sgis.csv 에 캐시한다
+(재실행 시 API 호출 없음). 브이월드 지오코더는 약관상 결과 저장이 금지돼 쓰지 않는다(2026-09-19 원문 확인).
 
 실행: python -m apps.indicator.adapter.inbound.cli.load_open_data [--only <dataset_id>,...]
 """
@@ -39,6 +40,8 @@ from apps.indicator.adapter.outbound.repositories.regional_indicator_repository 
 )
 from apps.indicator.domain.entities.regional_indicator_entity import RegionalIndicator
 from apps.master.adapter.outbound.orms.region_orm import RegionOrm
+from apps.store.adapter.outbound.gateways.sgis_geocode_gateway import SgisGeocodeGateway
+from core.matrix.grid_address_normalizer import normalize_address  # noqa: F401  (테스트·외부 참조 호환 재노출)
 from core.matrix.grid_geo_region_index import RegionIndex
 from core.matrix.grid_keymaker_secret_manager import get_settings
 from core.matrix.grid_oracle_database_manager import session_scope
@@ -52,8 +55,6 @@ _VWORLD = "https://api.vworld.kr/req"
 # 승하차 파일의 옛 역명 → 역 주소 파일의 현재 역명 (2호선 대공원→수성알파시티, 3호선 어린이회관→어린이세상)
 STATION_ALIASES = {"대공원": "수성알파시티", "어린이회관": "어린이세상"}
 # 역 주소 파일의 오타 — 지오코딩 전에 교정
-_ADDRESS_FIXES = {"달구벌대호": "달구벌대로"}
-
 HOUR_BANDS = {
     "time_05_10": range(5, 10),
     "time_10_14": range(10, 14),
@@ -74,15 +75,6 @@ def normalize_station_name(name: str) -> str:
     base = re.sub(r"\(.*?\)", "", name).strip()
     base = re.sub(r"\d+$", "", base)
     return STATION_ALIASES.get(base, base)
-
-
-def normalize_address(address: str) -> str:
-    """지오코더 입력 정리 — 괄호 동명 제거, '지하' 제거(브이월드가 지하 주소를 엉뚱한 지점으로 돌려준다, 2026-09-19 실측), 오타 교정."""
-    cleaned = re.sub(r"\(.*?\)", "", address)
-    cleaned = re.sub(r"지하\s*", "", cleaned)
-    for wrong, right in _ADDRESS_FIXES.items():
-        cleaned = cleaned.replace(wrong, right)
-    return re.sub(r"\s+", " ", cleaned).strip()
 
 
 def normalize_market_name(name: str) -> str:
@@ -124,23 +116,9 @@ class VworldClient:
             raise RuntimeError(f"브이월드 전통시장 조회 실패: {response.get('error')}")
         return response["result"]["featureCollection"]["features"]
 
-    def geocode(self, address: str) -> tuple[float, float] | None:
-        """도로명 → 지번 순으로 시도. 실패하면 None (0,0 으로 채우지 않는다)."""
-        address = normalize_address(address)
-        for addr_type in ("road", "parcel"):
-            response = self._client.get(
-                f"{_VWORLD}/address",
-                params={**self._params, "service": "address", "request": "getcoord", "version": "2.0",
-                        "crs": "EPSG:4326", "address": address, "type": addr_type},
-            ).json()["response"]
-            if response["status"] == "OK":
-                point = response["result"]["point"]
-                return float(point["x"]), float(point["y"])
-        return None
 
-
-def _geocode_cached(client: VworldClient, cache_path: Path, keyed_addresses: dict[str, str]) -> dict[str, tuple[float, float]]:
-    """key → (lng, lat). 캐시 파일에 있는 key는 재호출하지 않는다."""
+def _geocode_cached(client: SgisGeocodeGateway, cache_path: Path, keyed_addresses: dict[str, str]) -> dict[str, tuple[float, float]]:
+    """key → (lng, lat). 캐시 파일에 있는 key는 재호출하지 않는다. 지오코더는 SGIS(주소 변형 재시도 내장)."""
     cached: dict[str, tuple[float, float]] = {}
     if cache_path.exists():
         with cache_path.open(encoding="utf-8", newline="") as f:
@@ -192,9 +170,10 @@ def _counts_to_indicators(dataset_id: str, key: str, period: str, counts: dict[s
 class OpenDataLoader(ABC):
     dataset: ExternalDataset
 
-    def __init__(self, index: RegionIndex, vworld: VworldClient) -> None:
+    def __init__(self, index: RegionIndex, vworld: VworldClient, geocoder: SgisGeocodeGateway) -> None:
         self._index = index
-        self._vworld = vworld
+        self._vworld = vworld  # 전통시장 위치(Data API, 저장 허용)만 쓴다
+        self._geocoder = geocoder
 
     @abstractmethod
     def load(self) -> list[RegionalIndicator]: ...
@@ -257,7 +236,7 @@ class BaeknyeonStoreLoader(OpenDataLoader):
 
     def load(self) -> list[RegionalIndicator]:
         rows = [r for r in _read_csv("baeknyeon.csv") if r["업체주소"].startswith("대구")]
-        points = _geocode_cached(self._vworld, _DATA_DIR / "baeknyeon_geocoded.csv", {r["연번"]: r["업체주소"] for r in rows})
+        points = _geocode_cached(self._geocoder, _DATA_DIR / "baeknyeon_geocoded_sgis.csv", {r["연번"]: r["업체주소"] for r in rows})
         located = [points[r["연번"]] for r in rows if r["연번"] in points]
         codes = self._index.locate_many([p[0] for p in located], [p[1] for p in located])
         print(f"  백년가게 대구 {len(rows)}곳, 지오코딩 {len(located)}곳, 행정동 판정 {sum(c is not None for c in codes)}곳", flush=True)
@@ -301,7 +280,7 @@ class SubwayRidershipLoader(OpenDataLoader):
 
     def _station_regions(self) -> dict[str, str]:
         stations = _read_csv("stations.csv")
-        points = _geocode_cached(self._vworld, _DATA_DIR / "stations_geocoded.csv", {r["역명"]: r["도로명주소"] for r in stations})
+        points = _geocode_cached(self._geocoder, _DATA_DIR / "stations_geocoded_sgis.csv", {r["역명"]: r["도로명주소"] for r in stations})
         names = [r["역명"] for r in stations if r["역명"] in points]
         codes = self._index.locate_many([points[n][0] for n in names], [points[n][1] for n in names])
         region_by_station = {normalize_station_name(n): c for n, c in zip(names, codes) if c}
@@ -368,13 +347,14 @@ def main() -> None:
 
     index = _region_index()
     vworld = VworldClient()
+    geocoder = SgisGeocodeGateway()
     dataset_repo = SqlAlchemyExternalDatasetRepository()
     indicator_repo = SqlAlchemyRegionalIndicatorRepository()
     for loader_cls in _LOADERS:
         if wanted and loader_cls.dataset.dataset_id not in wanted and loader_cls is not TraditionalMarketLoader:
             continue
         print(f"[{loader_cls.dataset.dataset_id}]", flush=True)
-        indicators = loader_cls(index, vworld).load()
+        indicators = loader_cls(index, vworld, geocoder).load()
         if wanted and loader_cls.dataset.dataset_id not in wanted:
             continue  # 온누리 매핑용 선행 실행 — 적재는 건너뜀
         dataset_repo.upsert([loader_cls.dataset])

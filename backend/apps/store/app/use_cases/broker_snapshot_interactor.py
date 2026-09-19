@@ -5,7 +5,6 @@
 최초 적재일에는 비교 기준(기존 행)이 없어 추정이 발동하지 않는다.
 """
 
-from dataclasses import replace
 from datetime import date
 from itertools import batched
 
@@ -14,11 +13,16 @@ from apps.store.app.ports.output.broker_snapshot_port import (
     BrokerGatewayPort,
     StoreSnapshotRepositoryPort,
 )
+from apps.store.app.use_cases.snapshot_support import (
+    CLOSED_STATUS_CODE as _CLOSED_STATUS_CODE,
+)
+from apps.store.app.use_cases.snapshot_support import (
+    CLOSED_STATUS_NAME as _CLOSED_STATUS_NAME,
+)
+from apps.store.app.use_cases.snapshot_support import carry_location
 from apps.store.domain.entities.store_entity import Store
 
 _CHUNK_SIZE = 500
-_CLOSED_STATUS_CODE = "closed_estimated"
-_CLOSED_STATUS_NAME = "폐업(추정)"
 
 
 class BrokerSnapshotInteractor(BrokerSnapshotUseCase):
@@ -39,7 +43,7 @@ class BrokerSnapshotInteractor(BrokerSnapshotUseCase):
         for chunk in batched(
             self._gateway.iter_offices(industry_id, district_code), _CHUNK_SIZE
         ):
-            stores = [self._carry_location(store, locations) for store in chunk]
+            stores = [carry_location(store, locations) for store in chunk]
             seen.update(store.store_id for store in stores)
             processed += self._repository.upsert(stores)
 
@@ -51,13 +55,3 @@ class BrokerSnapshotInteractor(BrokerSnapshotUseCase):
             status_name=_CLOSED_STATUS_NAME,
         )
         return processed, closed
-
-    @staticmethod
-    def _carry_location(
-        store: Store, locations: dict[str, tuple[float, float, str | None]]
-    ) -> Store:
-        """원천에 좌표가 없으므로 기존 지오코딩·공간조인 결과를 이월한다 (멱등)."""
-        if store.lat is not None or store.store_id not in locations:
-            return store
-        lat, lng, region_code = locations[store.store_id]
-        return replace(store, lat=lat, lng=lng, region_code=region_code)

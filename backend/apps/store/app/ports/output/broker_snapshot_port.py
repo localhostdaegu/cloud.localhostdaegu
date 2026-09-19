@@ -21,12 +21,13 @@ class StoreSnapshotRepositoryPort(ABC):
         """store_id 기준 업서트 — 처리 건수 반환."""
 
     @abstractmethod
-    def active_store_ids(self, industry_id: str, district_code: str) -> set[str]:
-        """close_date 없는(영업 관측 중) 점포 ID 집합 — 폐업 추정 비교 기준."""
+    def active_store_ids(self, industry_id: str, district_code: str | None = None) -> set[str]:
+        """close_date 없는(영업 관측 중) 점포 ID 집합 — 폐업 추정 비교 기준.
+        district_code 를 생략하면 업종 전체(학원처럼 전역 1회 스냅샷인 원천)."""
 
     @abstractmethod
     def existing_locations(
-        self, industry_id: str, district_code: str
+        self, industry_id: str, district_code: str | None = None
     ) -> dict[str, tuple[float, float, str | None]]:
         """좌표 보유 점포의 (lat, lng, region_code) — 원천에 좌표가 없어
         재수집 업서트가 후속 지오코딩·공간조인 결과를 지우지 않도록 이월한다."""

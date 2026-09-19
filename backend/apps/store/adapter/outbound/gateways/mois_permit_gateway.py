@@ -128,4 +128,6 @@ class MoisPermitGateway(StorePermitGatewayPort):
             lat=lat,
             lng=lng,
             source_updated_at=_parse_datetime(item["DAT_UPDT_PNT"]),
+            # 도로명 우선, 없으면 지번 — 원천 좌표가 빈 인허가(3.2%)를 geocode_stores(SGIS)로 채우는 입력
+            address=(item.get("ROAD_NM_ADDR") or "").strip() or (item.get("LOTNO_ADDR") or "").strip() or None,
         )

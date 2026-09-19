@@ -83,3 +83,15 @@ def test_resolve_points_caches_failures(tmp_path):
     resolve_points(gateway, path, ["실패 주소"])
 
     assert gateway.call_count == 1  # 두 번째 실행은 캐시된 실패로 재호출하지 않는다
+
+
+def test_resolve_points_retry_failed_requeries_cached_failures(tmp_path):
+    path = tmp_path / "sgis_geocode.csv"
+    append_cache(path, [("이미 있는 주소", (128.6, 35.87)), ("이미 실패한 주소", None)])
+    gateway = _FakeGateway({"이미 실패한 주소": (128.55, 35.86)})
+
+    cache = resolve_points(gateway, path, ["이미 있는 주소", "이미 실패한 주소"], retry_failed=True)
+
+    assert gateway.asked == ["이미 실패한 주소"]  # 성공 캐시는 그대로, 실패만 다시 묻는다
+    assert cache["이미 실패한 주소"] == (128.55, 35.86)
+    assert load_cache(path)["이미 실패한 주소"] == (128.55, 35.86)  # 캐시 파일도 갱신된다
