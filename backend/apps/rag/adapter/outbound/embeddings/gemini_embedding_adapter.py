@@ -1,6 +1,7 @@
 """Gemini 임베딩 어댑터 — 온라인용 EmbeddingPort 구현.
 
-1536차원 (foodrm 식품 법규 임베딩과 동일 규격).
+2560차원 — 로컬 대체 임베더(qwen3-embedding:4b 네이티브 2560)와 같은 차원. Gemini는 MRL이라
+3072→2560 손실이 없다(docs/model-evaluation.md §6, 2026-09-18 실측).
 """
 
 import logging
@@ -14,7 +15,7 @@ from core.matrix.grid_keymaker_secret_manager import get_settings
 
 LOGGER = logging.getLogger("localhostdaegu.rag.embedding")
 
-EMBEDDING_DIM = 1536
+EMBEDDING_DIM = 2560
 _GEMINI_BATCH_LIMIT = 100
 
 # 429의 출처는 우리 호출량이 아니라 gemini-embedding 베이스 모델의 전역 공용 풀이다

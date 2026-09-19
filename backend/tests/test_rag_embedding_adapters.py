@@ -15,17 +15,17 @@ def _transport(captured):
     """MockTransport: /api/embed 요청 바디 캡처."""
     def handler(request):
         captured.append(json.loads(request.content))
-        return httpx.Response(200, json={"embeddings": [[3.0, 4.0] + [0.0] * 1534]})
+        return httpx.Response(200, json={"embeddings": [[3.0, 4.0] + [0.0] * 2558]})
     return httpx.MockTransport(handler)
 
 
 def test_query_embedding_applies_instruct_prefix_and_dims():
-    """embed_query: QUERY_PROMPT 프리픽스 + dimensions=1536."""
+    """embed_query: QUERY_PROMPT 프리픽스 + dimensions=2560(운영 차원)."""
     captured = []
     adapter = OllamaQwen3EmbeddingAdapter(transport=_transport(captured))
     vec = adapter.embed_query("카페 지원")
     assert captured[0]["input"] == [QUERY_PROMPT + "카페 지원"]
-    assert captured[0]["dimensions"] == 1536
+    assert captured[0]["dimensions"] == 2560
     assert abs(sum(v * v for v in vec) - 1.0) < 1e-6  # L2 정규화
 
 
@@ -54,7 +54,7 @@ class _FakeEmbedding:
 
 class _FakeEmbedResult:
     def __init__(self, count):
-        self.embeddings = [_FakeEmbedding([0.0] * 1536) for _ in range(count)]
+        self.embeddings = [_FakeEmbedding([0.0] * 2560) for _ in range(count)]
 
 
 def test_gemini_adapter_class_attributes():
@@ -143,23 +143,23 @@ def test_gemini_adapter_logger_uses_project_namespace():
 # ---------- 차원 지정·bge-m3 어댑터 (로컬/외부 임베더 비교 평가용) ----------
 
 
-def test_qwen_adapter_accepts_native_2560_dimensions():
-    """OllamaQwen3EmbeddingAdapter(dimensions=2560): 요청 바디 dimensions·model_name 접미사."""
+def test_qwen_adapter_accepts_reduced_1536_dimensions():
+    """OllamaQwen3EmbeddingAdapter(dimensions=1536): 요청 바디 dimensions·model_name 접미사(기본 2560이 아닐 때만)."""
     captured = []
 
     def handler(request):
         captured.append(json.loads(request.content))
-        return httpx.Response(200, json={"embeddings": [[1.0] + [0.0] * 2559]})
+        return httpx.Response(200, json={"embeddings": [[1.0] + [0.0] * 1535]})
 
-    adapter = OllamaQwen3EmbeddingAdapter(dimensions=2560, transport=httpx.MockTransport(handler))
+    adapter = OllamaQwen3EmbeddingAdapter(dimensions=1536, transport=httpx.MockTransport(handler))
     vec = adapter.embed_documents(["문서"])[0]
-    assert captured[0]["dimensions"] == 2560
-    assert len(vec) == 2560
-    assert adapter.model_name == "qwen3-embedding-4b-q4-2560d"
+    assert captured[0]["dimensions"] == 1536
+    assert len(vec) == 1536
+    assert adapter.model_name == "qwen3-embedding-4b-q4-1536d"
 
 
 def test_qwen_adapter_default_model_name_is_unchanged():
-    """기본 1536은 기존 DB embedded_by 값과 같아야 한다 (호환성)."""
+    """기본 2560은 접미사 없는 모델명 — DB embedded_by 값과 같아야 한다."""
     adapter = OllamaQwen3EmbeddingAdapter(transport=_transport([]))
     assert adapter.model_name == "qwen3-embedding-4b-q4"
 
@@ -188,10 +188,10 @@ def test_bge_m3_adapter_sends_no_prefix_and_no_dimensions():
 
 
 def test_gemini_adapter_output_dimensionality_is_configurable(monkeypatch):
-    """GeminiEmbeddingAdapter(output_dimensionality=2560): config 전달·model_name 접미사."""
+    """GeminiEmbeddingAdapter(output_dimensionality=1536): config 전달·model_name 접미사(기본 2560이 아닐 때만)."""
     from apps.rag.adapter.outbound.embeddings.gemini_embedding_adapter import GeminiEmbeddingAdapter
 
-    adapter = GeminiEmbeddingAdapter(api_key="test-key", output_dimensionality=2560)
+    adapter = GeminiEmbeddingAdapter(api_key="test-key", output_dimensionality=1536)
     configs, models = [], []
 
     def fake_embed_content(model, contents, config):
@@ -201,9 +201,9 @@ def test_gemini_adapter_output_dimensionality_is_configurable(monkeypatch):
 
     monkeypatch.setattr(adapter._client.models, "embed_content", fake_embed_content)
     adapter.embed_query("질의")
-    assert configs[0].output_dimensionality == 2560
+    assert configs[0].output_dimensionality == 1536
     assert models[0] == "gemini-embedding-001"  # API 모델 ID에는 차원 접미사가 붙으면 안 된다
-    assert adapter.model_name == "gemini-embedding-001-2560d"
+    assert adapter.model_name == "gemini-embedding-001-1536d"
     assert GeminiEmbeddingAdapter(api_key="test-key").model_name == "gemini-embedding-001"
 
 

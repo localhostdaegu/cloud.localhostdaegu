@@ -17,6 +17,7 @@ class StoreResponse(BaseModel):
     source_updated_at: datetime
     region_code: str | None = None
     subcategory_id: str | None = None
+    address: str | None = None
 
 
 class StoreMarkerResponse(BaseModel):

@@ -42,10 +42,12 @@ def build_report_writer(provider: str, settings: Settings) -> ReportWriterPort:
     return _REPORT_WRITER_REGISTRY[provider](settings)
 
 
-def build_agents() -> list:
+def build_agents(settings: Settings | None = None) -> list:
     """수집 에이전트 3종 — 운영과 평가 하네스(compare_report_writers)가 같은 배선을 쓴다."""
-    # rag_chunk 는 전량 gemini-embedding-001 로 색인됨 — 질의 임베더도 같아야 한다 (기본 ollama 금지).
-    search = EvidenceSearchGateway(get_rag_search_use_case(provider="gemini"))
+    settings = settings or get_settings()
+    # 질의 임베더는 색인한 모델과 같아야 한다(embedded_by 필터). 기본 gemini, 오프라인 시연은 재색인 뒤
+    # RAG_EMBEDDING_PROVIDER=ollama (docs/model-evaluation.md §11 절차).
+    search = EvidenceSearchGateway(get_rag_search_use_case(provider=settings.rag_embedding_provider))
     return [
         MarketAgent(MarketDataGateway(get_region_use_case(), get_risk_use_case())),
         ShockAgent(search, REGION_NAME),
@@ -58,7 +60,7 @@ def get_analysis_use_case() -> AnalysisUseCase:
     settings = get_settings()
     return AnalysisInteractor(
         store=InMemoryAnalysisRequestStore(),
-        agents=build_agents(),
+        agents=build_agents(settings),
         sections=lambda purpose: sections_for(purpose, REGION_NAME),
         writer=build_report_writer(settings.report_writer_provider, settings),
     )

@@ -1,8 +1,7 @@
 """점포 행정동 공간조인 러너 (Driving Adapter, CLI).
 
 - 입력: region.geometry_ref의 경계 GeoJSON(v0.6.0 적재) × store.lat/lng
-- 판정: shapely STRtree 포함(contains) 일괄 질의 → 미포함은 최근접 경계 허용 오차 내 스냅
-  (DB에 PostGIS 없음 — pgvector 이미지 — 이라 앱사이드 조인이 현 인프라 정합)
+- 판정: core RegionIndex(shapely STRtree 포함 + 최근접 스냅) — 여러 BC가 같은 판정을 공유한다
 - 멱등: 기본은 region_code IS NULL 행만 채움. --full 은 전체 재판정 (경계 갱신 시)
 - 일일 증분(store-collector 크론) 후속 실행을 전제로 설계
 
@@ -10,62 +9,17 @@
 """
 
 import argparse
-import json
 from pathlib import Path
 
-import shapely
-from shapely import STRtree
 from sqlalchemy import select, update
 
 from apps.master.adapter.outbound.orms.region_orm import RegionOrm
 from apps.store.adapter.outbound.orms.store_orm import StoreOrm
+from core.matrix.grid_geo_region_index import RegionIndex
 from core.matrix.grid_oracle_database_manager import session_scope
 
 _REPO_ROOT = Path(__file__).resolve().parents[6]
-# 경계 틈·좌표 변환 오차 흡수 스냅 한계 — 대구 위도(35.9°)에서 0.0005° ≈ 45~56m
-# (EPSG:5174→WGS84 변환 오차 ±3m 실측 + 인접 폴리곤 사이 미세 틈 대비)
-_NEAREST_TOLERANCE_DEG = 0.0005
 _UPDATE_CHUNK = 10_000
-
-
-class RegionIndex:
-    """(region_code, GeoJSON geometry) 목록의 공간 인덱스 — 점→행정동 판정."""
-
-    def __init__(self, items: list[tuple[str, dict]]) -> None:
-        self._codes = [code for code, _ in items]
-        self._geoms = shapely.from_geojson(
-            json.dumps(
-                {
-                    "type": "GeometryCollection",
-                    "geometries": [geometry for _, geometry in items],
-                }
-            )
-        ).geoms
-        self._tree = STRtree(list(self._geoms))
-
-    @classmethod
-    def from_refs(cls, repo_root: Path, refs: list[tuple[str, str]]) -> "RegionIndex":
-        """refs: [(region_code, geometry_ref 상대경로)] — 파일에서 geometry만 읽는다."""
-        items = []
-        for region_code, ref in refs:
-            feature = json.loads((repo_root / ref).read_text(encoding="utf-8"))
-            items.append((region_code, feature["geometry"]))
-        return cls(items)
-
-    def locate_many(self, lngs: list[float], lats: list[float]) -> list[str | None]:
-        points = shapely.points(lngs, lats)
-        result: list[str | None] = [None] * len(points)
-        for point_idx, geom_idx in zip(*self._tree.query(points, predicate="within")):
-            result[point_idx] = self._codes[geom_idx]
-        for i, code in enumerate(result):
-            if code is None:
-                nearest = self._tree.nearest(points[i])
-                if points[i].distance(self._geoms[int(nearest)]) <= _NEAREST_TOLERANCE_DEG:
-                    result[i] = self._codes[int(nearest)]
-        return result
-
-    def locate(self, lng: float, lat: float) -> str | None:
-        return self.locate_many([lng], [lat])[0]
 
 
 def assign_all(full: bool = False) -> None:

@@ -27,7 +27,7 @@ from apps.master.adapter.outbound.orms.district_orm import DistrictOrm
 from apps.master.adapter.outbound.orms.region_orm import RegionOrm
 
 # 공간 인덱스는 store BC의 검증된 유틸을 읽기 전용 재사용 (타 BC 무수정 — adapter 레이어 간 import)
-from apps.store.adapter.inbound.cli.assign_regions import RegionIndex
+from core.matrix.grid_geo_region_index import RegionIndex
 from apps.tobacco.adapter.outbound.orms.tobacco_retailer_orm import TobaccoRetailerOrm
 from apps.tobacco.domain.entities.tobacco_retailer_entity import TobaccoRetailer
 from core.matrix.grid_oracle_database_manager import session_scope

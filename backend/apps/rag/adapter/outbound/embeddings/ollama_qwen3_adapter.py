@@ -1,7 +1,7 @@
 """Ollama Qwen3 임베딩 어댑터 — EmbeddingPort 구현.
 
-Qwen3-Embedding-4B는 MRL(32~2560차원)을 지원한다. dimensions 기본 1536은 운영 DB
-vector(1536)·기존 embedded_by 값과의 호환용이고, 네이티브 최고 차원은 2560이다.
+Qwen3-Embedding-4B는 MRL(32~2560차원)을 지원한다. 기본 2560은 네이티브 최고 차원이며 운영 DB
+vector(2560)·Gemini 운영 차원과 같다(2026-09-19 통일).
 """
 
 from apps.rag.adapter.outbound.embeddings.ollama_embedding_base import OllamaEmbeddingAdapterBase
@@ -14,7 +14,7 @@ class OllamaQwen3EmbeddingAdapter(OllamaEmbeddingAdapterBase):
 
     MODEL_NAME = "qwen3-embedding-4b-q4"
     OLLAMA_MODEL = "qwen3-embedding:4b"
-    DIMENSIONS = 1536
+    DIMENSIONS = 2560
 
     def __init__(
         self,

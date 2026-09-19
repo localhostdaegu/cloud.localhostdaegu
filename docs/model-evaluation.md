@@ -1,6 +1,6 @@
 # 모델 평가 — 로컬 대 Gemini, 임베딩·LLM (오프라인·온라인 가용성 평가)
 
-> 작성: 2026-09-18 · 상태: 임베딩(§1~§9)·LLM(§10) 가용성 평가 완료
+> 작성: 2026-09-18 · 갱신: 2026-09-19(§11 운영 반영) · 상태: 임베딩(§1~§9)·LLM(§10) 가용성 평가 완료, 운영 차원 2560 통일
 > 문서 성격: **가용성 평가 기록.** 서비스가 온라인(외부 API)과 오프라인(로컬 모델) 어느 쪽으로도 응대할 수 있어야 하므로, 두 경로를 같은 코퍼스·같은 질문으로 나란히 평가했다는 사실과 그 결과를 남긴다.
 > 같은 맥락의 선행 프로젝트: [REMAKE DAY 모델 선정 연구](https://research.remakeday.com/experiments/model-selection/) — 거기서 쓴 후보(bge-m3·qwen3-embedding:4b·gemini-embedding-001)·지표(Top-1·Top-k·교차 일치·지연)·단계 구조를 그대로 가져왔다.
 > 결과 원본: 임베딩 `data/eval/results/embed_compare_20260918_230428.json` · LLM `data/eval/results/llm_compare_20260918_232903.json`(1차 `..._232238.json`) · 평가셋 `data/eval/rag_evalset.jsonl`
@@ -156,15 +156,15 @@ python -m apps.rag.adapter.inbound.cli.compare_embedders
 - **전환 장치는 준비돼 있다.** `EmbeddingPort` 뒤에 Gemini·qwen·bge-m3 어댑터가 있고 레지스트리(`_INDEX_EMBEDDER_REGISTRY`)의 provider 문자열로 고른다. 색인과 검색은 `embedded_by`로 같은 모델끼리만 비교하므로 두 경로가 섞이지 않는다.
 
 **아직 안 된 것**
-- 운영 DB 컬럼이 `vector(1536)`이라 로컬 qwen@2560 색인을 **저장할 수 없다.** 오프라인 전환은 컬럼 2560 마이그레이션과 전량 재색인(약 3분) 뒤에 가능하다.
-- provider가 `analysis_dependencies`에 `"gemini"`로 고정돼 있다. 환경변수로 빼야 재배포 없이 전환된다.
+- ~~운영 DB 컬럼이 `vector(1536)`이라 로컬 qwen@2560 색인을 저장할 수 없다.~~ → 09-19 `halfvec(2560)`으로 마이그레이션하고 Gemini 2560으로 전량 재색인했다(§11).
+- ~~provider가 `analysis_dependencies`에 고정돼 있다.~~ → 09-19 `RAG_EMBEDDING_PROVIDER`로 뺐다(§11).
 - 리포트 작성기는 `REPORT_WRITER_PROVIDER=ollama`·`OLLAMA_REPORT_MODEL=gemma4:12b`로 전환할 수 있게 레지스트리를 두었지만(§10-1), 기본값은 여전히 gemini다.
 - 자동 폴백(외부 API 실패 → 로컬)은 설계하지 않았다. 지금은 사람이 provider를 바꾸는 수동 전환이다.
 
 ## 9. 결론·권고
 
 1. **로컬 대체 임베더는 qwen3-embedding:4b@2560.** 정확도는 Gemini 동급 이상, 질문 지연은 4분의 1. bge-m3는 후보에서 내린다.
-2. **운영은 당장 바꾸지 않는다.** Gemini 1536 색인이 살아 있고 마감(09-20)이 이틀 남았다. 전환하려면 ① `rag_chunk.embedding`을 `vector(2560)`으로 바꾸는 마이그레이션(HNSW 재생성), ② `--provider ollama`로 전량 재색인, ③ `analysis_dependencies`의 provider 고정값을 설정으로 빼는 작업이 필요하다. 어댑터는 이미 준비돼 있어 코드 변경은 ③뿐이다.
+2. **운영은 Gemini를 유지하되 차원은 2560으로 통일한다(09-19 사용자 결정).** ① 컬럼을 `halfvec(2560)`으로 바꾸고(HNSW는 `vector` 2000차원 상한) ② Gemini 2560으로 전량 재색인 ③ 임베더·작성기 provider를 환경변수로 뺐다. 오프라인은 시연 대비 배선이며 전환은 §11 절차로 수 분이다.
 3. **평가셋 검수가 남았다.** 80건 전부 candidate다. 사용자가 검수해 `confirmed`로 올리면 `evaluate_rag.py`의 본지표가 생긴다. news는 질문을 제목이 아니라 본문에서 만들거나 손으로 써야 의미가 있다.
 4. **LLM 평가는 §10.** 로컬 대체 리포트 작성기는 gemma4:12b.
 
@@ -246,4 +246,28 @@ python -m apps.analysis.adapter.inbound.cli.compare_report_writers --repeat 2
 - **A.7 (09-18 23:10) 운영 버그 발견** — LLM 하네스가 운영 에이전트로 컨텍스트를 채우다 `CachingRegionUseCaseProxy.summary()`가 `year` 인자를 받지 않아 TypeError. 09-18 연도 전달 작업에서 프록시가 빠져 지도 선택 연도가 리포트에 전달되지 않고 있었다(운영에서는 예외를 삼켜 market 섹션이 빈 채로 나감). 프록시에 `year`를 이어 주고 테스트로 고정했다.
 - **A.8 (09-18 23:22) LLM 1차 실행** — 인용 게이트가 문장부호까지 정확 일치를 요구해 Gemini의 정당한 인용 2건을 위반으로 잡음. 정규화 후 재실행(A.9).
 - **A.9 (09-18 23:29) LLM 2차 실행** — §10-3 표. 후보당 28건, 총 112건, 전체 4분 25초.
+- **A.11 (09-19 00:50) 운영 2560 통일** — `vector(2560)` HNSW 생성 실패(2000차원 상한) → `halfvec(2560)`. Gemini 재색인 3,589건 153초. 평가셋 recall 0.438은 만료 필터 때문(필터 OFF 1.000).
 - **A.10 (09-18 23:35) 정식 동주 측정** — `ollama stop`으로 GPU를 비운 뒤 임베딩→LLM→임베딩 순 호출. §10-4 표.
+
+## 11. 운영 반영 — 차원 2560 통일과 오프라인 전환 절차 (2026-09-19)
+
+**결정**: 운영은 Gemini를 쓴다. 오프라인(로컬) 경로는 시연 장애 대비 배선이고, 필요할 때 수 분 안에 바꿀 수 있어야 한다. 그러려면 온라인·오프라인 임베딩 차원이 같아야 하므로 **운영 Gemini 차원을 로컬 qwen과 같은 2560으로 맞췄다**(사용자 결정).
+
+**적용 내용**
+- 마이그레이션 `c1d2e3f4a5b6`: `rag_chunk.embedding` `vector(1536)` → **`halfvec(2560)`**. pgvector HNSW 인덱스는 `vector` 타입에서 2000차원까지만 지원한다는 것을 적용 중 실측했다(`column cannot have more than 2000 dimensions for hnsw index`). 2560은 fp16 `halfvec`(인덱스 4000차원까지)으로 저장하며 코사인 검색 정밀도 차이는 무시할 수준이다. 기존 1536 벡터는 형 변환이 불가해 비우고 전량 재색인한다.
+- 어댑터 기본 차원: Gemini `EMBEDDING_DIM=2560`, qwen `DIMENSIONS=2560`(접미사 없는 `model_name`이 이제 2560을 뜻한다). 설정 `RAG_EMBEDDING_PROVIDER`(기본 gemini)·`REPORT_WRITER_PROVIDER`(기본 gemini)·`OLLAMA_REPORT_MODEL`(기본 gemma4:12b).
+- 재색인: `build_rag_index --full --provider gemini` — 3,589청크, 2분 33초, 429 없음. `alembic check` 통과, 백엔드 테스트 497건 통과.
+- 검증: 재색인 후 평가셋 80건을 운영 검색 경로(`evaluate_rag`)로 돌리면 Recall@5 0.438이 나오는데, funding 20건을 **만료 공고 필터를 끄고** 돌리면 Recall@5 1.000·MRR 0.91이다. 평가셋의 funding 정답이 2025년 공고(만료)라 운영 필터에 걸리는 것이지 색인 문제가 아니다. 평가셋을 검수할 때 만료되지 않은 공고로 다시 뽑아야 한다.
+
+**오프라인 전환 절차(시연 장애 시)**
+
+```bash
+# 1) 로컬 모델 준비 확인 (둘 다 상주 시 약 11.6 GiB)
+ollama pull qwen3-embedding:4b && ollama pull gemma4:12b
+# 2) 검색 색인을 로컬 임베더로 교체 (3,589청크 약 3분, 20 docs/s)
+cd backend && python -m apps.rag.adapter.inbound.cli.build_rag_index --full --provider ollama
+# 3) 환경변수 2개 바꾸고 백엔드 재시작
+RAG_EMBEDDING_PROVIDER=ollama REPORT_WRITER_PROVIDER=ollama uvicorn main:app --port 8300
+```
+
+되돌리기는 `--provider gemini`로 재색인(약 2.5분)하고 환경변수를 원래대로 두면 된다. 색인은 `embedded_by`로 모델을 기록하므로 질의 임베더와 색인 모델이 어긋나면 검색 결과가 0건이 된다 — 재색인 없이 환경변수만 바꾸면 안 된다.

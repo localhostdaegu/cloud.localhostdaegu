@@ -1,13 +1,13 @@
 """fp16 로컬 임베딩 어댑터 — Qwen3-Embedding-4B (색인 전용, 새벽 배치).
 
-- 출력 1536차원(MRL truncate) → vector(1536) 스키마와 호환.
+- 출력 2560차원(네이티브) → vector(2560) 스키마와 호환.
 - 모델 로딩(~8GB VRAM)은 첫 호출까지 지연 — FastAPI 임포트 시 GPU를 잡지 않는다.
 - triton JIT에 C 컴파일러가 필요할 수 있다 — .env의 CC 참조 (docs/모델구성_v1.md).
 """
 
 from apps.rag.app.ports.output.rag_port import EmbeddingPort
 
-EMBEDDING_DIM = 1536
+EMBEDDING_DIM = 2560
 
 
 class Fp16Qwen3EmbeddingAdapter(EmbeddingPort):

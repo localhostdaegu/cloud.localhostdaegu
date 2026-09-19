@@ -1,13 +1,14 @@
-"""rag_chunk 스키마 — vector(1536) + HNSW 인덱스."""
+"""rag_chunk 스키마 — halfvec(2560) + HNSW 인덱스 (마이그레이션 c1d2e3f4a5b6)."""
 from sqlalchemy import text
 from core.matrix.grid_oracle_database_manager import session_scope
 
-def test_rag_chunk_table_exists_with_vector_1536():
+def test_rag_chunk_table_exists_with_halfvec_2560():
     with session_scope() as s:
-        dim = s.execute(text(
-            "SELECT atttypmod FROM pg_attribute WHERE attrelid='rag_chunk'::regclass AND attname='embedding'"
+        type_name = s.execute(text(
+            "SELECT format_type(atttypid, atttypmod) FROM pg_attribute "
+            "WHERE attrelid='rag_chunk'::regclass AND attname='embedding'"
         )).scalar()
-    assert dim == 1536
+    assert type_name == "halfvec(2560)"
 
 def test_rag_chunk_hnsw_index_exists():
     with session_scope() as s:
@@ -24,4 +25,4 @@ def test_rag_chunk_orm_declares_hnsw_index_matching_migration():
     hnsw = indexes["ix_rag_chunk_embedding_hnsw"]
     assert [column.name for column in hnsw.columns] == ["embedding"]
     assert hnsw.dialect_options["postgresql"]["using"] == "hnsw"
-    assert hnsw.dialect_options["postgresql"]["ops"] == {"embedding": "vector_cosine_ops"}
+    assert hnsw.dialect_options["postgresql"]["ops"] == {"embedding": "halfvec_cosine_ops"}

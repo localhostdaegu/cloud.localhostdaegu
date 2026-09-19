@@ -110,6 +110,7 @@ class MolitBrokerGateway(BrokerGatewayPort):
             close_date=None,  # 원천에 폐업일 없음 — 스냅샷 소실 추정(인터랙터)
             status_code=_STATUS_CODES.get(status_code, status_code),
             status_name=(item.get("sttusSeCodeNm") or "").strip(),
+            address=(item.get("rdnmadr") or "").strip() or None,  # 도로명 — SGIS 지오코딩 입력
             lat=None,  # 원천에 좌표 없음 — SGIS 지오코딩 후속 대상
             lng=None,
             source_updated_at=_to_source_updated_at(item.get("lastUpdtDt")),

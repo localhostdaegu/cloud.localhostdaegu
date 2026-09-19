@@ -1,6 +1,6 @@
 """전역 Secret 매니저 — .env / 환경변수를 단일 창구로 제공한다.
 
-우선순위: OS 환경변수(도커 컴포즈 주입) > backend/.env > 루트 .env (도커 컴포즈 공용 파일, 로컬 실행 시 API 키 원본).
+우선순위: OS 환경변수(도커 컴포즈 주입) > backend/.env (API 키 원본) > 루트 .env (도커 컴포즈 변수 치환용 POSTGRES_* 등).
 """
 
 from functools import lru_cache
@@ -27,9 +27,14 @@ class Settings(BaseSettings):
     bizinfo_api_key: str = ""
     youthcenter_api_key: str = ""
     seoul_open_data_api_key: str = ""
+    childcare_api_key: str = ""  # 어린이집정보공개포털 (별도 키, 일 1,000회)
+    neis_api_key: str = ""  # 나이스 교육정보 개방포털 — 학원교습소정보 (없으면 1회 5건 제한)
     ecos_api_key: str = ""
     rone_api_key: str = ""
     vworld_api_key: str = ""
+    # 통계청 SGIS 오픈API — 지오코딩(브이월드는 결과 저장을 약관으로 금지해 영구 적재에 못 쓴다)
+    sgis_service_id: str = ""
+    sgis_security_key: str = ""
     # 브이월드 인증키에 등록된 서비스URL — 데이터·WFS API는 domain 불일치 시 INCORRECT_KEY
     vworld_service_domain: str = "beyondfacade.cloud"
     gemini_api_key: str = ""
@@ -37,6 +42,8 @@ class Settings(BaseSettings):
     # 리포트 작성기 경로 — gemini(온라인) | ollama(오프라인). 오프라인 모델은 docs/model-evaluation.md 로 고른다.
     report_writer_provider: str = "gemini"
     ollama_report_model: str = "gemma4:12b"
+    # RAG 질의 임베더 — 색인한 모델과 같아야 한다(embedded_by 필터). 오프라인 전환은 재색인 뒤 ollama.
+    rag_embedding_provider: str = "gemini"
     region: str = "daegu"
     # 배포 오리진 — 쉼표 구분. 예: https://localhostdaegu.cloud,https://www.localhostdaegu.cloud
     cors_allow_origins: str = ""

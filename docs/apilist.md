@@ -33,7 +33,7 @@ NEO4J_URI=bolt://localhost:7689
 NEO4J_AUTH=neo4j/localhostdaegu
 ```
 
-제외 키(주석 처리): `SEOUL_OPEN_DATA_API_KEY`(서울 전용) · `CHILDCARE_API_KEY`(프로토타입 제외) · `TUNNEL_TOKEN`(배포 시)
+제외 키(주석 처리): `SEOUL_OPEN_DATA_API_KEY`(서울 전용) · `TUNNEL_TOKEN`(배포 시). `CHILDCARE_API_KEY`는 2026-09-19 확보(어린이집 986건 적재). `NEIS_API_KEY`도 같은 날 확보(학원 8,002건 적재, NEIS 개방포털 `acaInsTiInfo` D10)
 
 ---
 

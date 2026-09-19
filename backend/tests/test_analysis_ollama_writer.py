@@ -60,3 +60,15 @@ def test_registry_builds_writer_by_provider(monkeypatch):
     from apps.analysis.adapter.outbound.llm.gemini_report_writer import GeminiReportWriter
 
     assert isinstance(deps.build_report_writer("gemini", settings), GeminiReportWriter)
+
+
+def test_build_agents_uses_rag_embedding_provider_setting():
+    """오프라인 전환은 코드 수정 없이 RAG_EMBEDDING_PROVIDER 로 — 검색 임베더가 설정을 따른다."""
+    from apps.analysis.dependencies import analysis_dependencies as deps
+    from apps.rag.adapter.outbound.embeddings.ollama_qwen3_adapter import OllamaQwen3EmbeddingAdapter
+
+    settings = deps.get_settings.__wrapped__()
+    settings.rag_embedding_provider = "ollama"
+    agents = deps.build_agents(settings)
+    shock = next(a for a in agents if a.name == "shock")
+    assert isinstance(shock._search._search._embedder, OllamaQwen3EmbeddingAdapter)

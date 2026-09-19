@@ -16,13 +16,13 @@
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=35",
     "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=35",
     "consultation_metadata": {
-      "bank_connection": "unverified",
+      "bank_connection": "linked",
       "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=35",
       "business_registration_required": null,
       "prerequisites": [],
       "application_steps": [],
       "documents": [],
-      "verified_at": "2026-09-18"
+      "verified_at": "2026-09-19"
     }
   },
   {
@@ -42,7 +42,7 @@
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=36",
     "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=36",
     "consultation_metadata": {
-      "bank_connection": "unverified",
+      "bank_connection": "linked",
       "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=36",
       "business_registration_required": null,
       "prerequisites": [
@@ -50,7 +50,7 @@
       ],
       "application_steps": [],
       "documents": [],
-      "verified_at": "2026-09-18"
+      "verified_at": "2026-09-19"
     }
   },
   {
@@ -70,7 +70,7 @@
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
     "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
     "consultation_metadata": {
-      "bank_connection": "unverified",
+      "bank_connection": "linked",
       "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=5",
       "business_registration_required": false,
       "prerequisites": [
@@ -81,7 +81,7 @@
       ],
       "application_steps": [],
       "documents": [],
-      "verified_at": "2026-09-18"
+      "verified_at": "2026-09-19"
     }
   },
   {
@@ -101,13 +101,13 @@
     "url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=30",
     "source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=30",
     "consultation_metadata": {
-      "bank_connection": "unverified",
+      "bank_connection": "linked",
       "bank_connection_source_url": "https://www.dgsinbo.or.kr/page/10039/10043.tc?pageDtlOrdrNo=1&importUrl=/guaranteegoods/detail.tc&gdsNo=30",
       "business_registration_required": true,
       "prerequisites": [],
       "application_steps": [],
       "documents": [],
-      "verified_at": "2026-09-18"
+      "verified_at": "2026-09-19"
     }
   },
   {

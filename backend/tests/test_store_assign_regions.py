@@ -1,6 +1,6 @@
 """점포 공간조인 — RegionIndex 포함 판정·경계 틈 보정 검증."""
 
-from apps.store.adapter.inbound.cli.assign_regions import RegionIndex
+from core.matrix.grid_geo_region_index import RegionIndex
 
 # 단위 정사각형 2개 (인접, 공유 변 x=1)
 _LEFT = {

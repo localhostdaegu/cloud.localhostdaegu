@@ -13,3 +13,6 @@ node_modules/
 *.log
 .superpowers/
 scratchpad/
+
+# 발표용 제안서 자료 — 저장소에 올리지 않음
+docs/plan/

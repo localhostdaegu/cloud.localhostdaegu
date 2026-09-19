@@ -31,6 +31,7 @@ class StoreOrm(OrmBase):
     close_date: Mapped[date | None]
     status_code: Mapped[str]
     status_name: Mapped[str]
+    address: Mapped[str | None]  # 원천 도로명주소 — 지오코딩 입력
     lat: Mapped[float | None]
     lng: Mapped[float | None]
     source_updated_at: Mapped[datetime]

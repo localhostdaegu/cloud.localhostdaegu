@@ -1,6 +1,7 @@
 """Composition Root (DIP) — RAG 색인·검색 UseCase 배선.
 
-운영 코퍼스는 gemini-embedding-001로 색인돼 있어 색인·검색 기본 provider 모두 gemini다.
+운영 코퍼스는 gemini-embedding-001(2560차원)로 색인돼 있어 색인·검색 기본 provider 모두 gemini다.
+오프라인 시연은 `--provider ollama`(qwen 2560)로 재색인한 뒤 RAG_EMBEDDING_PROVIDER=ollama.
 검색은 쿼리 임베더와 같은 모델이 색인한 청크만 비교한다(embedded_by 필터) — provider는
 Factory Method 레지스트리(CLAUDE.md §5)로 if/elif 분기 없이 고른다.
 """
