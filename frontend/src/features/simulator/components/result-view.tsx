@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ConsultationFinanceOutput, FinanceInput } from "@/shared/api/types";
 import type { ConsultationProfile } from "../lib/consultation-draft";
 import { formatKrw } from "@/shared/format";
+import { AdjustmentHints } from "./adjustment-hints";
 import { FundingBar } from "./funding-bar";
 import { MatchingCards } from "./matching-cards";
 import { StressTable } from "./stress-table";
@@ -53,11 +54,11 @@ export function ResultFigures({ result, input, compareTo }: ResultFiguresProps) 
 
   return (
     <div className="flex flex-col gap-6">
-      <dl className="grid grid-cols-3 gap-4 rounded-md border border-[var(--border)] bg-[var(--bg-raised)] p-4">
+      <dl className="grid gap-4 rounded-md border border-[var(--border)] bg-[var(--bg-raised)] p-4 sm:grid-cols-3">
         {SUMMARY_ITEMS.map(({ key, label }) => (
           <div key={key} className="flex flex-col gap-1">
             <dt className="text-xs text-[var(--text-secondary)]">{label}</dt>
-            <dd className="text-xl font-semibold tracking-tight tabular-nums text-[var(--text-primary)]">
+            <dd className="text-xl font-semibold tracking-tight whitespace-nowrap tabular-nums text-[var(--text-primary)]">
               {formatKrw(result[key])}
             </dd>
             {compareTo && <Delta now={result[key]} before={compareTo[key]} />}
@@ -120,6 +121,12 @@ export function ResultFigures({ result, input, compareTo }: ResultFiguresProps) 
           })}
         </div>
       </div>
+
+      <AdjustmentHints
+        input={input}
+        externalFundingNeed={result.external_funding_need}
+        reserveMonths={result.reserve_months}
+      />
 
       {input.desired_loan > 0 && baseScenario && (
         <StressTable

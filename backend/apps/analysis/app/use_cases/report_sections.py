@@ -17,6 +17,7 @@ from apps.analysis.domain.report_text import (
     comparison_markdown,
     funding_lead,
     funding_prompt,
+    has_market_data,
     market_lead,
     market_prompt,
     plan_lead,
@@ -74,6 +75,13 @@ class VerdictSection(InterpretedSection):
 
 class MarketSection(InterpretedSection):
     key = "market"
+
+    def render(self, ctx: AnalysisContext, writer: ReportWriterPort) -> Iterator[str]:
+        # 해석할 지표가 없으면 LLM 을 부르지 않는다 — 부르면 "데이터가 없다"는 문장만 되풀이한다.
+        if not has_market_data(ctx):
+            yield self.lead(ctx)
+            return
+        yield from super().render(ctx, writer)
 
     def lead(self, ctx: AnalysisContext) -> str:
         return market_lead(ctx)

@@ -48,3 +48,21 @@ def test_budget_skips_unitless_number_before_amount():
 def test_budget_sums_consecutive_units():
     assert parse_intent("1억 5천만원", DONGS, GUS).budget_krw == 150_000_000
     assert parse_intent("예산 2억5천", DONGS, GUS).budget_krw == 250_000_000
+
+
+def test_registered_industries_and_everyday_words_are_understood():
+    """2026-09-19 페르소나 테스트 — 등록 업종 4종과 '국수집'이 업종 미정으로 떨어졌다."""
+    cases = {
+        "달성군에 편의점 예산 7천": "convenience_store",
+        "수성구 학원 예산 5천": "academy",
+        "중구 부동산 예산 3천": "real_estate",
+        "달성군 어린이집": "childcare",
+        "칠성시장 옆에 국수집 차릴라카는데 돈은 한 4천 있어예": "restaurant",
+    }
+    for text, industry in cases.items():
+        assert parse_intent(text, {}, {"달성군": "27710", "수성구": "27260", "중구": "27110"}).industry_id == industry
+
+
+def test_gyeongdae_gate_and_hospital_map_to_different_dongs():
+    assert parse_intent("경대북문 분식집", {}, {}).region_name == "산격3동"
+    assert parse_intent("경대병원역 근처 카페", {}, {}).region_name == "삼덕동"

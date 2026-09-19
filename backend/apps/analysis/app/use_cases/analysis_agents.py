@@ -14,10 +14,25 @@ from apps.analysis.app.ports.output.analysis_port import (
     SimulationPort,
 )
 from apps.analysis.domain.agent_event import ToolCallEvent
-from apps.analysis.domain.analysis_context import AnalysisContext
+from apps.analysis.domain.analysis_context import AnalysisContext, EvidenceDoc
+from apps.analysis.domain.district_relevance import keep_relevant
+from apps.analysis.domain.report_text import krw
 
 NEWS_TOP_K = 5
 FUNDING_TOP_K = 5
+_SEARCH_MARGIN = 2  # 다른 구·군 문서를 뺀 뒤에도 TOP_K 를 채우려고 넉넉히 검색한다
+
+
+_DISTRICT_CODE_LENGTH = 5  # 행정동 10자리의 앞 5자리가 구·군 코드
+
+
+def _search_local(
+    search: EvidenceSearchPort, query: str, source_type: str, top_k: int, ctx: AnalysisContext, districts: dict[str, str]
+) -> list[EvidenceDoc]:
+    """넉넉히 검색한 뒤 다른 구·군만 가리키는 문서를 빼고 top_k 로 자른다."""
+    docs = search.search(query, source_type, top_k * _SEARCH_MARGIN)
+    district_name = districts.get(ctx.request.region[:_DISTRICT_CODE_LENGTH])
+    return keep_relevant(docs, district_name, list(districts.values()))[:top_k]
 
 
 def _with_question(base: str, ctx: AnalysisContext) -> str:
@@ -43,22 +58,23 @@ class MarketAgent(AnalysisAgent):
         yield ToolCallEvent(
             agent=self.name,
             tool="region_metrics",
-            summary=f"{ctx.region_label} {ctx.industry_label} 점포수·폐업률·성장률 조회",
+            summary=f"{ctx.region_label} {ctx.industry_label} 점포수·폐업률·점포 증감률 조회",
         )
-        yield ToolCallEvent(agent=self.name, tool="risk_score", summary="위험도 스코어(폐업·밀집·성장) 조회")
+        yield ToolCallEvent(agent=self.name, tool="risk_score", summary="동네 간 상대 위험도 조회")
 
 
 class ShockAgent(AnalysisAgent):
     name = "shock"
 
-    def __init__(self, search: EvidenceSearchPort, region_name: str) -> None:
+    def __init__(self, search: EvidenceSearchPort, region_name: str, districts: dict[str, str] | None = None) -> None:
         self._search = search
         self._region_name = region_name
+        self._districts = districts or {}  # 구·군 코드 → 이름
 
     def collect(self, ctx: AnalysisContext) -> Iterator[ToolCallEvent]:
         query = _with_question(f"{self._region_name} {ctx.industry_label} 소상공인 원가 금리 경기", ctx)
-        ctx.news = self._search.search(query, "news", NEWS_TOP_K)
-        yield ToolCallEvent(agent=self.name, tool="news_search", summary=f"뉴스 RAG 검색 — {len(ctx.news)}건")
+        ctx.news = _search_local(self._search, query, "news", NEWS_TOP_K, ctx, self._districts)
+        yield ToolCallEvent(agent=self.name, tool="news_search", summary=f"관련 뉴스 {len(ctx.news)}건 찾음")
 
 
 class FundingAgent(AnalysisAgent):
@@ -70,11 +86,13 @@ class FundingAgent(AnalysisAgent):
         simulation: SimulationPort,
         matching: ProductMatchingPort,
         region_name: str,
+        districts: dict[str, str] | None = None,
     ) -> None:
         self._search = search
         self._simulation = simulation
         self._matching = matching
         self._region_name = region_name
+        self._districts = districts or {}  # 구·군 코드 → 이름
 
     def collect(self, ctx: AnalysisContext) -> Iterator[ToolCallEvent]:
         # finance 는 선택 입력이다 — 있으면 시뮬레이션을 돌려 상품을 매칭하고,
@@ -90,16 +108,28 @@ class FundingAgent(AnalysisAgent):
             yield ToolCallEvent(
                 agent=self.name,
                 tool="finance_simulate",
-                summary=f"재무 시뮬레이션 — 조달 필요 {ctx.external_funding_need:,}원",
+                summary=f"필요 자금 계산 — 자기자본 외 {krw(ctx.external_funding_need)}",
             )
-            ctx.products = self._matching.match(ctx.external_funding_need, ctx.request.industry)
+            ctx.products = self._match_products(ctx)
             yield ToolCallEvent(
-                agent=self.name, tool="product_matching", summary=f"금융상품 매칭 — {len(ctx.products)}건"
+                agent=self.name, tool="product_matching", summary=f"상담 후보 상품 {len(ctx.products)}건 정리"
             )
         query = _with_question(f"{self._region_name} {ctx.industry_label} 소상공인 창업 정책자금 보증 대출", ctx)
-        ctx.funding_docs = self._search.search(query, "funding", FUNDING_TOP_K)
+        ctx.funding_docs = _search_local(self._search, query, "funding", FUNDING_TOP_K, ctx, self._districts)
         yield ToolCallEvent(
             agent=self.name,
             tool="funding_search",
-            summary=f"정책자금 공고 RAG 검색 — {len(ctx.funding_docs)}건",
+            summary=f"정책자금 공고 {len(ctx.funding_docs)}건 찾음",
+        )
+
+    def _match_products(self, ctx: AnalysisContext):
+        # 상담 정보는 선택 입력이다 — 있으면 사전상담 화면과 같은 기준(상담 후보)으로, 없으면 기존 매칭으로 고른다.
+        consultation = ctx.request.consultation
+        if consultation is None:
+            return self._matching.match(ctx.external_funding_need, ctx.request.industry)
+        return self._matching.consultation_candidates(
+            ctx.external_funding_need,
+            ctx.request.industry,
+            consultation.profile,
+            ctx.request.region[:_DISTRICT_CODE_LENGTH],
         )

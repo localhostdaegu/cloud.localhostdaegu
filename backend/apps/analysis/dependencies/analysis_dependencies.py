@@ -27,7 +27,7 @@ from apps.master.dependencies.region_dependencies import get_region_use_case
 from apps.metric.dependencies.region_industry_metric_dependencies import get_risk_use_case
 from apps.rag.dependencies.rag_dependencies import get_rag_search_use_case
 from core.matrix.grid_keymaker_secret_manager import Settings, get_settings
-from core.matrix.grid_region_config import REGION_NAME
+from core.matrix.grid_region_config import DISTRICTS, REGION_NAME
 
 # 리포트 작성기 레지스트리 — provider 문자열 → 팩토리 (온라인 gemini / 오프라인 ollama, if/elif 대신 dict)
 _REPORT_WRITER_REGISTRY = {
@@ -48,10 +48,11 @@ def build_agents(settings: Settings | None = None) -> list:
     # 질의 임베더는 색인한 모델과 같아야 한다(embedded_by 필터). 기본 gemini, 오프라인 시연은 재색인 뒤
     # RAG_EMBEDDING_PROVIDER=ollama (docs/model-evaluation.md §11 절차).
     search = EvidenceSearchGateway(get_rag_search_use_case(provider=settings.rag_embedding_provider))
+    districts = {code: info.name for code, info in DISTRICTS.items()}
     return [
         MarketAgent(MarketDataGateway(get_region_use_case(), get_risk_use_case())),
-        ShockAgent(search, REGION_NAME),
-        FundingAgent(search, EngineSimulationGateway(), ManualProductMatchingGateway(), REGION_NAME),
+        ShockAgent(search, REGION_NAME, districts),
+        FundingAgent(search, EngineSimulationGateway(), ManualProductMatchingGateway(), REGION_NAME, districts),
     ]
 
 

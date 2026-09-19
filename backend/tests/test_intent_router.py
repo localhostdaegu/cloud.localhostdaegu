@@ -42,3 +42,13 @@ def test_seeded_dong_name_matches_without_landmark(client: TestClient):
     assert body["region_name"] == "산격3동"
     assert body["industry_id"] == "hair_salon"
     assert body["missing"] == ["budget"]
+
+
+def test_spoken_place_comes_back_as_a_dong_code_so_the_map_can_select_it(client: TestClient):
+    """2026-09-19 페르소나 테스트 — '서문시장 근처'라 말한 고객이 구 중심의 다른 동을 골랐다."""
+    body = client.post("/intent", json={"text": "서문시장 근처 카페, 예산 5천"}).json()
+    assert (body["region_name"], body["region_code"]) == ("대신동", "2711059500")
+
+
+def test_district_only_has_no_dong_code(client: TestClient):
+    assert client.post("/intent", json={"text": "수성구에 음식점"}).json()["region_code"] is None

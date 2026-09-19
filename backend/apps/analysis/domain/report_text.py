@@ -24,6 +24,20 @@ def system_instruction(region_name: str) -> str:
     )
 
 
+def krw(won: int) -> str:
+    """원 단위 int → 상담자료에 쓰는 만원 단위 표기(만원 미만 절사). 화면(frontend formatKrw)과 같은 단위를 쓴다.
+
+    1억 이상은 '2억 1,085만원'처럼 억·만원을 함께 적는다 — 은행에 가져갈 문서라 소수 억 단위로 뭉개지 않는다.
+    """
+    sign = "-" if won < 0 else ""
+    eok, man = divmod(abs(won) // 10_000, 10_000)
+    if eok and man:
+        return f"{sign}{eok}억 {man:,}만원"
+    if eok:
+        return f"{sign}{eok}억원"
+    return f"{sign}{man:,}만원" if man else "0원"
+
+
 def _subject(ctx: AnalysisContext) -> str:
     return f"{ctx.region_label} {ctx.industry_label}"
 
@@ -54,13 +68,13 @@ def finance_facts(ctx: AnalysisContext) -> str:
     if sim is None:
         return "재무 시뮬레이션: 입력 없음"
     return (
-        f"재무 시뮬레이션: 초기 투자 {sim.capex:,}원, 월 고정비 {sim.monthly_fixed:,}원, "
-        f"손익분기 월매출 {sim.bep_revenue:,}원, 부족 자금 {sim.funding_gap:,}원"
+        f"재무 시뮬레이션: 초기 투자 {krw(sim.capex)}, 월 고정비 {krw(sim.monthly_fixed)}, "
+        f"손익분기 월매출 {krw(sim.bep_revenue)}, 부족 자금 {krw(sim.funding_gap)}"
     )
 
 
 def _limit_text(limit: int | None) -> str:
-    return f"{limit:,}원" if limit is not None else "미정"
+    return krw(limit) if limit is not None else "미정"
 
 
 def _rate_text(rate: float | None) -> str:
@@ -91,7 +105,21 @@ def verdict_lead(ctx: AnalysisContext) -> str:
     return f"### 종합 진단\n\n**{_subject(ctx)} · {headline}**\n\n"
 
 
+_NO_DATA = "데이터 없음"
+
+
+def has_market_data(ctx: AnalysisContext) -> bool:
+    """지표가 하나라도 집계됐는가 — 편의점·어린이집처럼 원천이 아직 연결되지 않은 업종은 전부 '데이터 없음'이다."""
+    return ctx.risk is not None or any(c.value != _NO_DATA for c in ctx.cards)
+
+
 def market_lead(ctx: AnalysisContext) -> str:
+    if not has_market_data(ctx):
+        return (
+            f"### 상권 진단\n\n{_subject(ctx)}은 아직 상권 지표가 집계되지 않았습니다. "
+            "이 업종의 원천 데이터가 지표에 연결되지 않았기 때문이며, 상권이 나쁘다는 뜻이 아닙니다. "
+            "자금 계획과 상담 후보는 이 지표와 무관하게 위 내용 그대로 쓸 수 있습니다.\n\n"
+        )
     rows = [f"| {c.label} | {c.value} |" for c in ctx.cards]
     risk = ctx.risk
     if risk is not None:
@@ -108,7 +136,7 @@ def shock_lead(ctx: AnalysisContext) -> str:
 
 
 def funding_lead(ctx: AnalysisContext) -> str:
-    return f"### 정책자금\n\n**매칭 금융상품 (보증 → 은행 → 정책자금 순)**\n\n{products_text(ctx)}\n\n"
+    return f"### 정책자금\n\n**상담 후보 금융상품 {len(ctx.products)}건**\n\n{products_text(ctx)}\n\n"
 
 
 def verdict_prompt(ctx: AnalysisContext) -> str:
@@ -151,7 +179,7 @@ def _payback(months: float | None) -> str:
 
 def calculator_markdown(sim: SimulationSummary) -> str:
     rows = [
-        f"| {s.name} | {s.monthly_revenue:,}원 | {s.operating_profit:,}원 | {_payback(s.payback_months)} |"
+        f"| {s.name} | {krw(s.monthly_revenue)} | {krw(s.operating_profit)} | {_payback(s.payback_months)} |"
         for s in sim.scenarios
     ]
     return (
@@ -159,12 +187,12 @@ def calculator_markdown(sim: SimulationSummary) -> str:
             [
                 "### 재무 시뮬레이션",
                 "",
-                f"초기 투자 {sim.capex:,}원 · 운영준비금 {sim.reserve_months}개월치 {sim.operating_reserve:,}원 · "
-                f"총 준비자금 {sim.total_required_funds:,}원",
+                f"초기 투자 {krw(sim.capex)} · 운영준비금 {sim.reserve_months}개월치 {krw(sim.operating_reserve)} · "
+                f"총 준비자금 {krw(sim.total_required_funds)}",
                 "",
-                f"월 고정비 {sim.monthly_fixed:,}원 · 손익분기 월매출 {sim.bep_revenue:,}원 · "
-                f"자기자본 외 조달 필요 {sim.external_funding_need:,}원 · "
-                f"희망대출 반영 후 남는 부족액 {sim.funding_gap:,}원",
+                f"월 고정비 {krw(sim.monthly_fixed)} · 손익분기 월매출 {krw(sim.bep_revenue)} · "
+                f"자기자본 외 조달 필요 {krw(sim.external_funding_need)} · "
+                f"희망대출 반영 후 남는 부족액 {krw(sim.funding_gap)}",
                 "",
                 "| 시나리오 | 월매출 | 영업이익 | 투자 회수 |",
                 "|---|---|---|---|",
@@ -196,22 +224,25 @@ _PREPARATION_LABELS = {
 }
 
 
+def _plan_facts(sim: SimulationSummary) -> list[str]:
+    """선택안의 자금 수요 두 줄 — 리포트 첫머리와 LLM 프롬프트가 같은 문장을 쓴다."""
+    return [
+        f"총 준비자금 {krw(sim.total_required_funds)} "
+        f"(초기 투자 {krw(sim.capex)} + 운영준비금 {sim.reserve_months}개월치 {krw(sim.operating_reserve)})",
+        "",
+        f"자기자본 외 조달 필요 {krw(sim.external_funding_need)} · "
+        f"희망대출 반영 후 남는 부족액 {krw(sim.funding_gap)} · "
+        f"손익분기 월매출 {krw(sim.bep_revenue)}",
+    ]
+
+
 def plan_lead(ctx: AnalysisContext) -> str:
     """선택안의 자금 수요 — 코드가 계산한 값만 쓴다(§6 T4)."""
     sim = ctx.simulation
     if sim is None:
         return "### 상담할 계획\n\n재무 입력이 없어 계획을 요약하지 못했습니다.\n"
 
-    lines = [
-        "### 상담할 계획",
-        "",
-        f"총 준비자금 {sim.total_required_funds:,}원 "
-        f"(초기 투자 {sim.capex:,}원 + 운영준비금 {sim.reserve_months}개월치 {sim.operating_reserve:,}원)",
-        "",
-        f"자기자본 외 조달 필요 {sim.external_funding_need:,}원 · "
-        f"희망대출 반영 후 남는 부족액 {sim.funding_gap:,}원 · "
-        f"손익분기 월매출 {sim.bep_revenue:,}원",
-    ]
+    lines = ["### 상담할 계획", "", *_plan_facts(sim)]
     consultation = ctx.request.consultation
     if consultation is not None and consultation.change_reason:
         lines += ["", f"변경 이유: {consultation.change_reason}"]
@@ -219,11 +250,16 @@ def plan_lead(ctx: AnalysisContext) -> str:
 
 
 def plan_prompt(ctx: AnalysisContext) -> str:
+    """수치를 프롬프트에 그대로 싣는다 — 싣지 않으면 LLM 이 '수치가 제시되지 않았다'고 쓴다(2026-09-19 페르소나 테스트).
+    변경 이유는 있을 때만 알린다. 없다는 사실을 알리면 LLM 이 그것을 결함처럼 지적한다."""
+    sim = ctx.simulation
+    facts = "\n".join(line for line in _plan_facts(sim) if line) if sim else "재무 입력 없음"
     consultation = ctx.request.consultation
     reason = consultation.change_reason if consultation else ""
+    reason_line = f"사용자가 밝힌 변경 이유: {reason}\n" if reason else ""
     return (
-        f"{_subject(ctx)} 창업자금 계획입니다. 위 수치는 이미 표에 있으니 다시 계산하거나 새 숫자를 만들지 마세요.\n"
-        f"사용자가 밝힌 변경 이유: {reason or '없음'}\n"
+        f"{_subject(ctx)} 창업자금 계획입니다.\n계획 수치(이미 위에 표시됨):\n{facts}\n{reason_line}"
+        "이 수치를 다시 계산하거나 새 숫자를 만들지 마세요. 수치가 없다거나 부족하다고 쓰지 마세요.\n"
         "이 계획이 어떤 상태인지 2~3문장으로 설명하고, 은행 상담에서 먼저 확인할 점 하나를 덧붙이세요.\n"
         "승인 여부·자격 충족을 단정하지 마세요."
     )
@@ -235,12 +271,11 @@ def comparison_markdown(ctx: AnalysisContext) -> str:
     if baseline is None or current is None:
         return "### 최초안과 현재안\n\n비교할 최초안이 없습니다. 조건을 바꿔 다시 계산하면 비교표가 생깁니다.\n"
 
-    rows = [
-        ("손익분기 월매출", baseline.bep_revenue, current.bep_revenue),
-        ("총 준비자금", baseline.total_required_funds, current.total_required_funds),
-        ("자기자본 외 조달 필요", baseline.external_funding_need, current.external_funding_need),
-        ("희망대출 반영 후 부족액", baseline.funding_gap, current.funding_gap),
-    ]
+    rows = _comparison_rows(baseline, current)
+    # 조건을 한 번만 계산했으면 두 안이 같다 — 값이 똑같은 표는 비교가 아니다.
+    if all(before == after for _, before, after in rows):
+        return "### 최초안과 현재안\n\n최초안에서 바꾼 조건이 없습니다. 조건을 바꿔 다시 계산하면 비교표가 생깁니다.\n"
+
     return (
         "\n".join(
             [
@@ -248,11 +283,20 @@ def comparison_markdown(ctx: AnalysisContext) -> str:
                 "",
                 "| 항목 | 최초안 | 현재안 |",
                 "|---|---|---|",
-                *[f"| {label} | {before:,}원 | {after:,}원 |" for label, before, after in rows],
+                *[f"| {label} | {krw(before)} | {krw(after)} |" for label, before, after in rows],
             ]
         )
         + "\n"
     )
+
+
+def _comparison_rows(baseline: SimulationSummary, current: SimulationSummary) -> list[tuple[str, int, int]]:
+    return [
+        ("손익분기 월매출", baseline.bep_revenue, current.bep_revenue),
+        ("총 준비자금", baseline.total_required_funds, current.total_required_funds),
+        ("자기자본 외 조달 필요", baseline.external_funding_need, current.external_funding_need),
+        ("희망대출 반영 후 부족액", baseline.funding_gap, current.funding_gap),
+    ]
 
 
 def questions_lead(ctx: AnalysisContext) -> str:

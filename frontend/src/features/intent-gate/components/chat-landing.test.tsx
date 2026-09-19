@@ -67,12 +67,28 @@ it.each([
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
 
-it("업종과 지역이 모두 없으면 지도로 바로 이동한다", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...result, district_code: null, industry_id: null, budget_krw: null, missing: ["district", "industry"] }))));
+it("동네를 못 알아들으면 말없이 지도로 보내지 않고 구·군을 되묻는다", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...result, district_code: null, industry_id: null, budget_krw: 30_000_000, missing: ["region", "industry"] }))));
+  const user = mount();
+  await user.type(screen.getByRole("textbox"), "예산 3천으로 뭐 하지?");
+  await user.click(screen.getByRole("button", { name: "찾아보기" }));
+
+  expect(await screen.findByText(/말씀하신 곳을 찾지 못했어요/)).toBeInTheDocument();
+  expect(push).not.toHaveBeenCalled();
+
+  // 구·군을 고르면 업종 되물음으로 이어지고, 말한 예산은 끝까지 따라간다.
+  await user.click(screen.getByRole("button", { name: "수성구" }));
+  await user.click(await screen.findByRole("button", { name: "편의점" })); // 등록 업종 11종이 모두 칩에 있다
+  expect(push).toHaveBeenCalledWith("/map?district=27260&industry=convenience_store&budget=30000000");
+});
+
+it("동네를 아직 못 정했으면 대구 전체 지도로 갈 수 있다", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...result, district_code: null, industry_id: null, budget_krw: null, missing: ["region", "industry"] }))));
   const user = mount();
   await user.type(screen.getByRole("textbox"), "뭐 하지?");
   await user.click(screen.getByRole("button", { name: "찾아보기" }));
-  await waitFor(() => expect(push).toHaveBeenCalledWith("/map"));
+  await user.click(await screen.findByRole("button", { name: /아직 몰라요/ }));
+  expect(push).toHaveBeenCalledWith("/map");
 });
 
 it("오류를 표시하고 입력을 보존해 재시도할 수 있다", async () => {

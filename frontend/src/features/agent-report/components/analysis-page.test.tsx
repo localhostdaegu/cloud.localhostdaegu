@@ -58,7 +58,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const submit = () => fireEvent.click(screen.getByRole("button", { name: /분석 시작/ }));
+const submit = () => fireEvent.click(screen.getByRole("button", { name: /분석 시작|상담자료 만들기/ }));
 
 it("저장된 선택안이 있으면 상담자료(handoff)로 요청한다", async () => {
   const draft = { ...recordCalculation(emptyDraft({ region: "2711059500", industry: "cafe" }), INPUT, RESULT), change_reason: "월세가 낮은 자리" };

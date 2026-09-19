@@ -150,6 +150,11 @@ class FakeMatching(ProductMatchingPort):
         self.calls.append((funding_gap, industry_id))
         return [PRODUCT]
 
+    def consultation_candidates(self, external_funding_need, industry_id, profile, district_code):
+        self.calls.append((external_funding_need, industry_id))
+        self.consultation_calls = [*getattr(self, "consultation_calls", []), (profile, district_code)]
+        return [PRODUCT]
+
 
 class FakeWriter(ReportWriterPort):
     def __init__(self, chunks: tuple[str, ...] = ("해석",)) -> None:

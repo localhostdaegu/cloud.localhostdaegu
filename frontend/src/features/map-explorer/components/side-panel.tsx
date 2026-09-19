@@ -26,8 +26,11 @@ interface SidePanelProps {
  *  개업 30일 내 종료 건은 집계에서 빠진다(OPEN-008 — backend apps/metric/domain/short_lived.py). */
 const CARD_NOTES: Record<string, string> = {
   폐업률: "전년 말 점포 수 대비 그해 폐업 건수 · 개업 30일 내 종료 건 제외",
-  성장률: "(개업 − 폐업) ÷ 전년 말 점포 수",
+  "점포 증감률": "(개업 − 폐업) ÷ 전년 말 점포 수",
 };
+
+/** 백엔드 region_interactor._NO_DATA 와 같은 문구. */
+const NO_DATA = "데이터 없음";
 
 function SkeletonRows() {
   return (
@@ -83,7 +86,7 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
   const regionName = regionNames.find((r) => r.code === regionCode)?.name ?? "선택한";
 
   return (
-    <aside className="relative w-80 shrink-0 border-l border-[var(--border)] bg-[var(--bg-surface)]">
+    <aside className="relative min-h-[55dvh] w-full flex-1 border-t border-[var(--border)] bg-[var(--bg-surface)] md:min-h-0 md:w-80 md:flex-none md:border-t-0 md:border-l">
       {/* 패널 내용이 길어져도 페이지(=지도) 높이를 밀어내지 않고 패널 안에서만 스크롤한다. */}
       <div className="absolute inset-0 flex flex-col overflow-y-auto p-5">
       {!regionCode && (
@@ -203,7 +206,8 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
                     </span>
                   )}
                 </div>
-                <GradeBadge grade={card.grade} />
+                {/* 값이 없는데 "확인된 사실"이라 붙이지 않는다. */}
+                {card.value !== NO_DATA && <GradeBadge grade={card.grade} />}
               </li>
             ))}
           </ul>

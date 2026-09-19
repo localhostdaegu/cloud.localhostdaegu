@@ -79,6 +79,7 @@ export function SimulatorPage() {
           industry,
           ...(searchParams.get("year") ? { year: searchParams.get("year")! } : {}),
           finance: encodeFinanceParam(plan.input),
+          autostart: "1",
         }).toString()}`
       : undefined;
 

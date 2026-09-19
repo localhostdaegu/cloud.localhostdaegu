@@ -34,7 +34,7 @@ def test_market_agent_fetches_snapshot_and_reports_two_tools():
     assert market.calls == [("2711059500", "cafe", None)]
     assert ctx.market == MARKET
     assert [(e.agent, e.tool) for e in events] == [("market", "region_metrics"), ("market", "risk_score")]
-    assert events[0].summary == "대신동 카페 점포수·폐업률·성장률 조회"
+    assert events[0].summary == "대신동 카페 점포수·폐업률·점포 증감률 조회"
 
 
 def test_shock_agent_searches_news_with_question():
@@ -44,9 +44,9 @@ def test_shock_agent_searches_news_with_question():
 
     events = list(ShockAgent(search, "대구").collect(ctx))
 
-    assert search.calls == [("대구 카페 소상공인 원가 금리 경기 원두값 오르면?", "news", 5)]
+    assert search.calls == [("대구 카페 소상공인 원가 금리 경기 원두값 오르면?", "news", 10)]  # 다른 구·군 문서를 뺄 여유분까지 검색한다
     assert ctx.news == [NEWS_DOC]
-    assert [(e.agent, e.tool, e.summary) for e in events] == [("shock", "news_search", "뉴스 RAG 검색 — 1건")]
+    assert [(e.agent, e.tool, e.summary) for e in events] == [("shock", "news_search", "관련 뉴스 1건 찾음")]
 
 
 def test_funding_agent_without_finance_skips_simulation_and_matching():
@@ -61,7 +61,7 @@ def test_funding_agent_without_finance_skips_simulation_and_matching():
     assert simulation.calls == []
     assert matching.calls == []
     assert ctx.products == []
-    assert search.calls == [("대구 카페 소상공인 창업 정책자금 보증 대출", "funding", 5)]
+    assert search.calls == [("대구 카페 소상공인 창업 정책자금 보증 대출", "funding", 10)]
     assert ctx.funding_docs == [FUNDING_DOC]
     assert [e.tool for e in events] == ["funding_search"]
 
@@ -77,7 +77,7 @@ def test_funding_agent_with_finance_simulates_first_and_matches_with_gap():
     # §4-1 — 상담 주제가 되는 금액은 조달 필요액이다. 희망대출 반영 후 부족액이 아니다.
     assert matching.calls == [(28_849_996, "cafe")]
     assert [e.tool for e in events] == ["finance_simulate", "product_matching", "funding_search"]
-    assert events[0].summary == "재무 시뮬레이션 — 조달 필요 28,849,996원"
+    assert events[0].summary == "필요 자금 계산 — 자기자본 외 2,884만원"
 
 
 def test_funding_agent_recalculates_baseline_plan_on_the_server():
@@ -127,3 +127,30 @@ def test_market_agent_leaves_year_unset_when_not_chosen():
     list(MarketAgent(market).collect(_context()))
 
     assert market.calls == [("2711059500", "cafe", None)]
+
+
+def test_funding_agent_uses_the_same_candidates_as_the_consultation_screen():
+    """2026-09-19 페르소나 테스트 — 화면은 상담 후보 9건인데 상담자료는 옛 매칭으로 3건이었다."""
+    from apps.analysis.domain.analysis_context import ConsultationContext, ConsultationProfile
+
+    matching = FakeMatching()
+    profile = ConsultationProfile(business_registered=False, owner_age=40)
+    ctx = _context(finance=FINANCE)
+    ctx.request = replace(ctx.request, consultation=ConsultationContext(profile=profile))
+
+    list(FundingAgent(FakeEvidenceSearch(), FakeSimulation(), matching, "대구").collect(ctx))
+
+    assert matching.consultation_calls == [(profile, ctx.request.region[:5])]
+
+
+def test_shock_agent_drops_news_about_other_districts():
+    from apps.analysis.domain.analysis_context import EvidenceDoc
+
+    search = FakeEvidenceSearch()
+    other = EvidenceDoc("news", "대구 수성구 소상공인 지원", "", None, None, None)
+    search.search = lambda query, source_type, top_k: [other]  # noqa: ARG005
+    ctx = _context()  # region 2711059500 → 중구
+
+    list(ShockAgent(search, "대구", {"27110": "중구", "27260": "수성구"}).collect(ctx))
+
+    assert ctx.news == []

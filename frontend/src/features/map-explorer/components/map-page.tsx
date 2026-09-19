@@ -28,8 +28,9 @@ export function MapPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <ControlBar state={state} onChange={handleStateChange} />
-      <div className="flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1 overflow-hidden">
+      {/* 좁은 화면에서는 지도(위)·패널(아래)로 쌓는다 — 옆에 두면 400px 폭에서 지도가 80px만 남는다. */}
+      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="h-[42dvh] shrink-0 overflow-hidden md:h-auto md:min-w-0 md:flex-1 md:shrink">
           <MapView
             regionCode={state.region}
             metric={state.metric}

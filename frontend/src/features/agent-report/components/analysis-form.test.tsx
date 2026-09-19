@@ -10,7 +10,8 @@ it("finance가 있으면 안내 문구를 보이고 제출 params에 포함한�
   render(<AnalysisForm initialRegion="2711059500" initialIndustry="cafe" finance={FINANCE} onSubmit={onSubmit} />);
 
   expect(screen.getByText(/시뮬레이션 입력이 함께 전달돼요/)).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+  // 사전상담에서 넘어온 사람에게는 목적(은행에 가져갈 자료)으로 버튼을 부른다.
+  fireEvent.click(screen.getByRole("button", { name: "상담자료 만들기" }));
 
   expect(onSubmit).toHaveBeenCalledWith({ region: "2711059500", industry: "cafe", question: undefined, finance: FINANCE });
 });

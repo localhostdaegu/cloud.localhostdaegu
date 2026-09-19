@@ -19,10 +19,14 @@ export function ControlBar({ state, onChange }: ControlBarProps) {
       <label className="flex flex-col gap-1.5">
         <span className={LEGEND}>업종</span>
         <select
-          value={state.industry ?? DEFAULT_INDUSTRY}
-          onChange={(e) => onChange({ ...state, industry: e.target.value })}
+          value={state.industry ?? ""}
+          onChange={(e) => onChange({ ...state, industry: e.target.value || null })}
           className={FIELD}
         >
+          {/* 업종을 아직 안 골랐으면 그렇게 보여준다 — "카페"로 고정돼 보이면 옆 패널(업종별 비교)과 어긋난다. */}
+          {state.industry === null && (
+            <option value="">업종 미정 — 지도 색은 {INDUSTRY_LABELS[DEFAULT_INDUSTRY as keyof typeof INDUSTRY_LABELS]} 기준</option>
+          )}
           {INDUSTRIES.map((ind) => (
             <option key={ind} value={ind}>
               {INDUSTRY_LABELS[ind]}

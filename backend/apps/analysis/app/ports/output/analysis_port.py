@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
 from apps.analysis.domain.analysis_context import (
+    ConsultationProfile,
     AnalysisRequest,
     EvidenceDoc,
     MarketSnapshot,
@@ -40,6 +41,12 @@ class ProductMatchingPort(ABC):
     @abstractmethod
     def match(self, funding_gap: int, industry_id: str) -> list[MatchedProduct]:
         """부족 자금·업종 조건 금융상품 (보증 → 은행 → 정책자금 순)."""
+
+    @abstractmethod
+    def consultation_candidates(
+        self, external_funding_need: int, industry_id: str, profile: ConsultationProfile, district_code: str
+    ) -> list[MatchedProduct]:
+        """상담자료용 — 사전상담 화면(GET /matching/consultation)과 같은 기준의 iM뱅크 상담 후보."""
 
 
 class ReportWriterPort(ABC):

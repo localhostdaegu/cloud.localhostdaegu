@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { parseFinanceParam } from "@/shared/finance-param";
 import { industryLabel } from "@/shared/industries";
@@ -55,6 +55,21 @@ export function AnalysisPage() {
       consultation: toConsultationContext(draft),
     });
   };
+
+  // 사전상담의 "이 안으로 상담 준비"로 들어오면 버튼을 한 번 더 누르게 하지 않는다.
+  // 새로고침으로 다시 만들어지지 않게(LLM 호출 비용) 시작과 동시에 URL 에서 표시를 지운다.
+  const autostarted = useRef(false);
+  const autostart = searchParams.get("autostart") === "1";
+  const industryParam = searchParams.get("industry") ?? "";
+  useEffect(() => {
+    if (!autostart || autostarted.current || !regionCode || !industryParam) return;
+    autostarted.current = true;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("autostart");
+    window.history.replaceState(null, "", url);
+    startWithConsultation({ region: regionCode, industry: industryParam });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 진입 시 1회만
+  }, [autostart, regionCode, industryParam]);
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8">

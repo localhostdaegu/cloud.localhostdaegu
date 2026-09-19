@@ -66,6 +66,7 @@ export function MapView({ regionCode, metric, industry, year, district, onSelect
   onSelectRegionRef.current = onSelectRegion;
   const [ready, setReady] = useState(false);
   const flewToDistrictRef = useRef(false);
+  const entryRegionRef = useRef(regionCode);
 
   const { geojson, rows } = useMapData(metric, industry, year);
   // 경계/지표 fetch 실패는 무음 빈 지도가 아니라 배너로 알린다 (side-panel의 role="alert" 관행과 일관).
@@ -143,6 +144,25 @@ export function MapView({ regionCode, metric, industry, year, district, onSelect
     map.flyTo({ center: target.center, zoom: 13 });
     flewToDistrictRef.current = true;
   }, [ready, district, regionCode]);
+
+  // 랜딩에서 말한 동네(region)가 함께 넘어왔을 때 — 최초 1회 그 동의 경계로 화면을 맞춘다.
+  // 구·군 중심으로만 가면 "서문시장 근처"라 말한 사람이 다른 동을 고르게 된다(2026-09-19 페르소나 테스트).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || flewToDistrictRef.current || !geojson.data) return;
+    // 진입 시점에 URL로 받은 동만 — 사용자가 지도에서 직접 누른 동으로는 화면을 옮기지 않는다.
+    if (!regionCode || regionCode !== entryRegionRef.current) return;
+    const feature = geojson.data.features.find((f) => f.properties.region_code === regionCode);
+    if (!feature) return;
+    const points = (feature.geometry.coordinates as unknown[]).flat(feature.geometry.type === "Polygon" ? 1 : 2) as [number, number][];
+    const lngs = points.map(([lng]) => lng);
+    const lats = points.map(([, lat]) => lat);
+    map.fitBounds(
+      [[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]],
+      { padding: 120, maxZoom: 14 },
+    );
+    flewToDistrictRef.current = true;
+  }, [ready, regionCode, geojson.data]);
 
   // 테마 전환(data-theme) → 래스터 타일 URL 교체 + 선택 강조색(--accent) 재적용.
   useEffect(() => {

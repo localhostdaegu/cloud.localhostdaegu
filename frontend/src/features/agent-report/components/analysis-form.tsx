@@ -81,7 +81,8 @@ export function AnalysisForm({ initialRegion, initialIndustry, regions = [], fin
         disabled={disabled || !region || !industry}
         className="self-start rounded-md bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-[var(--accent-fg)] transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px disabled:pointer-events-none disabled:opacity-50"
       >
-        {disabled ? "분석 중…" : "분석 시작"}
+        {/* 사전상담에서 넘어온 사람의 목적은 분석이 아니라 은행에 가져갈 자료다. */}
+        {finance ? (disabled ? "만드는 중…" : "상담자료 만들기") : disabled ? "분석 중…" : "분석 시작"}
       </button>
     </form>
   );

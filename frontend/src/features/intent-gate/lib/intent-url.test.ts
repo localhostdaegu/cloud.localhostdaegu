@@ -15,3 +15,9 @@ test("type C without region stays on daegu overview", () => {
     budget_krw: 50_000_000, missing: ["region"] }))
     .toBe("/map?industry=cafe&budget=50000000");
 });
+
+it("말한 동네의 행정동 코드가 있으면 region으로 실어 지도가 그 동을 바로 고르게 한다", () => {
+  expect(
+    intentToUrl({ intent_type: "A", district_code: "27110", region_code: "2711059500", industry_id: "cafe", budget_krw: null, missing: [] }),
+  ).toBe("/map?district=27110&region=2711059500&industry=cafe");
+});

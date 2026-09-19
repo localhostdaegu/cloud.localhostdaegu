@@ -111,7 +111,7 @@ async function main() {
     });
 
     const started = Date.now();
-    await page.getByRole("button", { name: "분석 시작" }).click();
+    await page.getByRole("button", { name: /분석 시작|상담자료 만들기/ }).click();
 
     // 진행 라벨은 내부 에이전트명이 아니라 사용자가 읽는 단계다(§3-1) — orchestrator = "입력 확인".
     await page
@@ -141,8 +141,8 @@ async function main() {
     // 서버가 다시 계산한 수치인지 — 선택안(월세 150만) 기준 값이 계산표에 있어야 한다.
     const reportText = await page.locator(".report-markdown").allTextContents();
     const joined = reportText.join("\n");
-    step("계산표에 조달 필요액 표기", /자기자본 외 조달 필요 [\d,]+원/.test(joined));
-    step("미확보 희망대출 구분 표기", /희망대출 반영 후 남는 부족액 [\d,]+원/.test(joined));
+    step("계산표에 조달 필요액 표기", /자기자본 외 조달 필요 [\d,억 ]+만?원/.test(joined));
+    step("미확보 희망대출 구분 표기", /희망대출 반영 후 남는 부족액 [\d,억 ]+만?원/.test(joined));
     step("비교표에 최초안·현재안 두 열", /최초안/.test(joined) && /현재안/.test(joined));
     // Next.js 라우트 아나운서(<next-route-announcer> 섀도 DOM의 role="alert")는 항상 존재하므로 제외한다.
     const alerts = await page.locator('[role="alert"]:not(#__next-route-announcer__)').allTextContents();

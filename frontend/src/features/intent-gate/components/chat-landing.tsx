@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { INDUSTRY_LABELS } from "@/shared/daegu";
+import { DISTRICTS } from "@/shared/daegu";
+import { INDUSTRY_LABELS } from "@/shared/industries";
 import { parseIntent, type ParseIntentResult } from "../api";
 import { intentToUrl } from "../lib/intent-url";
 import { HeroVisual } from "./hero-visual";
@@ -20,9 +21,16 @@ export function ChatLanding() {
   // industry가 missing인데 district는 확정된 응답 — 업종 칩으로 되물어 재제출 없이 바로 라우팅한다.
   const [awaitingIndustry, setAwaitingIndustry] = useState<ParseIntentResult | null>(null);
 
+  // 동네를 못 알아들은 응답 — 말없이 대구 전체 지도로 보내지 않고 구·군을 되묻는다.
+  const [awaitingDistrict, setAwaitingDistrict] = useState<ParseIntentResult | null>(null);
+
   const mutation = useMutation({
     mutationFn: parseIntent,
     onSuccess: (result) => {
+      if (!result.district_code) {
+        setAwaitingDistrict(result);
+        return;
+      }
       if (result.missing.includes("industry") && result.district_code) {
         setAwaitingIndustry(result);
         return;
@@ -36,7 +44,17 @@ export function ChatLanding() {
     const trimmed = text.trim();
     if (!trimmed || mutation.isPending) return;
     setAwaitingIndustry(null);
+    setAwaitingDistrict(null);
     mutation.mutate(trimmed);
+  }
+
+  // 구·군을 고르면 업종 되물음으로 이어진다 — 업종까지 이미 말했으면 바로 지도로 간다.
+  function handlePickDistrict(code: string | null) {
+    if (!awaitingDistrict) return;
+    const next = { ...awaitingDistrict, district_code: code };
+    setAwaitingDistrict(null);
+    if (code && next.missing.includes("industry")) setAwaitingIndustry(next);
+    else router.push(intentToUrl(next));
   }
 
   function handlePickIndustry(id: string) {
@@ -84,6 +102,18 @@ export function ChatLanding() {
           </div>
 
           {mutation.isError && <p role="alert" className={styles.error}>요청을 처리하지 못했습니다. 다시 시도해 주세요.</p>}
+
+          {awaitingDistrict && (
+            <div className={styles.industryPrompt} aria-live="polite">
+              <p>어느 동네를 생각하세요? 말씀하신 곳을 찾지 못했어요.</p>
+              <div className={styles.chips}>
+                {Object.entries(DISTRICTS).map(([code, { name }]) => (
+                  <button key={code} type="button" onClick={() => handlePickDistrict(code)} className={styles.chip}>{name}</button>
+                ))}
+                <button type="button" onClick={() => handlePickDistrict(null)} className={styles.chip}>아직 몰라요 — 대구 전체 보기</button>
+              </div>
+            </div>
+          )}
 
           {awaitingIndustry && (
             <div className={styles.industryPrompt} aria-live="polite">

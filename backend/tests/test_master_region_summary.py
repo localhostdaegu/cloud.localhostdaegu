@@ -65,7 +65,7 @@ def test_summary_formats_three_fact_cards():
     assert [(c.label, c.value, c.grade) for c in dto.cards] == [
         ("점포수", "705개", "fact"),
         ("폐업률", "5.3%", "fact"),
-        ("성장률", "+3.2%", "fact"),
+        ("점포 증감률", "+3.2%", "fact"),
     ]
 
 
@@ -80,7 +80,7 @@ def test_summary_uses_no_data_when_metric_missing():
     assert [(c.label, c.value) for c in dto.cards] == [
         ("점포수", "데이터 없음"),
         ("폐업률", "데이터 없음"),
-        ("성장률", "데이터 없음"),
+        ("점포 증감률", "데이터 없음"),
     ]
 
 

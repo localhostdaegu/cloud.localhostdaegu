@@ -6,12 +6,19 @@ LANDMARKS: dict[str, tuple[str, str]] = {
     "안지랑": ("대명9동", "27200"), "앞산": ("대명9동", "27200"),
     "들안길": ("상동", "27260"), "수성못": ("두산동", "27260"), "알파시티": ("고산2동", "27260"),
     "동인동": ("동인동", "27110"), "두류": ("두류3동", "27290"), "계명대": ("신당동", "27290"),
-    "경북대": ("산격3동", "27230"),
+    "경북대": ("산격3동", "27230"), "경대북문": ("산격3동", "27230"), "경대": ("산격3동", "27230"),
+    "경대병원": ("삼덕동", "27110"),  # "경대"보다 길어 먼저 검사된다 — 경북대병원은 중구다
 }
 INDUSTRY_SYNONYMS: dict[str, str] = {
     "카페": "cafe", "커피": "cafe", "디저트": "cafe",
     "음식점": "restaurant", "식당": "restaurant", "고깃집": "restaurant",
     "곱창": "restaurant", "찜갈비": "restaurant", "치킨": "restaurant",
-    "미용실": "hair_salon", "헬스장": "gym", "체육관": "gym",
-    "당구장": "billiard", "노래방": "karaoke", "피시방": "pc_bang", "PC방": "pc_bang",
+    # 2026-09-19 페르소나 테스트 — "국수집"·"분식집"이 업종 미정으로 떨어졌다
+    "국수": "restaurant", "국밥": "restaurant", "분식": "restaurant", "밥집": "restaurant",
+    "중국집": "restaurant", "횟집": "restaurant", "술집": "restaurant", "호프": "restaurant",
+    "미용실": "hair_salon", "헤어": "hair_salon", "헬스장": "gym", "헬스": "gym", "피트니스": "gym", "체육관": "gym",
+    "당구장": "billiard", "노래방": "karaoke", "피시방": "pc_bang", "PC방": "pc_bang", "피씨방": "pc_bang",
+    # 등록 업종인데 말로는 못 알아듣던 4종
+    "편의점": "convenience_store", "학원": "academy", "교습소": "academy",
+    "부동산": "real_estate", "공인중개": "real_estate", "어린이집": "childcare",
 }

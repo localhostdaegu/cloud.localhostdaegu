@@ -164,6 +164,14 @@ _UNCHECKED_REASON = "공식 원문을 아직 확인하지 못함 — 해당 기�
 _UNNAMED_BANK_REASON = "공식 원문에 취급 은행이 명시되지 않음(시중은행 등으로만 표기) — 해당 기관에 직접 확인 필요"
 
 
+def _manwon(won: int) -> str:
+    """화면과 같은 만원 단위(만원 미만 절사) — 1억 이상은 '1억 2,000만원'."""
+    eok, man = divmod(won // 10_000, 10_000)
+    if eok:
+        return f"{eok}억 {man:,}만원" if man else f"{eok}억원"
+    return f"{man:,}만원"
+
+
 def _connection_reason(metadata: dict) -> str:
     connection = metadata["bank_connection"]
     if connection in _CONNECTION_REASONS:
@@ -176,7 +184,7 @@ def _reason(product: dict, metadata: dict, external_funding_need: int, business_
     limit = product["loan_limit"]
     if limit is not None and limit < external_funding_need:
         parts.append(
-            f"공시 한도 {limit:,}원은 조달 필요 {external_funding_need:,}원보다 적어 일부만 충당 가능"
+            f"공시 한도 {_manwon(limit)}은 조달 필요 {_manwon(external_funding_need)}보다 적어 일부만 충당 가능"
         )
     if metadata["business_registration_required"] is True and business_registered is False:
         parts.append("사업자등록 후 신청 가능")

@@ -95,7 +95,7 @@ export function summaryOf(code: string, industry: string): RegionSummary {
   const cards: SummaryCard[] = [
     { label: "점포수", value: `${storeCount}개`, grade: "fact" },
     { label: "폐업률", value: `${(closureRate * 100).toFixed(1)}%`, grade: "fact" },
-    { label: "성장률", value: `${growthRate >= 0 ? "+" : ""}${(growthRate * 100).toFixed(1)}%`, grade: "fact" },
+    { label: "점포 증감률", value: `${growthRate >= 0 ? "+" : ""}${(growthRate * 100).toFixed(1)}%`, grade: "fact" },
     {
       label: "뉴스 신호",
       value: newsSeed > 0.5 ? "최근 30일 신규 카페 오픈 소식 증가" : "임대료 상승 관련 언급 감지",
@@ -348,7 +348,7 @@ export function agentEventScript(purpose: "review" | "handoff" = "review"): Agen
     {
       type: "report_delta",
       section: "market",
-      markdown: "### 상권 진단\n\n대신동 카페 점포수 66개 · 폐업률 57.4% · 성장률 +8.2% (2025년 집계). 개별 점포의 매출 예측이 아니라 지역 추세입니다.",
+      markdown: "### 상권 진단\n\n대신동 카페 점포수 66개 · 폐업률 57.4% · 점포 증감률 +8.2% (2025년 집계). 개별 점포의 매출 예측이 아니라 지역 추세입니다.",
     },
     {
       type: "report_delta",

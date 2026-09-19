@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from apps.analysis.domain.agent_event import Citation
 from apps.analysis.domain.report_text import (
+    krw,
     calculator_markdown,
     citations_from,
     finance_facts,
@@ -47,12 +48,20 @@ def test_market_lead_renders_cards_and_risk_components_table():
     assert "| 위험도 구성(폐업·밀집·성장) | 30.0 · 28.5 · 14.0 |" in text
 
 
-def test_market_lead_without_data_says_no_metrics():
-    assert market_lead(bare_context()) == "### 상권 진단\n\n_상권 지표 데이터가 없습니다._\n\n"
+def test_market_lead_without_data_says_not_aggregated_and_not_bad():
+    text = market_lead(bare_context())
+    assert "아직 상권 지표가 집계되지 않았습니다" in text
+    assert "상권이 나쁘다는 뜻이 아닙니다" in text  # 데이터 없음을 위험 신호로 읽지 않게 한다
+
+
+def test_krw_uses_manwon_like_the_screen():
+    assert [krw(0), krw(9_999), krw(97_421_998), krw(210_856_996), krw(300_000_000), krw(-261_665)] == [
+        "0원", "0원", "9,742만원", "2억 1,085만원", "3억원", "-26만원",
+    ]
 
 
 def test_funding_lead_lists_matched_products_or_none():
-    assert "- 대구신용보증재단 소상공인 창업 보증: 한도 50,000,000원, 금리 3.2%" in funding_lead(full_context())
+    assert "- 대구신용보증재단 소상공인 창업 보증: 한도 5,000만원, 금리 3.2%" in funding_lead(full_context())
     assert "- 조건에 맞는 상품 없음" in funding_lead(bare_context())
 
 
@@ -65,10 +74,10 @@ def test_calculator_markdown_formats_scenarios_and_unrecoverable_payback():
     text = calculator_markdown(SIMULATION)
     assert text.startswith("### 재무 시뮬레이션\n\n")
     # §4-1 — funding_gap 의 라벨을 '희망대출 반영 후 남는 부족액'으로 명확히 했다.
-    assert "희망대출 반영 후 남는 부족액 18,849,996원" in text
-    assert "자기자본 외 조달 필요 28,849,996원" in text
-    assert "| 비관 | 4,800,000원 | -261,665원 | 회수 불가 |" in text
-    assert "| 기준 | 8,000,000원 | 1,658,335원 | 24.1개월 |" in text
+    assert "희망대출 반영 후 남는 부족액 1,884만원" in text
+    assert "자기자본 외 조달 필요 2,884만원" in text
+    assert "| 비관 | 480만원 | -26만원 | 회수 불가 |" in text
+    assert "| 기준 | 800만원 | 165만원 | 24.1개월 |" in text
 
 
 def test_finance_facts_without_simulation():
@@ -92,8 +101,8 @@ def test_shock_prompt_contains_news_delimited_question_and_title_citation_rule()
 
 def test_funding_prompt_contains_precomputed_gap_and_products_and_title_citation_rule():
     prompt = funding_prompt(full_context())
-    assert "부족 자금 18,849,996원" in prompt
-    assert "- 대구신용보증재단 소상공인 창업 보증: 한도 50,000,000원, 금리 3.2%" in prompt
+    assert "부족 자금 1,884만원" in prompt
+    assert "- 대구신용보증재단 소상공인 창업 보증: 한도 5,000만원, 금리 3.2%" in prompt
     assert "- 대구 청년창업 지원사업 (대구광역시, 2026-09-01)" in prompt
     assert "「" in prompt
     assert "매칭 금융상품 목록에서 가져온 내용에는 붙이지 않는다" in prompt

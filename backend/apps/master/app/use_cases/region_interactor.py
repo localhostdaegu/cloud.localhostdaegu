@@ -13,6 +13,8 @@ from apps.master.domain.errors import RegionNotFoundError
 
 _COORD_PRECISION = 5  # 소수 5자리 ≈ 1.1m — 지도 표시용 (원본 파일은 원 정밀도 유지)
 _NO_DATA = "데이터 없음"
+# (개업 − 폐업) ÷ 전년 말 점포 수 — 매출 성장으로 읽히지 않게 "성장률"이라 부르지 않는다(이어받기 §0-2)
+_GROWTH_LABEL = "점포 증감률"
 
 
 def _round_coords(node: float | list) -> float | list:
@@ -75,13 +77,13 @@ class RegionInteractor(RegionUseCase):
         if snapshot is None:
             cards = [
                 SummaryCardDto(label=label, value=_NO_DATA, grade="fact")
-                for label in ("점포수", "폐업률", "성장률")
+                for label in ("점포수", "폐업률", _GROWTH_LABEL)
             ]
         else:
             cards = [
                 SummaryCardDto(label="점포수", value=f"{snapshot.store_count}개", grade="fact"),
                 SummaryCardDto(label="폐업률", value=_percent(snapshot.closure_rate), grade="fact"),
-                SummaryCardDto(label="성장률", value=_signed_percent(snapshot.growth_rate), grade="fact"),
+                SummaryCardDto(label=_GROWTH_LABEL, value=_signed_percent(snapshot.growth_rate), grade="fact"),
             ]
         return RegionSummaryDto(
             region_code=region.region_code,

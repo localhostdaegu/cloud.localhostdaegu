@@ -107,7 +107,7 @@ def test_plan_lead_states_the_selected_plan_numbers_and_change_reason():
 
     text = plan_lead(_handoff_context())
 
-    assert "28,849,996원" in text  # 자기자본 외 조달 필요
+    assert "2,884만원" in text  # 자기자본 외 조달 필요
     assert "월세가 낮은 자리로 바꿨습니다" in text
 
 
@@ -118,8 +118,8 @@ def test_comparison_is_written_by_code_without_the_llm():
     chunks = list(ComparisonSection().render(_handoff_context(), writer))
 
     assert writer.calls == []
-    assert "38,849,996원" in "".join(chunks)  # 최초안
-    assert "28,849,996원" in "".join(chunks)  # 현재안
+    assert "3,884만원" in "".join(chunks)  # 최초안
+    assert "2,884만원" in "".join(chunks)  # 현재안
 
 
 def test_comparison_says_so_when_there_is_nothing_to_compare():
@@ -145,4 +145,46 @@ def test_questions_lead_keeps_unconfirmed_items_visible():
 def test_calculator_shows_external_funding_need_not_only_the_gap():
     text = calculator_markdown(SIMULATION)
 
-    assert "28,849,996원" in text
+    assert "2,884만원" in text
+
+
+def test_plan_prompt_carries_the_numbers_so_the_llm_cannot_say_they_are_missing():
+    """2026-09-19 페르소나 테스트 — 수치 없이 '위 수치는 표에 있다'고만 하면 LLM 이 수치가 없다고 쓴다."""
+    from apps.analysis.domain.report_text import plan_prompt
+
+    prompt = plan_prompt(_handoff_context())
+    assert "2,884만원" in prompt  # 자기자본 외 조달 필요
+    assert "수치가 없다거나 부족하다고 쓰지 마세요" in prompt
+
+
+def test_plan_prompt_stays_silent_about_a_missing_change_reason():
+    from dataclasses import replace
+
+    from apps.analysis.domain.report_text import plan_prompt
+
+    ctx = _handoff_context()
+    consultation = replace(ctx.request.consultation, change_reason="")
+    ctx.request = replace(ctx.request, consultation=consultation)
+    assert "변경 이유" not in plan_prompt(ctx)
+
+
+def test_comparison_without_any_change_says_so_instead_of_an_identical_table():
+    from dataclasses import replace
+
+    from apps.analysis.app.use_cases.report_sections import ComparisonSection
+
+    ctx = _handoff_context()
+    ctx.baseline_simulation = replace(ctx.simulation)
+    text = "".join(ComparisonSection().render(ctx, FakeWriter()))
+    assert "최초안에서 바꾼 조건이 없습니다" in text
+    assert "| 항목 |" not in text
+
+
+def test_market_section_skips_the_llm_when_nothing_is_aggregated():
+    from apps.analysis.app.use_cases.report_sections import MarketSection
+    from tests.analysis_fakes import bare_context
+
+    writer = FakeWriter()
+    text = "".join(MarketSection("system").render(bare_context(), writer))
+    assert "집계되지 않았습니다" in text
+    assert writer.calls == []
