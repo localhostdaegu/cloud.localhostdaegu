@@ -5,6 +5,7 @@ import type {
   FinanceInput,
   LatestRate,
   MatchingProduct,
+  RentPrice,
 } from "@/shared/api/types";
 
 export function simulateFinance(payload: FinanceInput): Promise<ConsultationFinanceOutput> {
@@ -53,4 +54,9 @@ export function fetchConsultationCandidates(query: ConsultationQuery): Promise<C
   // 근거 미확인 상품도 '관련 기관 참고자료'로 받아 화면에서 분리해 보여준다(§5-2).
   params.set("include_unverified", "true");
   return apiGet<ConsultationCandidate[]>(`/matching/consultation?${params.toString()}`);
+}
+
+/** 한국부동산원 R-ONE 최신 분기 임대료 — 대구 평균과 상권별 (GET /rents/latest). */
+export function fetchLatestRents(): Promise<RentPrice[]> {
+  return apiGet<RentPrice[]>("/rents/latest");
 }

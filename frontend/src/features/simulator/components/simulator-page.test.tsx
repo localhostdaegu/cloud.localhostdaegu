@@ -26,14 +26,21 @@ const loanRateInput = () => screen.getByLabelText(/대출금리/);
 const LATEST_SME = { rate_type: "loan_sme", period: "202607", value_percent: 4.22, value_ratio: 0.0422 };
 
 it("최신 중소기업대출 금리(ECOS)가 오면 대출금리 기본값을 그 값으로 채운다", async () => {
-  const fetchMock = vi.fn(async () => new Response(JSON.stringify(LATEST_SME), { status: 200 }));
+  // 페이지는 금리 말고도 월세 참고값(/rents/latest)을 조회한다 — 금리 요청에만 금리로 답한다.
+  const fetchMock = vi.fn(async (url: string | URL) =>
+    String(url).includes("/shocks/rates/")
+      ? new Response(JSON.stringify(LATEST_SME), { status: 200 })
+      : new Response("[]", { status: 200 }),
+  );
   vi.stubGlobal("fetch", fetchMock);
 
   renderPage();
 
   expect(loanRateInput()).toHaveValue(4.5); // 로딩 중에는 고정 기본값으로 폼이 바로 뜬다
   await waitFor(() => expect(loanRateInput()).toHaveValue(4.2)); // 0.0422 → 4.2% 표시
-  expect(String(fetchMock.mock.calls[0][0])).toContain("/shocks/rates/latest?rate_type=loan_sme");
+  expect(fetchMock.mock.calls.map(([url]) => String(url))).toContainEqual(
+    expect.stringContaining("/shocks/rates/latest?rate_type=loan_sme"),
+  );
 });
 
 it("금리 조회가 실패하면 4.5% 기본값을 유지하고 폼은 계속 쓸 수 있다", async () => {

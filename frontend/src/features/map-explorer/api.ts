@@ -1,6 +1,16 @@
 import type { FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import { apiGet } from "@/shared/api/client";
-import type { IndustryRiskScore, MetricKey, MetricRow, RegionSummary, RiskScore, Store } from "@/shared/api/types";
+import type {
+  IndustryRiskScore,
+  MetricKey,
+  MetricRow,
+  PopulationSummary,
+  RegionalIndicator,
+  RegionSummary,
+  RiskScore,
+  ShockEvent,
+  Store,
+} from "@/shared/api/types";
 
 export type RegionProperties = { region_code: string; name: string };
 export type RegionGeoJSON = FeatureCollection<Polygon | MultiPolygon, RegionProperties>;
@@ -34,4 +44,27 @@ export function fetchRiskScore(regionCode: string, industry: string): Promise<Ri
 export function fetchIndustryRiskRanking(regionCode: string): Promise<IndustryRiskScore[]> {
   const params = new URLSearchParams({ region_code: regionCode });
   return apiGet<IndustryRiskScore[]>(`/metrics/risk?${params.toString()}`);
+}
+
+/** industry 고정 전 행정동 랭킹(A유형) — 점수 내림차순. 선택한 동이 몇 번째인지 셀 때 쓴다. */
+export function fetchRegionRiskRanking(industry: string): Promise<RiskScore[]> {
+  const params = new URLSearchParams({ industry });
+  return apiGet<RiskScore[]>(`/metrics/risk?${params.toString()}`);
+}
+
+/** 업종에 영향을 준 사건 목록 — 추이 차트에서 "그해 무슨 일이 있었나"를 짚는 데 쓴다. */
+export function fetchShockEvents(industry: string): Promise<ShockEvent[]> {
+  const params = new URLSearchParams({ industry, limit: "100" });
+  return apiGet<ShockEvent[]>(`/shocks?${params.toString()}`);
+}
+
+/** 주민등록 인구 요약. 적재되지 않은 동은 ApiError(code="POPULATION_NOT_FOUND"). */
+export function fetchPopulationSummary(regionCode: string): Promise<PopulationSummary> {
+  return apiGet<PopulationSummary>(`/populations/${regionCode}/summary`);
+}
+
+/** 동네 특성 지표(전통시장·백년가게·지하철 승차 등) — 없는 동은 빈 배열. */
+export function fetchRegionalIndicators(regionCode: string): Promise<RegionalIndicator[]> {
+  const params = new URLSearchParams({ region_code: regionCode });
+  return apiGet<RegionalIndicator[]>(`/indicators?${params.toString()}`);
 }

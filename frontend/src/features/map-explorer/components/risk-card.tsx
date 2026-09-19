@@ -1,9 +1,11 @@
 import type { RiskComponents, RiskGrade } from "@/shared/api/types";
 
+/** 점수는 같은 업종·연도 안에서 동네끼리 매긴 상대 순위다 — 실패 확률이나 진입 가부 판정이 아니므로
+ *  "진입 고위험/양호" 같은 절대 표현을 쓰지 않는다(OPEN-009). */
 const GRADE_LABEL: Record<RiskGrade, string> = {
-  red: "진입 고위험",
-  yellow: "진입 주의",
-  green: "진입 양호",
+  red: "상대 위험 높음",
+  yellow: "상대 위험 중간",
+  green: "상대 위험 낮음",
 };
 
 /** grade-badge.tsx의 pill 관행(border+텍스트색)을 재사용 — ok/warn/danger는 fg 대응 토큰이 없어
@@ -23,9 +25,9 @@ const COMPONENT_MAX: Record<keyof RiskComponents, number> = {
 };
 
 const COMPONENT_LABEL: Record<keyof RiskComponents, string> = {
-  closure: "폐업률 기여",
-  density: "경쟁밀도 기여",
-  growth: "신규진입 기여",
+  closure: "폐업률 순위",
+  density: "점포 수 순위",
+  growth: "점포 증감 순위",
 };
 
 const COMPONENT_KEYS = Object.keys(COMPONENT_LABEL) as (keyof RiskComponents)[];
@@ -45,15 +47,21 @@ interface RiskCardProps {
   score: number;
   grade: RiskGrade;
   components: RiskComponents;
+  /** 같은 업종에서 점수가 높은 순으로 몇 번째 동인지 — 있으면 점수 아래에 풀어 쓴다. */
+  rank?: { position: number; total: number };
 }
 
-export function RiskCard({ score, grade, components }: RiskCardProps) {
+export function RiskCard({ score, grade, components, rank }: RiskCardProps) {
   return (
     <div className="mb-5 flex flex-col gap-3 rounded-md border border-[var(--border)] bg-[var(--bg-raised)] p-4">
       <div className="flex items-center justify-between gap-3">
         <span className="text-3xl font-bold tabular-nums text-[var(--text-primary)]">{score}</span>
         <RiskGradeBadge grade={grade} />
       </div>
+      <p className="text-[11px] leading-snug text-[var(--text-secondary)]">
+        {rank && `대구 ${rank.total}개 동 가운데 ${rank.position}번째로 높아요. `}
+        동네끼리 비교한 상대 점수이며 실패 확률이 아닙니다.
+      </p>
 
       <ul className="flex flex-col gap-2">
         {COMPONENT_KEYS.map((key) => (

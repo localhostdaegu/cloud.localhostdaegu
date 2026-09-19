@@ -10,7 +10,8 @@ import { intentToUrl } from "../lib/intent-url";
 import { HeroVisual } from "./hero-visual";
 import styles from "./chat-landing.module.css";
 
-const EXAMPLE_CHIPS = ["서문시장 근처 카페, 예산 5천", "동성로에 미용실", "예산 5천이면 뭐 하지?"];
+// 예시는 실제로 끝까지 이어지는 질문만 둔다 — 예산만으로 업종을 골라 주는 역매칭은 아직 없다.
+const EXAMPLE_CHIPS = ["서문시장 근처 카페, 예산 5천", "동성로에 미용실", "수성구에서 헬스장, 예산 8천"];
 
 export function ChatLanding() {
   const router = useRouter();

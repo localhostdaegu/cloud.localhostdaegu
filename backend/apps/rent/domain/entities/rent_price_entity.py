@@ -21,3 +21,16 @@ class RentObservation:
     value: float
     unit: str  # "천원/㎡" / "%"
     statbl_id: str  # 값이 나온 R-ONE 통계표 ID — 표본 개편(기준연도) 추적
+
+
+@dataclass(frozen=True)
+class RentPrice:
+    """rent_price 한 행 — 임대료·공실률이 병합된 조회 단위 (상가유형×지역×분기)."""
+
+    id: str  # "{building_type}:{cls_id}:{period}"
+    building_type: str  # "medium_large" / "small"
+    region_name: str  # CLS_NM 원문
+    region_level: int  # region_path 깊이 — 대구 실적재: 1 대구 평균 / 2 개별 상권
+    period: str  # "YYYYQn"
+    rent_per_m2: float | None  # 임대료 (천원/㎡) — 지표 미적재 시 None
+    vacancy_rate: float | None  # 공실률 (%)

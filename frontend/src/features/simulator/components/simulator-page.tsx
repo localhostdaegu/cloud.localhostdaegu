@@ -24,6 +24,7 @@ import { simulateFinance } from "../api";
 import { ConsultationProfileForm } from "./consultation-profile-form";
 import { SimulatorForm } from "./simulator-form";
 import { PlanComparison } from "./plan-comparison";
+import { RentReference } from "./rent-reference";
 import { ResultFigures, ResultNextSteps } from "./result-view";
 
 /** URL district·industry·budget 프리필 → 폼 → 계산 → 최초안·현재안 비교 → 선택안 결과(§5-3). */
@@ -110,6 +111,7 @@ export function SimulatorPage() {
             }}
             submitting={mutation.isPending}
             onValuesChange={useCallback((values: FinanceInput) => setFormValues(values), [])}
+            rentHelper={(applyRent) => <RentReference onApply={applyRent} />}
           />
 
           {mutation.isError && (

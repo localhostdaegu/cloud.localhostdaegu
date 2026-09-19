@@ -1,8 +1,8 @@
 "use client";
 
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import type { MetricKey } from "@/shared/api/types";
-import { fetchMetrics } from "../api";
+import { fetchMetrics, fetchShockEvents } from "../api";
 import { YEARS } from "../lib/map-state";
 
 interface RegionTrendProps {
@@ -31,10 +31,27 @@ function useYearlyValues(metric: MetricKey, regionCode: string, industry: string
   return results.map((r) => r.data?.find((row) => row.region_code === regionCode)?.value ?? null);
 }
 
+/** 이 업종에 영향이 컸던(high) 사건만, 차트 범위 안에서 — 전부 나열하면 매년 있는 최저임금 인상이 차트를 덮는다. */
+function useMajorShocks(industry: string): { year: number; name: string }[] {
+  const { data } = useQuery({
+    queryKey: ["shocks", industry],
+    queryFn: () => fetchShockEvents(industry),
+    staleTime: Infinity,
+    select: (events) =>
+      events
+        .filter((e) => e.industry_impacts.some((i) => i.industry_id === industry && i.severity === "high"))
+        .map((e) => ({ year: Number(e.start_date.slice(0, 4)), name: e.name }))
+        .filter((e) => YEARS.includes(e.year)),
+  });
+  return data ?? [];
+}
+
 /** 선택한 동·업종의 연도별 점포 수(막대)와 폐업률(선). 값이 두 해 미만이면 추이가 아니므로 그리지 않는다. */
 export function RegionTrend({ regionCode, industry }: RegionTrendProps) {
   const stores = useYearlyValues("store_count", regionCode, industry);
   const closures = useYearlyValues("closure_rate", regionCode, industry);
+  const shocks = useMajorShocks(industry);
+  const shockYears = new Set(shocks.map((e) => e.year));
 
   const known = YEARS.map((year, i) => ({ year, value: stores[i] })).filter(
     (p): p is { year: number; value: number } => p.value !== null,
@@ -96,6 +113,12 @@ export function RegionTrend({ regionCode, industry }: RegionTrendProps) {
                   opacity={year === PARTIAL_YEAR ? 0.35 : 1}
                 />
               )}
+              {shockYears.has(year) && (
+                <path
+                  d={`M ${i * band + band / 2 - 3} 1 h 6 l -3 5 z`}
+                  fill="var(--warn)"
+                />
+              )}
               <text x={i * band + band / 2} y={H + 11} textAnchor="middle" fontSize={9} fill="var(--text-secondary)">
                 {`'${String(year).slice(2)}`}
               </text>
@@ -120,6 +143,19 @@ export function RegionTrend({ regionCode, industry }: RegionTrendProps) {
         {peak && ` · 폐업률 최고 ${peak.year}년 ${percent(peak.value)}`}
         {stores[YEARS.length - 1] !== null && ` · ${PARTIAL_YEAR}년은 집계 중`}
       </p>
+
+      {shocks.length > 0 && (
+        <ul className="flex flex-col gap-1 text-[11px] leading-snug text-[var(--text-secondary)]">
+          {shocks.map((e) => (
+            <li key={`${e.year}-${e.name}`} className="flex gap-1.5">
+              <span aria-hidden className="text-[var(--warn)]">▼</span>
+              <span>
+                <span className="tabular-nums text-[var(--text-primary)]">{e.year}</span> {e.name}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </figure>
   );
 }

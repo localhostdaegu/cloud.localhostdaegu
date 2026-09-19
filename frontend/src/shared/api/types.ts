@@ -179,3 +179,44 @@ export interface ConsultationCandidate {
   reason: string;
   unresolved_conditions: string[];
 }
+
+/** GET /shocks 응답 각 항목 — 업종에 영향을 준 정책·지역 사건. */
+export interface ShockEvent {
+  event_id: string;
+  layer: string;
+  name: string;
+  start_date: string; // YYYY-MM-DD
+  end_date: string | null;
+  scope: string;
+  source_url: string | null;
+  industry_impacts: { industry_id: string; severity: "low" | "medium" | "high" }[];
+}
+
+/** GET /populations/{region_code}/summary — 주민등록 인구. 방문·구매 수요가 아니다. */
+export interface PopulationSummary {
+  region_code: string;
+  latest_period: string; // YYYYMM
+  base_period: string; // YYYYMM
+  latest_total: number;
+  base_total: number;
+  age_bands: { label: string; latest: number; base: number }[];
+}
+
+/** GET /indicators?region_code= — 지표 키마다 최신 기간의 행. breakdown은 시간대 등 하위 구분. */
+export interface RegionalIndicator {
+  indicator_key: string;
+  breakdown: string | null;
+  period: string; // YYYYMM
+  value: number;
+  unit: string | null;
+}
+
+/** GET /rents/latest — 한국부동산원 R-ONE 최신 분기. rent_per_m2 단위는 천원/㎡. */
+export interface RentPrice {
+  region_name: string;
+  region_level: number; // 1 대구 평균 / 2 개별 상권
+  building_type: "small" | "medium_large";
+  period: string; // YYYYQn
+  rent_per_m2: number | null;
+  vacancy_rate: number | null;
+}

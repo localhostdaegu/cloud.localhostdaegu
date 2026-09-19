@@ -6,6 +6,7 @@ from sqlalchemy import func, or_, select
 
 from apps.metric.app.dtos.region_industry_metric_dto import YearlyStoreStat
 from apps.metric.app.ports.output.region_industry_metric_port import StoreStatsPort
+from apps.metric.domain.short_lived import SHORT_LIVED_MAX_DAYS
 from apps.store.adapter.outbound.orms.store_orm import StoreOrm
 from core.matrix.grid_oracle_database_manager import session_scope
 
@@ -35,7 +36,15 @@ class StoreStatsGateway(StoreStatsPort):
                             func.extract("year", StoreOrm.close_date) == year
                         ),
                     )
-                    .where(StoreOrm.region_code.is_not(None))
+                    .where(
+                        StoreOrm.region_code.is_not(None),
+                        # 개업 직후 종료 건 제외 — 기간을 알 수 없는 행(개업일·폐업일 없음)은 그대로 둔다
+                        or_(
+                            StoreOrm.open_date.is_(None),
+                            StoreOrm.close_date.is_(None),
+                            StoreOrm.close_date - StoreOrm.open_date > SHORT_LIVED_MAX_DAYS,
+                        ),
+                    )
                     .group_by(StoreOrm.region_code, StoreOrm.industry_id)
                 ).all()
                 stats.extend(

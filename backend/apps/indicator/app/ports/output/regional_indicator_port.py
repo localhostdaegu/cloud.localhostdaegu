@@ -13,3 +13,11 @@ class RegionalIndicatorRepositoryPort(ABC):
         적재한 행 수를 반환한다. 미승인·미등록 데이터셋이면 적재 없이 도메인 예외를 던진다
         (DatasetNotApprovedError / DatasetNotFoundError) — 승인 전 수치가 서비스에 들어갈 길을 끊는다.
         """
+
+    @abstractmethod
+    def myself(self) -> RegionalIndicator:
+        """배선 검증용 — DB 없이 하드코딩 1행 (CLAUDE.md §12)."""
+
+    @abstractmethod
+    def find_by_region(self, region_code: str) -> list[RegionalIndicator]:
+        """행정동의 전 기간·전 지표 행 — 최신 기간 선별은 유스케이스 몫이다."""

@@ -6,7 +6,8 @@ import { ApiError } from "@/shared/api/client";
 import { GradeBadge } from "@/shared/ui/grade-badge";
 import { industryLabel } from "@/shared/industries";
 import { useRegionNames } from "@/shared/api/use-region-names";
-import { fetchIndustryRiskRanking, fetchRegionSummary, fetchRiskScore } from "../api";
+import { fetchIndustryRiskRanking, fetchRegionRiskRanking, fetchRegionSummary, fetchRiskScore } from "../api";
+import { RegionContext } from "./region-context";
 import { RegionTrend } from "./region-trend";
 import { RiskCard, RiskGradeBadge } from "./risk-card";
 
@@ -22,9 +23,9 @@ interface SidePanelProps {
 }
 
 /** 비율 카드의 분모·범위 — 숫자만 보면 "왜 이렇게 높지?"에 답할 수 없다(이어받기 §0-2).
- *  개업 30일 내 종료 건 제외는 결정됐지만 집계에는 아직 반영되지 않았다(OPEN-008). */
+ *  개업 30일 내 종료 건은 집계에서 빠진다(OPEN-008 — backend apps/metric/domain/short_lived.py). */
 const CARD_NOTES: Record<string, string> = {
-  폐업률: "전년 말 점포 수 대비 그해 폐업 건수 · 개업 30일 내 종료 포함",
+  폐업률: "전년 말 점포 수 대비 그해 폐업 건수 · 개업 30일 내 종료 건 제외",
   성장률: "(개업 − 폐업) ÷ 전년 말 점포 수",
 };
 
@@ -58,6 +59,18 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
     enabled: !!regionCode && !isRanking,
   });
   const riskNotFound = risk.isError && risk.error instanceof ApiError && risk.error.code === "RISK_NOT_FOUND";
+
+  // 상대 순위 문장용 — 실패해도 점수 카드는 그대로 나온다.
+  const rank = useQuery({
+    queryKey: ["risk-region-ranking", industry],
+    queryFn: () => fetchRegionRiskRanking(industry),
+    enabled: !!regionCode && !isRanking,
+    select: (rows) => {
+      const sorted = [...rows].sort((a, b) => b.score - a.score);
+      const position = sorted.findIndex((row) => row.region_code === regionCode) + 1;
+      return position > 0 ? { position, total: sorted.length } : undefined;
+    },
+  });
 
   const ranking = useQuery({
     queryKey: ["risk-ranking", regionCode],
@@ -161,7 +174,14 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
           </header>
 
           <div className="mt-5">
-            {risk.data && <RiskCard score={risk.data.score} grade={risk.data.grade} components={risk.data.components} />}
+            {risk.data && (
+              <RiskCard
+                score={risk.data.score}
+                grade={risk.data.grade}
+                components={risk.data.components}
+                rank={rank.data}
+              />
+            )}
             {riskNotFound && (
               <p className="mb-5 text-sm leading-relaxed text-[var(--text-secondary)]">
                 이 조합의 진단 데이터가 아직 없어요
@@ -189,6 +209,7 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
           </ul>
 
           <RegionTrend regionCode={regionCode} industry={industry} />
+          <RegionContext regionCode={regionCode} />
 
           {/* 주 동선은 사전상담 입력이다 — 재무 입력 없이 리포트로 직행하지 않는다(전환계획 §3-1).
               지역 분석은 남기되 금융상담 준비 완료로 다루지 않는다. */}

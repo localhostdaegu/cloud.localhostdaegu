@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from apps.dataset.adapter.outbound.orms.external_dataset_orm import ExternalDatasetOrm
 from apps.indicator.adapter.outbound.orm_mappers.regional_indicator_orm_mapper import (
     CONFLICT_KEY,
+    to_entity,
     to_values,
 )
 from apps.indicator.adapter.outbound.orms.regional_indicator_orm import RegionalIndicatorOrm
@@ -41,6 +42,23 @@ class SqlAlchemyRegionalIndicatorRepository(RegionalIndicatorRepositoryPort):
                     )
                 )
         return len(values)
+
+    def myself(self) -> RegionalIndicator:
+        return RegionalIndicator(
+            dataset_id="myself",
+            region_code="2711051700",
+            period="202609",
+            indicator_key="myself",
+            value=1.0,
+            unit="곳",
+        )
+
+    def find_by_region(self, region_code: str) -> list[RegionalIndicator]:
+        with session_scope() as session:
+            orms = session.execute(
+                select(RegionalIndicatorOrm).where(RegionalIndicatorOrm.region_code == region_code)
+            ).scalars()
+            return [to_entity(orm) for orm in orms]
 
 
 def _assert_export_approved(session: Session, dataset_ids: set[str]) -> None:

@@ -18,6 +18,8 @@ interface SimulatorFormProps {
   submitting?: boolean;
   /** 미제출 수정 감지용 — 제출 전 값이 결과와 어긋나는지 페이지가 판단한다(§5-3). */
   onValuesChange?: (values: FinanceInput) => void;
+  /** 월세 참고값 도우미 — 고른 값을 월세 칸에 넣는 함수를 받아 그린다. 폼은 자료 조회를 모른다. */
+  rentHelper?: (applyRent: (won: number) => void) => React.ReactNode;
 }
 
 const FIELD =
@@ -85,7 +87,7 @@ function RatioField({
 }
 
 /** 프리필 확인 섹션("확인해주세요") + 상세 입력 섹션("입력해주세요") 두 개로 구성된 재무 시뮬레이션 폼. */
-export function SimulatorForm({ defaults, onSubmit, submitting, onValuesChange }: SimulatorFormProps) {
+export function SimulatorForm({ defaults, onSubmit, submitting, onValuesChange, rentHelper }: SimulatorFormProps) {
   const [values, setValues] = useState<FinanceInput>(defaults);
   const [touched, setTouched] = useState<Set<keyof FinanceInput>>(() => new Set());
   // 대출금리 기본값은 최신 금리 조회 후 늦게 바뀐다 — 사용자가 아직 손대지 않았을 때만 따라간다.
@@ -188,6 +190,7 @@ export function SimulatorForm({ defaults, onSubmit, submitting, onValuesChange }
             onChange={set("expected_monthly_revenue")}
           />
         </div>
+        {rentHelper?.(set("monthly_rent"))}
       </fieldset>
 
       <button
