@@ -5,7 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "@/shared/api/client";
 import { GradeBadge } from "@/shared/ui/grade-badge";
 import { industryLabel } from "@/shared/industries";
+import { useRegionNames } from "@/shared/api/use-region-names";
 import { fetchIndustryRiskRanking, fetchRegionSummary, fetchRiskScore } from "../api";
+import { RegionTrend } from "./region-trend";
 import { RiskCard, RiskGradeBadge } from "./risk-card";
 
 interface SidePanelProps {
@@ -18,6 +20,13 @@ interface SidePanelProps {
   /** 현재 URL 쿼리 전체(district·industry·budget 등) — /simulate CTA에 그대로 승계한다. */
   searchParams?: string;
 }
+
+/** 비율 카드의 분모·범위 — 숫자만 보면 "왜 이렇게 높지?"에 답할 수 없다(이어받기 §0-2).
+ *  개업 30일 내 종료 건 제외는 결정됐지만 집계에는 아직 반영되지 않았다(OPEN-008). */
+const CARD_NOTES: Record<string, string> = {
+  폐업률: "전년 말 점포 수 대비 그해 폐업 건수 · 개업 30일 내 종료 포함",
+  성장률: "(개업 − 폐업) ÷ 전년 말 점포 수",
+};
 
 function SkeletonRows() {
   return (
@@ -57,9 +66,13 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
   });
 
   const label = industryLabel(industry);
+  const regionNames = useRegionNames();
+  const regionName = regionNames.find((r) => r.code === regionCode)?.name ?? "선택한";
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col overflow-y-auto border-l border-[var(--border)] bg-[var(--bg-surface)] p-5">
+    <aside className="relative w-80 shrink-0 border-l border-[var(--border)] bg-[var(--bg-surface)]">
+      {/* 패널 내용이 길어져도 페이지(=지도) 높이를 밀어내지 않고 패널 안에서만 스크롤한다. */}
+      <div className="absolute inset-0 flex flex-col overflow-y-auto p-5">
       {!regionCode && (
         <div className="my-auto flex flex-col items-center gap-2 px-4 text-center">
           <span className="text-sm font-medium text-[var(--text-primary)]">선택된 행정동 없음</span>
@@ -80,7 +93,7 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
         <div role="alert" className="my-auto flex flex-col items-center gap-2 px-4 text-center">
           <span className="text-sm font-medium text-[var(--danger)]">데이터 없음</span>
           <span className="text-sm leading-relaxed text-[var(--text-secondary)]">
-            <span className="tabular-nums">{regionCode}</span> 행정동의 업종별 위험도를 불러오지 못했습니다.
+            {regionName} 행정동의 업종별 위험도를 불러오지 못했습니다.
           </span>
         </div>
       )}
@@ -90,7 +103,7 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
           <header className="flex flex-col gap-0.5">
             <h2 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">업종별 위험도</h2>
             <p className="text-xs text-[var(--text-secondary)]">
-              <span className="tabular-nums">{regionCode}</span> · 업종을 선택하면 상세 진단이 표시됩니다.
+              {regionName} · 업종을 선택하면 상세 진단이 표시됩니다.
             </p>
           </header>
 
@@ -133,7 +146,7 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
         <div role="alert" className="my-auto flex flex-col items-center gap-2 px-4 text-center">
           <span className="text-sm font-medium text-[var(--danger)]">데이터 없음</span>
           <span className="text-sm leading-relaxed text-[var(--text-secondary)]">
-            <span className="tabular-nums">{regionCode}</span> 행정동의 {label} 지표를 불러오지 못했습니다.
+            {regionName} 행정동의 {label} 지표를 불러오지 못했습니다.
           </span>
         </div>
       )}
@@ -144,9 +157,7 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
             <h2 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">
               {summary.data.name}
             </h2>
-            <p className="text-xs text-[var(--text-secondary)]">
-              <span className="tabular-nums">{summary.data.region_code}</span> · {label}
-            </p>
+            <p className="text-xs text-[var(--text-secondary)]">{label}</p>
           </header>
 
           <div className="mt-5">
@@ -166,29 +177,40 @@ export function SidePanel({ regionCode, industry, industryParam, onSelectIndustr
                   <span className="text-sm leading-snug tabular-nums text-[var(--text-primary)]">
                     {card.value}
                   </span>
+                  {CARD_NOTES[card.label] && (
+                    <span className="text-[11px] leading-snug text-[var(--text-secondary)]">
+                      {CARD_NOTES[card.label]}
+                    </span>
+                  )}
                 </div>
                 <GradeBadge grade={card.grade} />
               </li>
             ))}
           </ul>
 
+          <RegionTrend regionCode={regionCode} industry={industry} />
+
           {/* 주 동선은 사전상담 입력이다 — 재무 입력 없이 리포트로 직행하지 않는다(전환계획 §3-1).
               지역 분석은 남기되 금융상담 준비 완료로 다루지 않는다. */}
-          <Link
-            href={simulateHref}
-            className="mt-6 rounded-md bg-[var(--accent)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--accent-fg)] transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px"
-          >
-            이 자리로 창업자금 사전상담 →
-          </Link>
+          {/* 추이 차트가 길어져도 다음 행동은 항상 보이게 패널 하단에 붙인다. */}
+          <div className="sticky -bottom-5 -mx-5 mt-6 flex flex-col border-t border-[var(--border)] bg-[var(--bg-surface)] px-5 py-4">
+            <Link
+              href={simulateHref}
+              className="rounded-md bg-[var(--accent)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--accent-fg)] transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px"
+            >
+              이 자리로 창업자금 사전상담 →
+            </Link>
 
-          <Link
-            href={`/analysis?region=${regionCode}&industry=${industry}`}
-            className="mt-2 rounded-md border border-[var(--border)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px"
-          >
-            지역 분석만 보기 →
-          </Link>
+            <Link
+              href={`/analysis?region=${regionCode}&industry=${industry}`}
+              className="mt-2 rounded-md border border-[var(--border)] px-3 py-2.5 text-center text-sm font-semibold text-[var(--text-primary)] transition-colors hover:bg-[var(--bg-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:translate-y-px"
+            >
+              지역 분석만 보기 →
+            </Link>
+          </div>
         </>
       )}
+      </div>
     </aside>
   );
 }

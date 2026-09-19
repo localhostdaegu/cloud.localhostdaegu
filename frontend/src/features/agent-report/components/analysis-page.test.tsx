@@ -8,6 +8,9 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams("region=2711059500&industry=cafe&year=2025"),
 }));
 
+// 동 이름 목록은 지도 경계 캐시에서 온다 — 이 테스트의 관심사(리포트 요청·세션 기록)가 아니므로 비워 둔다.
+vi.mock("@/shared/api/use-region-names", () => ({ useRegionNames: () => [] }));
+
 const INPUT: FinanceInput = {
   deposit: 20_000_000, key_money: 0, interior_cost: 20_000_000, equipment_cost: 10_000_000,
   monthly_rent: 1_000_000, monthly_payroll: 900_000, monthly_insurance: 100_000,

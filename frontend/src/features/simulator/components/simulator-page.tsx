@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
+import { DISTRICTS } from "@/shared/daegu";
 import { industryLabel } from "@/shared/industries";
 import { encodeFinanceParam } from "@/shared/finance-param";
 import type { FinanceInput } from "@/shared/api/types";
@@ -23,7 +24,7 @@ import { simulateFinance } from "../api";
 import { ConsultationProfileForm } from "./consultation-profile-form";
 import { SimulatorForm } from "./simulator-form";
 import { PlanComparison } from "./plan-comparison";
-import { ResultView } from "./result-view";
+import { ResultFigures, ResultNextSteps } from "./result-view";
 
 /** URL district·industry·budget 프리필 → 폼 → 계산 → 최초안·현재안 비교 → 선택안 결과(§5-3). */
 export function SimulatorPage() {
@@ -80,64 +81,85 @@ export function SimulatorPage() {
         }).toString()}`
       : undefined;
 
+  // 전후 차이는 현재안을 볼 때만 의미가 있다 — 최초안을 보고 있으면 비교 기준이 자기 자신이다.
+  const compareTo = draft.selected === "current" && draft.current !== null ? draft.baseline?.result : undefined;
+
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-8">
       <header className="flex flex-col gap-1">
         <h1 className="text-lg font-semibold tracking-tight text-[var(--text-primary)]">창업자금 사전상담</h1>
         <p className="text-xs text-[var(--text-secondary)]">
           {industry ? industryLabel(industry) : "업종 미지정"}
-          {district ? ` · ${district}` : ""} 기준으로 값을 채웠어요. 필요하면 수정하세요.
+          {district ? ` · ${DISTRICTS[district]?.name ?? district}` : ""} 기준으로 값을 채웠어요. 필요하면 수정하세요.
         </p>
       </header>
 
-      <ConsultationProfileForm
-        value={draft.profile}
-        onChange={(profile) => update({ ...draft, profile })}
-      />
+      {/* 넓은 화면에서는 입력(좌)과 결과(우)를 나란히 둔다 — 조건을 바꾸면서 결과를 같이 본다. */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
+        <div className="flex flex-col gap-8">
+          <ConsultationProfileForm
+            value={draft.profile}
+            onChange={(profile) => update({ ...draft, profile })}
+          />
 
-      <SimulatorForm
-        defaults={defaults}
-        onSubmit={(payload, missing) => {
-          setUnconfirmed(missing);
-          mutation.mutate(payload);
-        }}
-        submitting={mutation.isPending}
-        onValuesChange={useCallback((values: FinanceInput) => setFormValues(values), [])}
-      />
+          <SimulatorForm
+            defaults={defaults}
+            onSubmit={(payload, missing) => {
+              setUnconfirmed(missing);
+              mutation.mutate(payload);
+            }}
+            submitting={mutation.isPending}
+            onValuesChange={useCallback((values: FinanceInput) => setFormValues(values), [])}
+          />
 
-      {mutation.isError && (
-        <p role="alert" className="text-sm text-[var(--danger)]">
-          {mutation.error instanceof Error ? mutation.error.message : "시뮬레이션에 실패했습니다."}
-        </p>
-      )}
+          {mutation.isError && (
+            <p role="alert" className="text-sm text-[var(--danger)]">
+              {mutation.error instanceof Error ? mutation.error.message : "시뮬레이션에 실패했습니다."}
+            </p>
+          )}
+        </div>
 
-      {stale && (
-        <p role="status" className="text-sm text-[var(--warn)]">
-          아래 결과는 이전 입력 기준이에요. 다시 계산하면 새 안으로 비교·선택할 수 있습니다.
-        </p>
-      )}
+        <div className="flex flex-col gap-6 rounded-lg border border-[var(--border)] bg-[var(--bg-surface)] p-5 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+          {stale && (
+            <p role="status" className="text-sm text-[var(--warn)]">
+              아래 결과는 이전 입력 기준이에요. 다시 계산하면 새 안으로 비교·선택할 수 있습니다.
+            </p>
+          )}
+
+          {plan ? (
+            <>
+              <PlanComparison
+                baseline={draft.baseline}
+                current={draft.current}
+                selected={draft.selected}
+                onSelect={(kind: PlanKind) => update(selectPlan(draft, kind))}
+                changeReason={draft.change_reason}
+                onChangeReason={(change_reason) => update({ ...draft, change_reason })}
+                disabled={stale}
+              />
+              <ResultFigures result={plan.result} input={plan.input} compareTo={compareTo} />
+            </>
+          ) : (
+            <div className="flex flex-col gap-2 py-10 text-center">
+              <span className="text-sm font-medium text-[var(--text-primary)]">아직 계산 결과가 없어요</span>
+              <span className="text-sm leading-relaxed text-[var(--text-secondary)]">
+                왼쪽 값을 채우고 시뮬레이션을 실행하면 필요한 매출과 준비자금이 여기에 표시됩니다.
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
 
       {plan && (
-        <>
-          <PlanComparison
-            baseline={draft.baseline}
-            current={draft.current}
-            selected={draft.selected}
-            onSelect={(kind: PlanKind) => update(selectPlan(draft, kind))}
-            changeReason={draft.change_reason}
-            onChangeReason={(change_reason) => update({ ...draft, change_reason })}
-            disabled={stale}
-          />
-          <ResultView
-            result={plan.result}
-            input={plan.input}
-            category={industry ?? undefined}
-            profile={draft.profile}
-            districtCode={districtCode}
-            backHref={`/simulate?${searchParams.toString()}`}
-            analysisHref={analysisHref}
-          />
-        </>
+        <ResultNextSteps
+          result={plan.result}
+          input={plan.input}
+          category={industry ?? undefined}
+          profile={draft.profile}
+          districtCode={districtCode}
+          backHref={`/simulate?${searchParams.toString()}`}
+          analysisHref={analysisHref}
+        />
       )}
     </div>
   );

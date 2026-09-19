@@ -38,7 +38,8 @@ test("주 지표는 손익분기 매출·총 준비자금·자기자본 외 조�
   expect(screen.getByText("총 준비자금")).toBeInTheDocument();
   expect(screen.getByText("자기자본 외 조달 필요")).toBeInTheDocument();
   expect(screen.getByText("6,260만원")).toBeInTheDocument();
-  expect(screen.getByText("2,260만원")).toBeInTheDocument();
+  // 같은 금액이 자금 구성 막대 범례에도 나오므로 주 지표 칸을 짚어 확인한다.
+  expect(screen.getByText("자기자본 외 조달 필요").nextElementSibling).toHaveTextContent("2,260만원");
 });
 
 test("§7-2 — 부족액이 0원이어도 '자기자본으로 충분'이라고 쓰지 않는다", () => {

@@ -161,7 +161,7 @@ export function MatchingCards({
 
 function CandidateList({ items }: { items: ConsultationCandidate[] }) {
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
+    <ul className="grid items-start gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {items.map(({ product, metadata, status, reason, unresolved_conditions }) => (
         <li
           key={product.product_id}
@@ -184,10 +184,19 @@ function CandidateList({ items }: { items: ConsultationCandidate[] }) {
           </span>
           <span className="text-xs text-[var(--text-primary)]">{reason}</span>
 
-          <Bullets title="먼저 밟을 절차" items={metadata.prerequisites} />
-          <Bullets title="신청 경로" items={metadata.application_steps} />
-          <Bullets title="준비 서류" items={metadata.documents} />
-          <Bullets title="상담에서 확인할 것" items={unresolved_conditions} />
+          {/* 카드 10여 장이 글 벽이 되지 않도록 세부는 접어 둔다 — 이름·한도·근거만 먼저 읽힌다. */}
+          <details className="group">
+            <summary className="w-fit cursor-pointer text-xs text-[var(--accent)] underline decoration-[var(--border)] underline-offset-4 marker:content-none">
+              <span className="group-open:hidden">절차·서류·확인할 것 보기</span>
+              <span className="hidden group-open:inline">접기</span>
+            </summary>
+            <div className="mt-2 flex flex-col gap-2">
+              <Bullets title="먼저 밟을 절차" items={metadata.prerequisites} />
+              <Bullets title="신청 경로" items={metadata.application_steps} />
+              <Bullets title="준비 서류" items={metadata.documents} />
+              <Bullets title="상담에서 확인할 것" items={unresolved_conditions} />
+            </div>
+          </details>
 
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <a

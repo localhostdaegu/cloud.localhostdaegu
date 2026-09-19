@@ -33,10 +33,13 @@ export function MapLegend({ metric, classes }: MapLegendProps) {
     <div className="absolute right-3 bottom-9 z-10 rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2.5 shadow-md">
       <p className="mb-1.5 text-xs font-semibold text-[var(--text-primary)]">{METRIC_LABELS[metric]}</p>
       <ul className="flex flex-col gap-1">
-        {classes.map(({ color, from, to }) => (
+        {classes.map(({ color, from, to }, i) => (
           <li key={color} className="flex items-center gap-2 text-[11px] leading-none tabular-nums text-[var(--text-secondary)]">
             <span aria-hidden className="h-3 w-3 shrink-0 rounded-[2px]" style={{ backgroundColor: color }} />
-            {formatLegendValue(metric, from)} ~ {formatLegendValue(metric, to)}
+            {/* 최상위 구간은 "이상"으로 연다 — 극단값 하나(예: 폐업률 100% 초과)가 구간 끝값으로 읽히지 않게 한다. */}
+            {i === classes.length - 1
+              ? `${formatLegendValue(metric, from)} 이상`
+              : `${formatLegendValue(metric, from)} ~ ${formatLegendValue(metric, to)}`}
           </li>
         ))}
         <li className="flex items-center gap-2 text-[11px] leading-none text-[var(--text-secondary)]">

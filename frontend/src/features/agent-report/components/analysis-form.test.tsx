@@ -24,3 +24,21 @@ it("finance가 없으면 안내 문구 없이 기존 params만 제출한다", ()
 
   expect(onSubmit).toHaveBeenCalledWith({ region: "2711059500", industry: "cafe", question: undefined });
 });
+
+it("행정동은 10자리 코드가 아니라 동 이름으로 고른다 — 제출값은 코드다", () => {
+  const onSubmit = vi.fn();
+  render(
+    <AnalysisForm
+      initialRegion=""
+      initialIndustry="cafe"
+      regions={[{ code: "2711059500", name: "대신동" }]}
+      onSubmit={onSubmit}
+    />,
+  );
+
+  expect(screen.queryByLabelText("지역 코드")).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText("행정동"), { target: { value: "2711059500" } });
+  fireEvent.click(screen.getByRole("button", { name: "분석 시작" }));
+
+  expect(onSubmit).toHaveBeenCalledWith({ region: "2711059500", industry: "cafe", question: undefined });
+});

@@ -34,7 +34,7 @@ export function ReportView({ state }: ReportViewProps) {
       <div className="flex h-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border)] px-6 py-12 text-center">
         <span className="text-sm font-medium text-[var(--text-primary)]">아직 리포트가 없습니다</span>
         <span className="max-w-sm text-sm leading-relaxed text-[var(--text-secondary)]">
-          지역 코드와 업종을 확인한 뒤 [분석 시작]을 누르면, 에이전트가 수집한 근거와 함께 리포트가 여기에 채워집니다.
+          행정동과 업종을 확인한 뒤 [분석 시작]을 누르면, 에이전트가 수집한 근거와 함께 리포트가 여기에 채워집니다.
         </span>
       </div>
     );

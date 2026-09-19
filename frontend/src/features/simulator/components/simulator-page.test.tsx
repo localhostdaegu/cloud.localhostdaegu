@@ -157,7 +157,10 @@ it("새로고침해도 저장된 선택안으로 결과를 복원한다", async 
 
   renderPage();
 
-  await waitFor(() => expect(screen.getByText("800만원")).toBeInTheDocument());
+  // 같은 금액이 자금 구성 막대 범례에도 나오므로 주 지표 칸을 짚어 확인한다.
+  await waitFor(() =>
+    expect(screen.getByText("자기자본 외 조달 필요").nextElementSibling).toHaveTextContent("800만원"),
+  );
 });
 
 it("창업 단계 입력이 세션에 저장된다", async () => {

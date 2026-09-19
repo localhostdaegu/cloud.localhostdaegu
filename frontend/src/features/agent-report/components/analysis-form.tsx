@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { industryLabel } from "@/shared/industries";
+import { INDUSTRIES, industryLabel } from "@/shared/industries";
+import type { RegionName } from "@/shared/api/use-region-names";
 import type { FinanceInput } from "@/shared/api/types";
 import type { StartAnalysisParams } from "../hooks/use-agent-report";
 
 interface AnalysisFormProps {
   initialRegion: string;
   initialIndustry: string;
+  /** 행정동 선택지 — 화면에는 10자리 코드 대신 동 이름을 보여준다. 제출값은 그대로 코드다. */
+  regions?: RegionName[];
   finance?: FinanceInput;
   onSubmit: (params: StartAnalysisParams) => void;
   disabled?: boolean;
@@ -16,7 +19,7 @@ interface AnalysisFormProps {
 const FIELD =
   "rounded-md border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-sm text-[var(--text-primary)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]";
 
-export function AnalysisForm({ initialRegion, initialIndustry, finance, onSubmit, disabled }: AnalysisFormProps) {
+export function AnalysisForm({ initialRegion, initialIndustry, regions = [], finance, onSubmit, disabled }: AnalysisFormProps) {
   const [region, setRegion] = useState(initialRegion);
   const [industry, setIndustry] = useState(initialIndustry);
   const [question, setQuestion] = useState("");
@@ -31,20 +34,31 @@ export function AnalysisForm({ initialRegion, initialIndustry, finance, onSubmit
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-1.5 text-xs font-medium tracking-wide text-[var(--text-secondary)]">
-          지역 코드
-          <input
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            className={`${FIELD} tabular-nums`}
-          />
+          행정동
+          <select value={region} onChange={(e) => setRegion(e.target.value)} className={FIELD}>
+            <option value="">동을 선택하세요</option>
+            {/* 목록을 받기 전이거나 목록에 없는 딥링크 값도 선택 상태로 남긴다. */}
+            {region && !regions.some((r) => r.code === region) && <option value={region}>지도에서 선택한 동</option>}
+            {regions.map((r) => (
+              <option key={r.code} value={r.code}>
+                {r.name}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="flex flex-col gap-1.5 text-xs font-medium tracking-wide text-[var(--text-secondary)]">
           업종
-          <input value={industry} onChange={(e) => setIndustry(e.target.value)} className={FIELD} />
-          {/* 입력값은 API 계약상의 업종 id다. 무엇을 가리키는 id인지 한국어 라벨로 함께 보여준다. */}
-          <span className="font-normal text-[var(--text-secondary)]">
-            {industry ? industryLabel(industry) : "지도 탐색 탭에서 업종을 고르면 자동으로 채워집니다"}
-          </span>
+          <select value={industry} onChange={(e) => setIndustry(e.target.value)} className={FIELD}>
+            <option value="">업종을 선택하세요</option>
+            {industry && !(INDUSTRIES as readonly string[]).includes(industry) && (
+              <option value={industry}>{industryLabel(industry)}</option>
+            )}
+            {INDUSTRIES.map((id) => (
+              <option key={id} value={id}>
+                {industryLabel(id)}
+              </option>
+            ))}
+          </select>
         </label>
       </div>
       {finance && (

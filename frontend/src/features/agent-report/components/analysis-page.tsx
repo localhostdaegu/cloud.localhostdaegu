@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { parseFinanceParam } from "@/shared/finance-param";
 import { industryLabel } from "@/shared/industries";
+import { useRegionNames } from "@/shared/api/use-region-names";
 import {
   loadDraft,
   saveDraft,
@@ -34,6 +35,9 @@ export function AnalysisPage() {
 
   const [sessionId, setSessionId] = useState<string | null>(null);
 
+  const regions = useRegionNames();
+  const regionCode = searchParams.get("region") ?? "";
+
   const startWithConsultation = (params: StartAnalysisParams) => {
     const withYear = { ...params, ...(year ? { year } : {}) };
     if (draft === null || plan === null) return start(withYear);
@@ -56,8 +60,9 @@ export function AnalysisPage() {
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8">
       <div className="max-w-xl print-hide">
         <AnalysisForm
-          initialRegion={searchParams.get("region") ?? ""}
+          initialRegion={regionCode}
           initialIndustry={searchParams.get("industry") ?? ""}
+          regions={regions}
           finance={finance}
           onSubmit={startWithConsultation}
           disabled={loading}
@@ -79,7 +84,7 @@ export function AnalysisPage() {
             sessionId={sessionId}
             planKind={draft?.selected ?? null}
             meta={{
-              regionLabel: searchParams.get("region") ?? "",
+              regionLabel: regions.find((r) => r.code === regionCode)?.name ?? regionCode,
               industryLabel: industryLabel(searchParams.get("industry") ?? ""),
               generatedAt: new Date().toISOString().slice(0, 10),
             }}

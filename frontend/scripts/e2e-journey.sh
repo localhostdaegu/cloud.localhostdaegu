@@ -118,8 +118,8 @@ PREFILL="$(cat <<'EOF' | AB eval --stdin
 (() => {
   const byLabel = (text) => Array.from(document.querySelectorAll("label"))
     .find((l) => l.textContent.trim().startsWith(text))
-    ?.querySelector("input")?.value ?? "";
-  return JSON.stringify({ region: byLabel("지역 코드"), industry: byLabel("업종") });
+    ?.querySelector("input, select")?.value ?? "";
+  return JSON.stringify({ region: byLabel("행정동"), industry: byLabel("업종") });
 })()
 EOF
 )"
