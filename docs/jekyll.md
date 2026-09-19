@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-09-20 — 이어받기 ① 배포 갱신: 운영 백엔드 CORS 누락 발견·교체, 7건 푸시 → Vercel 자동 배포, 프로덕션 E2E PASS
+
+### 자정 — 배포 상태 실측과 갱신
+
+- **점검 결과**: 이어받기 §0-1-1의 ①은 "첫 배포"가 아니라 **재배포 갱신**이었다. 네임서버(`harley`·`tessa.ns.cloudflare.com`)·터널 `localhostdaegu`(14c7dc2e…, 연결 4개)·Vercel 프로젝트 `cloud-localhostdaegu`(Root `frontend`, 환경변수 2개 Production·Preview)·루트 `A 76.76.21.21`·`053` CNAME 모두 9/19 낮 상태 그대로 살아 있었다. Vercel 계정은 기본 로그인과 달라 `vercel --global-config ~/.config/vercel-localhostdaegu …`로 조회해야 한다(기본 설정으로는 "Could not retrieve Project Settings").
+- **운영 사고 1건**: 9/19 23:07 코드 반영을 위해 손으로 띄운 `uvicorn --workers 1`(pid 2631043)에 `CORS_ALLOW_ORIGINS`가 없었다. systemd `localhostdaegu-backend`는 `inactive`, 터널만 `active`. 실측 — `OPTIONS /finance/simulate` + `Origin: https://localhostdaegu.cloud` → 로컬·공개 모두 **400, allow-origin 헤더 없음**. 즉 운영 프론트에서 브라우저가 API 응답을 버리는 상태가 약 1시간 지속됐다(curl은 정상이라 눈치채기 어렵다). 조치: 수동 프로세스 종료 → `systemctl --user start localhostdaegu-backend`(23:59:47 기동) → 로컬·공개 preflight **200 + `access-control-allow-origin: https://localhostdaegu.cloud`**, `/matching/consultation` 실데이터 응답, `/docs` 외부 404 유지. `.env`는 `grid_keymaker_secret_manager`가 경로로 읽으므로 NEIS·CHILDCARE·SGIS 키를 유닛에 넣을 필요가 없었다(이어받기 ①의 "환경변수 추가 필요" 메모는 오해). 런북 §6에 함정으로 기록.
+- **프론트 갱신**: `00df250..bd25443` 7건(feat 2 · docs 5) 푸시 → Vercel Git 연동이 20초 만에 Production 빌드(`dpl_9XqSnU3n…`, alias `localhostdaegu.cloud`·`cloud-localhostdaegu.vercel.app`). 배포된 청크 642KB에서 `담배소매인 기준` 라벨과 `api.localhostdaegu.cloud`가 각 1회 검출 — 새 코드·실백엔드 base가 박혔음을 확인.
+- **프로덕션 E2E**: `frontend/tests/funnel.cjs`의 `BASE_URL`만 운영 주소로 바꾼 사본(스크래치패드, 저장소 밖)을 headless로 1회 실행 — ①~⑨ 전부 PASS(랜딩 입력 → `/map?district=27110&region=2711059500` → 폴리곤 클릭 → 사전상담 CTA → 최초 계산 "자기자본 외 조달 필요" → 월세 수정 재계산 비교표 → `/analysis` → iM뱅크 공식 상담 링크). `/analysis` 자동 시작으로 Gemini 호출 1회 발생.
+- **문서**: `docs/handoff.md` 헤더(갱신 9/20, 브랜치 `main`)·§0-1-1 ①(배포 갱신 완료, 시연 영상만 잔여, 재시작 규칙)·§6 배포 URL 체크. `docs/deploy-runbook.md` §6 함정 1건 추가.
+- **남은 것**: 이어받기 §0-1-1 ①의 **시연 영상**(사람 작업), ② 제출 서류·접수(오늘 23:59), ⑩ 제출 직전 크론 증감 수치 재갱신(`make_charts.py 2` + `grep -n "1,926\|3,643"`). 이 머신 전원 유지(백엔드가 여기서 돈다).
+
 ## 2026-09-19 — 첫 배포·페르소나 테스트 10명·미연결 데이터 연결·지오코딩 3,232건·지표 11업종, 밤에 4묶음 커밋
 
 ### 밤 마무리 — 학원 스냅샷 규칙 통일, 커밋 4묶음, 남은 일 10건 정리

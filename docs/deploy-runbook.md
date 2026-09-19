@@ -86,5 +86,7 @@ curl -X OPTIONS https://<백엔드>/finance/simulate \
 
 ## 6. 알려진 함정 (실제로 겪은 것)
 
+- **수동 `uvicorn`으로 재시작하면 CORS가 빠진다.** `CORS_ALLOW_ORIGINS`는 systemd 유닛(`~/.config/systemd/user/localhostdaegu-backend.service`)에만 있다. 9/19 밤 코드 반영을 위해 손으로 띄운 프로세스가 운영 프론트의 preflight를 400으로 돌려보냈다(9/20 00:00 발견·교체). 재시작은 항상 `systemctl --user restart localhostdaegu-backend`.
+
 - **개발 중 백엔드를 `--reload` 없이 띄웠다가 코드 변경이 반영되지 않아 E2E가 통과한 것처럼 보인 적이 있다.** 배포 후 검증은 반드시 §4의 `curl`로 응답 필드를 직접 확인한다. 화면에 라벨만 떠도 값이 비어 있을 수 있다.
 - `NEXT_PUBLIC_API_BASE` 미설정 시 조용히 mock으로 떨어진다. 에러가 나지 않아 알아채기 어렵다.

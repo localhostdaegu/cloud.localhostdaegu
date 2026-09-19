@@ -1,7 +1,7 @@
 # 이어받기(Handoff) — 어디서부터 계속하나
 
-> 작성: 2026-09-16 / **갱신: 2026-09-18** / 브랜치: `feat/daegu-backend` (main 대비 커밋 20여 개 앞섬, 미머지)
-> 마감: 접수 **2026-09-20(일) 23:59** — 남은 작업일 D-2
+> 작성: 2026-09-16 / **갱신: 2026-09-20 00:10** / 브랜치: `main` (9/18 병합, `origin/main` = `bd25443`)
+> 마감: 접수 **2026-09-20(일) 23:59** — 오늘
 > 전제 문서: 기획서 `docs/daegunavi.md` · API 목록 `docs/apilist.md` · 개발로그 `docs/jekyll.md`
 
 ---
@@ -56,7 +56,7 @@ node frontend/tests/funnel.cjs               # E2E (mock 기준) PASS 기대
 
 | # | 남은 일 | 왜 남았나 | 규모·방법 |
 |---|---|---|---|
-| 1 | **배포 + 시연 영상** (§0-1 3번) | 미착수 | 배포 가이드 `docs/deploy*.md`. 백엔드 환경변수에 `NEIS_API_KEY`·`CHILDCARE_API_KEY`·`SGIS_*`도 필요(9/19 추가) |
+| 1 | **시연 영상** (§0-1 3번) — 배포 갱신은 ✅ 9/20 00:00 | 배포 갱신 완료: `bd25443` 푸시 → Vercel Git 자동 배포(20초) → `https://localhostdaegu.cloud`에 새 라벨·API base 확인, 프로덕션 대상 깔때기 E2E 9단계 PASS. ⚠️ 9/19 밤 수동 재시작한 백엔드에 `CORS_ALLOW_ORIGINS`가 없어 운영 프론트 요청이 preflight 400이던 것을 systemd 유닛으로 교체해 해소 | 시연 영상만 남음(사람 작업, 대본 `docs/demo-script.md`). **백엔드 재시작은 반드시 `systemctl --user restart localhostdaegu-backend`** — 수동 uvicorn은 CORS·유닛 감시가 빠진다. `.env`는 경로로 읽으므로(`grid_keymaker_secret_manager`) NEIS·CHILDCARE·SGIS 키는 유닛에 따로 안 넣어도 된다 |
 | 2 | **제출 서류·접수** (§0-1 5번, 9/20) | 미착수 | `docs/plan/plan.md`(git 미추적 — 이 노트북에만 있음, 팀 공유는 별도 전달) |
 | 3 | 폐업 추정 라벨 유지 | 학원·부동산·어린이집 폐업은 스냅샷 소실 추정이라 현재 0건 — 스냅샷이 2~4주 쌓여야 값이 생김 | 코드 완료. 제안서·화면에 "추정" 표기 유지(`폐업률(추정)` 라벨, 프롬프트 주석) |
 | 4 | 좌표 없는 인허가 잔여 2,315건 | SGIS에 없는 옛 지번(영업 중 35, 2019~2025 폐업 37 = 전체 폐업의 0.1%) | 후순위. 도로명주소 API(juso.go.kr) 지번→도로명 변환 후 `geocode_stores --retry-failed` |
@@ -302,7 +302,7 @@ cd frontend && npm run dev &                              # :3300 (브라우저 
 - [x] **시연 대본** — `docs/demo-script.md` (3분, 수치는 엔진 검산값, 하지 말 것·예상 질문 포함)
 - [x] **배포 런북** — `docs/deploy-runbook.md` (환경변수·DB 준비·기동 제약·배포 후 확인)
 - [ ] 참가서약서 · 개인정보 수집·이용 동의서 (주최 양식 필요)
-- [ ] 배포 URL (9/20 예정) — 프론트 **Vercel** / 백엔드 **Cloudflare Tunnel** 확정. 절차: [배포 가이드](deploy-vercel-cloudflare.md). ⚠️ 도메인이 아직 가비아 NS라 이전·전파 시간이 필요하다(급하면 `trycloudflare.com` 임시 주소)
+- [x] 배포 URL — 프론트 `https://localhostdaegu.cloud`(Vercel, Git 푸시 자동 배포) / 백엔드 `https://api.localhostdaegu.cloud`(Cloudflare Tunnel, systemd 유닛 2개). 9/19 첫 배포, 9/20 00:00 `bd25443` 갱신. 절차: [배포 가이드](deploy-vercel-cloudflare.md)
 - [ ] 시연 영상 녹화
 - [ ] im-challenge.com 온라인 접수
 
