@@ -227,9 +227,12 @@ cd backend
 
 ### 학원·부동산중개업 수동 스냅샷 운영 절차 (2026-09-19 추가, 크론 아님)
 
-- 재수집 후 반드시 `geocode_stores` → `assign_regions` → `build_metrics` 순서로 돌린다. 두 업종은 원천에 좌표가 없어 `store.address`를 SGIS로 지오코딩해야 지표에 잡힌다(`scripts/store-collector.sh`는 미포함 — 수동 스냅샷).
+- 재수집 후 `geocode_stores` → `assign_regions` → `build_metrics` 순서로 돌린다. 두 업종은 원천에 좌표가 없어 `store.address`를 SGIS로 지오코딩해야 지표에 잡힌다. 좌표는 캐시(`data/cache/sgis_geocode.csv`)에서 복원되므로 재수집 뒤 지오코딩은 API 0회다.
 - `cd backend && PYTHONPATH=. .venv/bin/python -m apps.store.adapter.inbound.cli.academy_collector`(또는 `broker_collector`) → `... geocode_stores` → `... assign_regions` → `... build_metrics`.
-- **학원 재수집(`academy_collector`)만 좌표·region을 NULL로 되돌린다** — `AcademyCourseInteractor`가 이월 없이 upsert하기 때문이다. 부동산은 `BrokerSnapshotInteractor._carry_location`이 기존 lat/lng/region_code를 이월하므로 되돌지 않는다. 그래서 학원 재수집 뒤에는 반드시 `geocode_stores`(캐시 히트, SGIS 호출 0회) → `assign_regions` → `build_metrics`를 돌린다(캐시 `data/cache/sgis_geocode.csv`는 git 미추적 — 지우면 6,000회 재호출). 어린이집 원천 좌표 오류 15건은 캐시와 무관하게 `geocode_stores --childcare`가 좌표만 보고 재보정한다.
+- 두 인터랙터 모두 기존 좌표·행정동을 이월하고(`snapshot_support.carry_location`), 이전 스냅샷에 있다가 사라진 점포를 관측일 기준 `폐업(추정)`(status_code `closed_estimated`)으로 기록한다. 학원은 9/19 밤에 broker와 같은 규칙으로 맞췄다(전국 1회 스냅샷이라 업종 전체가 비교 단위). 최초 적재일은 비교 기준이 없어 추정이 발동하지 않으며, 스냅샷이 2~4주 쌓여야 폐업률이 의미를 갖는다 — 제안서에는 "추정치"로 표기.
+- 일일 크론 `scripts/store-collector.sh`에는 `geocode_stores`(캐시 우선) 단계가 들어 있다(9/19). 인허가 증분 merge가 원천 좌표 없는 행의 lat/lng를 비우기 때문이며, 좌표 없는 인허가 잔여 2,315건(SGIS에 없는 옛 지번, 2019~2025 폐업 37건)은 주소 API(juso.go.kr) 변환이 후속.
+- 편의점 지표 = **담배소매인 대용**(`tobacco_retailer`). 원천이 D-데이터허브 수동 다운로드라 파일을 다시 받으면 `... apps.tobacco.adapter.inbound.cli.load_tobacco_retailer` → `... build_metrics` 순서로 돌린다. `store` 테이블을 거치지 않고 지표 원천 Strategy(`stats_sources/tobacco_proxy_source.py`)가 직접 집계하므로 지오코딩·공간조인 단계는 필요 없다(행정동은 로더가 채운다).
+- 어린이집 폐원 = **스냅샷 소실 추정**. 원천이 폐지 시설을 반환하지 않아 `abolished_on`은 0건이며, 그 구·군의 최신 관측일(`max(last_seen_on)` by `district_code`)에 다시 보이지 않은 시설의 마지막 관측일을 폐원일로 본다. 관측일이 하루뿐인 지금은 폐업 0건이고, 스냅샷이 쌓여야 값이 생긴다 — 학원·부동산과 같이 "추정치"로 표기.
 
 ### (선택) Task 10 — 담배소매업 파일 (D-데이터허브 수동 다운로드 필요, 브리프: `task-10` 없음 — 계획서 본문 참조)
 
@@ -267,7 +270,7 @@ cd frontend && npm run dev &                              # :3300 (브라우저 
 - 프론트: ResultView 자체 QueryClient 제거 권장(3줄), formatKrw 밴드 불일치, MoneyField 소수 입력, B유형 헤더 region 이름(백엔드 랭킹 응답에 name 추가 필요), 스펙 갭 3건(A유형 대안 업종·결론 AI 리포트 CTA·stress 렌더), T7 redoceanmap 차트(P1)
 - 백엔드: `/metrics/risk` OpenAPI 스키마 부재(response_model=None), rank_by_industry N+1, tobacco 하이브리드 픽스처, s4u 수기 샘플 노출 여부(기획서 §10 미결 3)
 - 9/18 최종 리뷰 이월(LEAVE 판정·범위 밖): 뉴스 폴러는 전 키워드 실패여도 exit 0 / 예외 체인(`__context__`)·httpx INFO 로그로 URL 노출 여지 / 동대구역 랜드마크 = 신암4동(좌표 기준, 점포 밀집은 신천4동) / intent 라우터 ORM 직접 접근·matcher Specification 미적용 / 테스트가 git 미추적 `data/raw` 필요(신규 클론·CI 불가) / store 증분 커서 누락 가능(주 1회 `--full` 검토) / R-ONE 레벨 docstring·픽스처 3단 가정
-- 백엔드(9/19): `AcademyCourseInteractor`에 좌표 이월(`BrokerSnapshotInteractor._carry_location` 재사용) 미적용 — 학원만 재수집 때 좌표가 NULL로 돌아간다. 대칭화는 별도 결정
+- ~~백엔드(9/19): `AcademyCourseInteractor`에 좌표 이월 미적용~~ → 9/19 밤 해소: `snapshot_support.carry_location`을 broker와 공유하고 스냅샷 소실 폐업(추정)도 같은 규칙으로 적용
 - 저장소: `부트캠프 과제.pdf`(1.2MB) 커밋에 포함됨 — 제출 저장소 정리 시 제거 검토
 - 9/17 해결분(참고): 온통청년 간헐 400/403/500 → 재시도 + 전국 1회 조회·대구(군위 포함) 필터 / 크론 로그 `exit 0` 오표기 수정 / "신규 만료 22건" 반복 = 테스트가 개발 DB 오염 → 테스트 DB 분리 / 프론트 브이월드 키는 새 키와 동일 확인(9/16 미결 해소)
 - 팀 구성(1~4인)·참가신청서 — 기획서 §10 미결 2
