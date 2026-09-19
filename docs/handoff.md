@@ -36,8 +36,8 @@
    - 배포 메모(`/analysis`): 백엔드 환경변수 `GEMINI_API_KEY`·`GEMINI_REPORT_MODEL`(=gemini-3.8-flash) 필수 — 키가 없으면 `POST /analysis`가 500 · CORS `allow_origins`에 운영 오리진(https://localhostdaegu.cloud) 추가 · uvicorn **단일 워커**(분석 요청 저장소가 인메모리) · 리버스 프록시 뒤에서 SSE 버퍼링 끄기 확인(예: nginx `proxy_buffering off`)
 4. ~~**백엔드 whole-branch 최종 리뷰**~~ — ✅ 9/18 완료, `main` fast-forward 병합·푸시 완료
 5. **제출 서류·접수** (9/20) — 참가신청서(초안 있음)·서약서·개인정보 동의서·제안요약서 → im-challenge.com (§6)
-6. **(사람 작업) 온통청년 API 키 재발급 권장** — 9/17 05:10 funding 수집 실패 때 httpx 예외 메시지(요청 URL 전체)에 `apiKeyNm` 값이 담겨 `logs/funding-collector.log`에 기록됨(9/18 백엔드 최종 리뷰에서 발견). `logs/`는 git 미추적이라 커밋되지 않았고 로그의 해당 값은 `***`로 치환, 게이트웨이 예외 메시지에서 키 제거 수정 완료(9/18, youthcenter·인허가·기업마당·R-ONE·ECOS, 9/18 추가로 거리두기·브이월드·semas·molit·서울 학원(경로 키 `***`) — URL에 키를 넣는 게이트웨이 전부). 재발급 후 `YOUTHCENTER_API_KEY`(루트 `.env` 또는 `backend/.env`) 교체 → 다음 05:10 크론 또는 수동 수집으로 확인
-7. 여력 시: 활용신청 5종 적재 · 빈 테이블(`shock_event_region` 충격↔지역 연결, `tobacco_retailer` 수동 파일, `academy_course`·`convenience_store`는 서울 원본 잔재로 대구 수집기 없음) · Neo4j 사용처 결정(컨테이너 기동 중, 노드 0, 코드 사용처 없음 → 쓰거나 compose 에서 제외)
+6. ~~**(사람 작업) 온통청년 API 키 재발급 권장**~~ — ✅ 9/19 밤 재발급·교체·수집 성공(403 `invalid api key` 해소). 경위: 9/17 05:10 funding 수집 실패 때 httpx 예외 메시지(요청 URL 전체)에 `apiKeyNm` 값이 담겨 `logs/funding-collector.log`에 기록됨(9/18 백엔드 최종 리뷰에서 발견). `logs/`는 git 미추적이라 커밋되지 않았고 로그의 해당 값은 `***`로 치환, 게이트웨이 예외 메시지에서 키 제거 수정 완료(9/18, youthcenter·인허가·기업마당·R-ONE·ECOS, 9/18 추가로 거리두기·브이월드·semas·molit·서울 학원(경로 키 `***`) — URL에 키를 넣는 게이트웨이 전부). 재발급 후 `YOUTHCENTER_API_KEY`(루트 `.env` 또는 `backend/.env`) 교체 → 다음 05:10 크론 또는 수동 수집으로 확인
+7. ~~여력 시~~ → 9/19 대부분 완료(공공데이터 5종·담배소매업 33,804건 적재, `shock_event_region`은 채울 사건 없음 — ERD §4-1). 원문: 활용신청 5종 적재 · 빈 테이블(`shock_event_region` 충격↔지역 연결, `tobacco_retailer` 수동 파일, `academy_course`·`convenience_store`는 서울 원본 잔재로 대구 수집기 없음) · Neo4j 사용처 결정(컨테이너 기동 중, 노드 0, 코드 사용처 없음 → 쓰거나 compose 에서 제외)
 
 동작 확인 명령:
 ```bash
@@ -48,6 +48,24 @@ cd frontend && npm run dev                   # :3300 (브라우저 열지 말 �
 cd frontend && npx vitest run                # 96 passed 기대
 node frontend/tests/funnel.cjs               # E2E (mock 기준) PASS 기대
 ```
+
+### 0-1-1. 남은 일 (2026-09-19 밤 점검 — 오늘 해소분 제외, 추천 순서)
+
+오늘 해소: 온통청년 키, 인허가 좌표 없음 5,547건 중 3,232 지오코딩, 학원·부동산·어린이집 스냅샷 규칙(좌표 이월·폐업 추정), 담배소매업 적재,
+편의점·어린이집 상권 지표 연결, 브이월드 지오코딩 결과 SGIS 교체(약관), 제안서 수치 일괄 갱신. 상세는 `docs/jekyll.md` 2026-09-19.
+
+| # | 남은 일 | 왜 남았나 | 규모·방법 |
+|---|---|---|---|
+| 1 | **배포 + 시연 영상** (§0-1 3번) | 미착수 | 배포 가이드 `docs/deploy*.md`. 백엔드 환경변수에 `NEIS_API_KEY`·`CHILDCARE_API_KEY`·`SGIS_*`도 필요(9/19 추가) |
+| 2 | **제출 서류·접수** (§0-1 5번, 9/20) | 미착수 | `docs/plan/plan.md`(git 미추적 — 이 노트북에만 있음, 팀 공유는 별도 전달) |
+| 3 | 폐업 추정 라벨 유지 | 학원·부동산·어린이집 폐업은 스냅샷 소실 추정이라 현재 0건 — 스냅샷이 2~4주 쌓여야 값이 생김 | 코드 완료. 제안서·화면에 "추정" 표기 유지(`폐업률(추정)` 라벨, 프롬프트 주석) |
+| 4 | 좌표 없는 인허가 잔여 2,315건 | SGIS에 없는 옛 지번(영업 중 35, 2019~2025 폐업 37 = 전체 폐업의 0.1%) | 후순위. 도로명주소 API(juso.go.kr) 지번→도로명 변환 후 `geocode_stores --retry-failed` |
+| 5 | RAG 평가셋 80건 검수 | 정답 공고가 2025년 만료분이라 운영 만료 필터에 걸림(Recall@5 0.438 vs 필터 OFF 1.0) | `data/eval/review/` 검수 후 미만료 공고로 재추출(`generate_evalset`) |
+| 6 | 재단 상품 4건 취급은행·youth-1 2026 재공고 | 외부 확인 필요 | §0-2 후속 과제 ②③ |
+| 7 | 센터 민간 데이터(카드·생활인구) | 대구 방문 필요 | 본선 진출 시 9/28 멘토링 당일(§0-3·§5) |
+| 8 | 라이선스 잔여 확인 | 브이월드 이용약관 원문(출처 표시 문구)·15060371 이용허락범위·로고 출처·Pretendard self-host | `docs/plan/licenses.md` 체크리스트. 지오코딩 저장 조항 2건은 9/19 확인 완료 |
+| 9 | 코드 소소한 이월 | 어린이집 합산 규칙이 `app/dtos`에 위치(도메인이 제자리) · 테스트 모듈 간 비공개 심볼 import · mock `fixtures.ts` 편의점 라벨 옛값 · `_locate_all`+`assign_regions` 인덱스 중복 생성 | 리뷰 Minor. 급하지 않음 |
+| 10 | 제안서 크론 증감 수치 | 뉴스·색인 건수는 매시 늘어남(9/19 22:30 스냅샷 1,926·3,643) | 제출 직전 `docs/plan/make_charts.py 2` 재실행 + 본문 `grep -n "1,926\|3,643"` 일괄 교체 |
 
 ### 0-2. 9/17 후속 점검 — 현재 데이터와 확인된 문제
 
