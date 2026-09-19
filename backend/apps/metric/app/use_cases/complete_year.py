@@ -8,7 +8,7 @@ from apps.metric.domain.reporting_year import last_complete_year
 
 
 def complete_year_cap(store_stats: StoreStatsPort) -> int | None:
-    """store 원천 최신 기록일 기준 마지막 완결 연도. 원천이 비어 있으면 상한 없음(None)."""
+    """지표 원천(store·담배소매인·어린이집) 최신 기록일 기준 마지막 완결 연도. 원천이 비어 있으면 상한 없음(None)."""
     latest = store_stats.latest_record_date()
     return None if latest is None else last_complete_year(latest)
 

@@ -148,9 +148,30 @@ def verdict_prompt(ctx: AnalysisContext) -> str:
     )
 
 
+# Strategy (GoF) — 업종별 원천 주석. 원천이 업종과 다른 업종만 항목이 있다(if 업종 분기 대신 테이블).
+_SNAPSHOT_CLOSURE_NOTE = (
+    "이 업종의 원천은 현행 스냅샷만 제공하고 폐업분을 주지 않는다. 폐업은 스냅샷에서 사라진 점포를 관측일 기준으로 "
+    "추정한 값이라 아직 0건에 가깝고, 폐업률·점포 증감률을 실제 폐업으로 읽으면 안 된다 — 해석에 이 한계를 밝혀라."
+)
+_PROXY_SOURCE_NOTES = {
+    "convenience_store": (
+        "편의점 지표는 편의점 전용 인허가가 없어 담배소매인 지정 현황을 대용으로 쓴 값이며, "
+        "슈퍼마켓·마트 등 담배를 파는 다른 소매점이 함께 포함된다 — 해석에 이 한계를 밝혀라."
+    ),
+    "academy": _SNAPSHOT_CLOSURE_NOTE,
+    "real_estate": _SNAPSHOT_CLOSURE_NOTE,
+    "childcare": _SNAPSHOT_CLOSURE_NOTE,
+}
+
+
+def _proxy_source_note(ctx: AnalysisContext) -> str:
+    note = _PROXY_SOURCE_NOTES.get(ctx.request.industry, "")
+    return f"\n{note}" if note else ""
+
+
 def market_prompt(ctx: AnalysisContext) -> str:
     return (
-        f"{market_facts(ctx)}\n\n"
+        f"{market_facts(ctx)}{_proxy_source_note(ctx)}\n\n"
         "표의 지표가 창업자에게 무엇을 뜻하는지, 어떤 변수가 문제인지 불릿 3개 이내로 해석하라." + _question(ctx)
     )
 

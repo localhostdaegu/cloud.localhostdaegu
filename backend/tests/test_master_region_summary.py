@@ -121,3 +121,30 @@ def test_summary_endpoint_404_on_unknown_region():
     body = response.json()
     assert body["error"]["code"] == "REGION_NOT_FOUND"
     assert body["error"]["message"]
+
+
+def test_summary_labels_convenience_store_count_as_tobacco_proxy():
+    """편의점 지표는 담배소매인 인허가 대용 — 라벨이 그 사실을 감추지 않는다."""
+    snapshot = RegionMetricSnapshot(store_count=214, closure_rate=0.031, growth_rate=0.0)
+    dto = _interactor(snapshot).summary("1168064000", "convenience_store")
+    assert [c.label for c in dto.cards] == ["점포수(담배소매인 기준)", "폐업률", "점포 증감률"]
+
+
+def test_summary_labels_childcare_count_as_center_count():
+    snapshot = RegionMetricSnapshot(store_count=62, closure_rate=0.0, growth_rate=0.0)
+    dto = _interactor(snapshot).summary("1168064000", "childcare")
+    assert dto.cards[0].label == "어린이집 수"
+    assert dto.cards[1].label == "폐업률(추정)"  # 원천이 폐지분을 주지 않아 스냅샷 소실 추정
+
+
+def test_summary_labels_closure_as_estimate_for_snapshot_industries():
+    """학원·부동산도 폐업분 없는 스냅샷 원천 — 라벨이 추정임을 드러낸다. 인허가 업종은 그대로."""
+    snapshot = RegionMetricSnapshot(store_count=10, closure_rate=0.0, growth_rate=0.0)
+    for industry in ("academy", "real_estate"):
+        assert _interactor(snapshot).summary("1168064000", industry).cards[1].label == "폐업률(추정)"
+    assert _interactor(snapshot).summary("1168064000", "cafe").cards[1].label == "폐업률"
+
+
+def test_summary_keeps_industry_label_when_metric_missing():
+    dto = _interactor(None).summary("1168064000", "convenience_store")
+    assert [(c.label, c.value) for c in dto.cards][0] == ("점포수(담배소매인 기준)", "데이터 없음")

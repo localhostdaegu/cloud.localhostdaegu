@@ -78,7 +78,7 @@ it("동네를 못 알아들으면 말없이 지도로 보내지 않고 구·군�
 
   // 구·군을 고르면 업종 되물음으로 이어지고, 말한 예산은 끝까지 따라간다.
   await user.click(screen.getByRole("button", { name: "수성구" }));
-  await user.click(await screen.findByRole("button", { name: "편의점" })); // 등록 업종 11종이 모두 칩에 있다
+  await user.click(await screen.findByRole("button", { name: "편의점 (담배소매인 기준)" })); // 등록 업종 11종이 모두 칩에 있다 — 편의점 라벨은 담배소매인 대용임을 밝힌다
   expect(push).toHaveBeenCalledWith("/map?district=27260&industry=convenience_store&budget=30000000");
 });
 

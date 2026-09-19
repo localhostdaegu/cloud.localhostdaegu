@@ -19,7 +19,7 @@ export type IndustryId = (typeof INDUSTRIES)[number];
 export const INDUSTRY_LABELS: Record<IndustryId, string> = {
   cafe: "카페",
   restaurant: "일반음식점",
-  convenience_store: "편의점",
+  convenience_store: "편의점 (담배소매인 기준)",
   hair_salon: "미용실",
   karaoke: "노래방",
   pc_bang: "PC방",

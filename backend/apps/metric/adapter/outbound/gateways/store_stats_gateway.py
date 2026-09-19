@@ -1,70 +1,51 @@
-"""Driven Adapter — store 원천 테이블 연도별 집계 (cross-BC 접근은 어댑터 레이어에서만)."""
+"""Driven Adapter — 지표 원천 Strategy 합성 (cross-BC 접근은 어댑터 레이어에서만).
+
+포트는 하나지만 원천은 여럿이다(인허가 store / 담배소매인 → 편의점 / 어린이집).
+새 원천을 붙일 때 이 파일에 if 를 더하지 않고 `_SOURCES` 레지스트리에 클래스를 추가한다(OCP).
+"""
 
 from datetime import date
 
-from sqlalchemy import func, or_, select
-
+from apps.metric.adapter.outbound.gateways.stats_sources.childcare_source import (
+    ChildcareSource,
+)
+from apps.metric.adapter.outbound.gateways.stats_sources.store_table_source import (
+    StoreTableSource,
+)
+from apps.metric.adapter.outbound.gateways.stats_sources.tobacco_proxy_source import (
+    TobaccoProxySource,
+)
+from apps.metric.adapter.outbound.gateways.stats_sources.yearly_stats_source import (
+    YearlyStatsSource,
+)
 from apps.metric.app.dtos.region_industry_metric_dto import YearlyStoreStat
 from apps.metric.app.ports.output.region_industry_metric_port import StoreStatsPort
-from apps.metric.domain.short_lived import SHORT_LIVED_MAX_DAYS
-from apps.store.adapter.outbound.orms.store_orm import StoreOrm
 from core.matrix.grid_oracle_database_manager import session_scope
+
+_SOURCES: list[type[YearlyStatsSource]] = [
+    StoreTableSource,
+    TobaccoProxySource,
+    ChildcareSource,
+]
 
 
 class StoreStatsGateway(StoreStatsPort):
+    def __init__(self, sources: list[YearlyStatsSource] | None = None) -> None:
+        self._sources = sources if sources is not None else [cls() for cls in _SOURCES]
+
     def yearly_stats(self, years: list[int]) -> list[YearlyStoreStat]:
-        stats: list[YearlyStoreStat] = []
         with session_scope() as session:
-            for year in years:
-                end_of_year = date(year, 12, 31)
-                rows = session.execute(
-                    select(
-                        StoreOrm.region_code,
-                        StoreOrm.industry_id,
-                        # 연도 말 기준 영업 중: 개업 이후 & (미폐업 or 이듬해 이후 폐업)
-                        func.count().filter(
-                            StoreOrm.open_date <= end_of_year,
-                            or_(
-                                StoreOrm.close_date.is_(None),
-                                StoreOrm.close_date > end_of_year,
-                            ),
-                        ),
-                        func.count().filter(
-                            func.extract("year", StoreOrm.open_date) == year
-                        ),
-                        func.count().filter(
-                            func.extract("year", StoreOrm.close_date) == year
-                        ),
-                    )
-                    .where(
-                        StoreOrm.region_code.is_not(None),
-                        # 개업 직후 종료 건 제외 — 기간을 알 수 없는 행(개업일·폐업일 없음)은 그대로 둔다
-                        or_(
-                            StoreOrm.open_date.is_(None),
-                            StoreOrm.close_date.is_(None),
-                            StoreOrm.close_date - StoreOrm.open_date > SHORT_LIVED_MAX_DAYS,
-                        ),
-                    )
-                    .group_by(StoreOrm.region_code, StoreOrm.industry_id)
-                ).all()
-                stats.extend(
-                    YearlyStoreStat(
-                        region_code=region_code,
-                        industry_id=industry_id,
-                        year=year,
-                        store_count=store_count,
-                        open_count=open_count,
-                        close_count=close_count,
-                    )
-                    for region_code, industry_id, store_count, open_count, close_count in rows
-                )
-        return stats
+            return [
+                stat
+                for source in self._sources
+                for stat in source.yearly_stats(session, years)
+            ]
 
     def latest_record_date(self) -> date | None:
         with session_scope() as session:
-            # greatest()는 NULL 인자를 무시 — 폐업 이력이 없어도 최신 개업일을 돌려준다
-            return session.execute(
-                select(
-                    func.greatest(func.max(StoreOrm.open_date), func.max(StoreOrm.close_date))
-                ).where(StoreOrm.region_code.is_not(None))
-            ).scalar_one_or_none()
+            dates = [
+                latest
+                for source in self._sources
+                if (latest := source.latest_record_date(session)) is not None
+            ]
+        return max(dates, default=None)

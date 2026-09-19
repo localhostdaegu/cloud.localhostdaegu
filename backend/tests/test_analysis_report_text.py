@@ -12,6 +12,7 @@ from apps.analysis.domain.report_text import (
     funding_lead,
     funding_prompt,
     market_lead,
+    market_prompt,
     products_text,
     shock_prompt,
     system_instruction,
@@ -116,3 +117,23 @@ def test_citations_dedupe_by_url_skip_missing_url_and_grade_by_source():
         Citation(title=FUNDING_DOC.title, url="https://funding.example/1", grade="fact"),
         Citation(title=NEWS_DOC.title, url="https://news.example/1", grade="signal"),
     ]
+
+
+def test_market_prompt_discloses_tobacco_proxy_for_convenience_store():
+    """편의점 지표가 담배소매인 대용이라는 사실을 LLM 해석 프롬프트가 알고 있어야 한다."""
+    ctx = full_context()
+    ctx.request = replace(ctx.request, industry="convenience_store")
+    assert "담배소매인" in market_prompt(ctx)
+
+
+def test_market_prompt_adds_no_proxy_note_for_other_industries():
+    assert "담배소매인" not in market_prompt(full_context())
+
+
+def test_market_prompt_discloses_snapshot_closure_estimate():
+    """학원·부동산·어린이집은 폐업분 없는 스냅샷 원천 — 프롬프트가 폐업률을 실제 폐업으로 읽지 않게 한다."""
+    for industry in ("academy", "real_estate", "childcare"):
+        ctx = full_context()
+        ctx.request = replace(ctx.request, industry=industry)
+        assert "스냅샷" in market_prompt(ctx)
+    assert "스냅샷" not in market_prompt(full_context())

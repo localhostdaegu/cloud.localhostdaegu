@@ -158,3 +158,14 @@ def test_build_is_idempotent():
 
     assert first == second
     assert repository.rows == snapshot
+
+
+def test_build_rejects_duplicate_keys_from_overlapping_sources():
+    """두 원천이 같은 (행정동, 업종, 연도)를 내면 조용히 덮어쓰지 않고 실패한다 — 원천 등록 오류 조기 발견."""
+    import pytest
+
+    interactor, _, _ = _interactor(
+        [_stat(2020, store=10, opened=1, closed=0), _stat(2020, store=99, opened=9, closed=9)]
+    )
+    with pytest.raises(ValueError, match="중복"):
+        interactor.build([2020])

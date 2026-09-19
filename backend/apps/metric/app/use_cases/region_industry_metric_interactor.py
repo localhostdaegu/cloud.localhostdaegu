@@ -61,6 +61,8 @@ class RegionIndustryMetricInteractor(RegionIndustryMetricUseCase):
         # 첫 대상 연도의 비율 계산에 전년 말 store_count가 필요해 보조 연도 1개를 함께 집계
         stats = self._store_stats.yearly_stats([min(years) - 1, *years])
         by_key = {(s.region_code, s.industry_id, s.year): s for s in stats}
+        if len(by_key) != len(stats):  # 두 원천이 같은 업종을 내면 뒤 행이 조용히 덮어쓴다 — 원천 등록 오류로 막는다
+            raise ValueError("지표 원천이 같은 (행정동, 업종, 연도)를 중복 제공했다 — stats_sources 등록을 확인하라")
         target_years = set(years)
         metrics = []
         for stat in stats:

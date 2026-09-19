@@ -5,6 +5,9 @@ from functools import lru_cache
 from apps.master.adapter.outbound.gateways.boundary_file_reader import (
     BoundaryFileReader,
 )
+from apps.master.adapter.outbound.gateways.childcare_capacity_gateway import (
+    ChildcareCapacityGateway,
+)
 from apps.master.adapter.outbound.gateways.metric_summary_gateway import (
     MetricSummaryGateway,
 )
@@ -24,5 +27,6 @@ def get_region_use_case() -> RegionUseCase:
             repository=SqlAlchemyRegionRepository(),
             boundary_reader=BoundaryFileReader(),
             metric_summary=MetricSummaryGateway(),
+            childcare_capacity=ChildcareCapacityGateway(),
         )
     )

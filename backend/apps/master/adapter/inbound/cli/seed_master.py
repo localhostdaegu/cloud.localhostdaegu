@@ -38,7 +38,7 @@ _INDUSTRIES = [
     ("childcare", "어린이집", "demographic"),
 ]
 
-# 확정된 원천 코드만 시드 (미확정: 편의점 상가정보 업종코드 — 확정 시 추가)
+# 확정된 원천 코드만 시드
 _SOURCE_CODES = [
     ("restaurant", "mois_permit", "general_restaurants"),
     ("cafe", "mois_permit", "rest_cafes"),
@@ -49,6 +49,8 @@ _SOURCE_CODES = [
     ("billiard", "mois_permit", "billiard_halls"),
     ("real_estate", "molit_broker", "15123990"),
     ("childcare", "childcare_portal", "15013108"),
+    # 편의점 전용 인허가 코드가 없어 담배소매인 지정 현황을 대용 원천으로 쓴다 (정직성: 라벨에 명시)
+    ("convenience_store", "mois_permit_tobacco", "기타_담배소매업"),
 ]
 
 # 학원 교습계열 5 + 미용업 세분 3 (brainstorming §3.5·§3.6)
